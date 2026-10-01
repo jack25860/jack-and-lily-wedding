@@ -1,0 +1,62 @@
+name: Deploy wedding site
+
+on:
+  workflow_dispatch:
+    inputs:
+      zip_url:
+        description: "Primary URL of the site archive (.zip)"
+        required: true
+      zip_url_fallback:
+        description: "Fallback URL of the site archive (.zip)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download archive
+        run: |
+          set -e
+          ok=0
+          for u in "${{ github.event.inputs.zip_url }}" "${{ github.event.inputs.zip_url_fallback }}"; do
+            if [ -z "$u" ]; then continue; fi
+            echo "Trying: $u"
+            if curl -L --fail --retry 3 --retry-delay 5 --max-time 600 -o /tmp/site.zip "$u"; then
+              sz=$(stat -c%s /tmp/site.zip)
+              echo "Downloaded $sz bytes"
+              if [ "$sz" -gt 1000000 ]; then ok=1; break; fi
+            fi
+          done
+          if [ "$ok" != "1" ]; then echo "All download attempts failed"; exit 1; fi
+          file /tmp/site.zip
+
+      - name: Extract archive
+        run: |
+          set -e
+          unzip -o /tmp/site.zip -d .
+          rm -f /tmp/site.zip
+          echo "--- top level ---"
+          ls -la
+          echo "--- counts ---"
+          find . -path ./.git -prune -o -type f -print | wc -l
+          find ./images -type f | wc -l
+
+      - name: Commit and push
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Deploy wedding site (v14) with all assets"
+            git push
+          fi
