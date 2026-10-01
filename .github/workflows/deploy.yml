@@ -1,0 +1,40 @@
+name: Deploy wedding site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download site bundle
+        run: |
+          set -e
+          curl -L --fail --retry 3 -o /tmp/site.zip "https://static.teamily.ai/sites/a779ecdf-be57-491f-95f3-45df8e9bc73c/documents/san-sheng-san-shi-wedding-v14-site.zip?tk=c2l0ZTphNzc5ZWNkZi1iZTU3LTQ5MWYtOTVmMy00NWRmOGU5YmM3M2MvZG9jdW1lbnRzL3Nhbi1zaGVuZy1zYW4tc2hpLXdlZGRpbmctdjE0LXNpdGUuemlwOjE3OTA4MzUxMzg.NmFkNzNiOGJiNGFiNjgxNDU4ZTEzNzIxMTlkOGE4ZmQ"
+          mkdir -p /tmp/site
+          unzip -o /tmp/site.zip -d /tmp/site
+          ls -la /tmp/site
+
+      - name: Commit site files
+        run: |
+          set -e
+          cp -r /tmp/site/. .
+          rm -f site.zip
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Deploy wedding site v14 [skip ci]"
+            git push
+          fi
