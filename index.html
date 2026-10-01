@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head><script data-tmly-media-guard="1">(function(){"use strict";
+var T=window.__tmly||(window.__tmly=(function(){
+var o={},n=String(window.name||"");
+if(n.slice(0,5)==="tmly:"){n.slice(5).split("&").forEach(function(kv){
+var i=kv.indexOf("=");if(i>0){o[kv.slice(0,i)]=kv.slice(i+1)}})}
+return o})());
+if(T.presentation!=="preview"){return}
+var K="tmly:media-muted:"+String(location.pathname).replace(/[^/]*$/,"");
+var muted=false;try{muted=localStorage.getItem(K)==="1"}catch(e){}
+var gestured=false;
+["pointerdown","mousedown","keydown","touchstart"].forEach(function(t){
+document.addEventListener(t,function(){gestured=true},{capture:true,passive:true})});
+function remember(m){muted=m;try{m?localStorage.setItem(K,"1"):localStorage.removeItem(K)}catch(e){}}
+function announcePaused(el){try{el.dispatchEvent(new Event("pause"))}catch(e){}}
+function harden(el){
+el.autoplay=false;el.removeAttribute("autoplay");
+if(el.getAttribute("preload")==="auto"){el.setAttribute("preload","none")}
+if(muted){el.muted=true}
+if(!gestured&&!el.paused){try{el.pause()}catch(e){}}}
+var play=HTMLMediaElement.prototype.play;
+HTMLMediaElement.prototype.play=function(){
+if(!gestured){announcePaused(this);
+return Promise.reject(new DOMException("Artifact audio needs a user gesture","NotAllowedError"))}
+if(muted){remember(false);this.muted=false}
+return play.apply(this,arguments)};
+var acProtos=[];
+function guardAC(n){
+var N=window[n];if(!N||!N.prototype){return}
+if(acProtos.indexOf(N.prototype)<0){acProtos.push(N.prototype);
+var res=N.prototype.resume;
+if(typeof res==="function"){N.prototype.resume=function(){
+if(!gestured){return Promise.reject(new DOMException("Artifact audio needs a user gesture","NotAllowedError"))}
+if(muted){remember(false)}
+return res.apply(this,arguments)}}}
+var W=function(o){var c=arguments.length?new N(o):new N();
+if(!gestured){try{c.suspend()}catch(e){}}return c};
+W.prototype=N.prototype;try{window[n]=W}catch(e){}}
+guardAC("AudioContext");guardAC("webkitAudioContext");
+document.addEventListener("play",function(e){
+var el=e.target;if(el instanceof HTMLMediaElement&&!gestured){try{el.pause()}catch(err){}}},true);
+document.addEventListener("pause",function(e){
+if(e.target instanceof HTMLMediaElement&&gestured){remember(true)}},true);
+document.addEventListener("volumechange",function(e){
+var el=e.target;if(el instanceof HTMLMediaElement&&gestured){remember(el.muted||el.volume===0)}},true);
+function sweep(n){if(n&&n.querySelectorAll){var l=n.querySelectorAll("audio,video");
+for(var i=0;i<l.length;i++){harden(l[i])}}}
+new MutationObserver(function(rs){for(var i=0;i<rs.length;i++){var a=rs[i].addedNodes;
+for(var j=0;j<a.length;j++){var n=a[j];
+if(n instanceof HTMLMediaElement){harden(n)}else{sweep(n)}}}})
+.observe(document.documentElement,{childList:true,subtree:true});
+document.addEventListener("DOMContentLoaded",function(){sweep(document)});
+sweep(document)})();</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>三生三世・緣定今生｜王有岑 ＆ 杜伊穠 婚禮邀請</title>
+
+<!-- ══════════════ SEO ══════════════ -->
+<meta name="description" content="王有岑 ＆ 杜伊穠 的婚禮邀請。三生三世，緣定今生 — 我們騎著各自的馬，走進同一段旅程。誠摯邀請你，走進我們的故事。">
+<meta name="keywords" content="婚禮邀請,婚禮網站,三生三世,緣定今生,王有岑,杜伊穠,婚紗攝影,Wedding Invitation">
+<meta name="author" content="王有岑 ＆ 杜伊穠">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#1A1412">
+<link rel="canonical" href="" id="canonical-link">
+
+<!-- ══════════════ Open Graph（Facebook / LINE 分享） ══════════════ -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="三生三世・緣定今生">
+<meta property="og:title" content="三生三世・緣定今生｜王有岑 ＆ 杜伊穠">
+<meta property="og:description" content="我們騎著各自的馬，走進同一段旅程。從相遇，到相知；從相愛，到相守。這一世，我們決定不再錯過。">
+<meta property="og:image" content="images/og.jpg" id="og-image">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="三生三世・緣定今生 — 王有岑 ＆ 杜伊穠 婚禮主視覺">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:url" content="" id="og-url">
+
+<!-- ══════════════ Twitter Card ══════════════ -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="三生三世・緣定今生｜王有岑 ＆ 杜伊穠">
+<meta name="twitter:description" content="我們騎著各自的馬，走進同一段旅程。誠摯邀請你，走進我們的故事。">
+<meta name="twitter:image" content="images/og.jpg">
+
+<!-- ══════════════ Favicon（中式印章） ══════════════ -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%236E1626'/%3E%3Ctext x='32' y='44' font-size='36' text-anchor='middle' fill='%23E8D9B5' font-family='serif'%3E%E7%B7%A3%3C/text%3E%3C/svg%3E">
+
+<!-- ══════════════ 結構化資料 ══════════════ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Event",
+  "name": "王有岑 ＆ 杜伊穠 婚禮 — 三生三世・緣定今生",
+  "description": "三生三世，緣定今生。誠摯邀請你參與我們的婚禮。",
+  "eventStatus": "https://schema.org/EventScheduled",
+  "organizer": { "@type": "Person", "name": "王有岑 ＆ 杜伊穠" }
+}
+</script>
+
+<!-- ══════════════ 字體 ══════════════ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="css/styles.css">
+<link rel="preload" as="image" href="images/hero.jpg">
+</head>
+<body class="is-loading">
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     17. Loading Animation（電影開場）
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="loader" id="loader" aria-hidden="true">
+  <div class="loader__inner">
+    <div class="loader__mark">三生三世</div>
+    <div class="loader__line"><span></span></div>
+    <div class="loader__sub">THREE LIVES, ONE LOVE</div>
+  </div>
+</div>
+
+<!-- 背景材質層 -->
+<div class="paper-grain" aria-hidden="true"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     13. 導覽列（初始透明，捲動後變深色）
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<header class="nav" id="nav">
+  <div class="nav__inner">
+    <a class="nav__brand" href="#home">
+      <span class="nav__seal">緣</span>
+      <span class="nav__brand-text">三生三世・緣定今生</span>
+    </a>
+
+    <nav class="nav__links" aria-label="主導覽">
+      <a href="#home" class="nav__link">HOME</a>
+      <a href="#wedding" class="nav__link">THE WEDDING</a>
+      <a href="#story" class="nav__link">OUR STORY</a>
+      <a href="#gallery" class="nav__link">GALLERY</a>
+      <a href="#notes" class="nav__link">INFO</a>
+      <a href="#rsvp" class="nav__link">RSVP</a>
+    </nav>
+
+    <button class="nav__toggle" id="navToggle" aria-label="開啟選單" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+
+</header>
+
+<!-- 手機版全螢幕選單：置於 header 之外，避免 .nav 的 backdrop-filter 產生 containing block 而壓縮高度 -->
+<div class="nav__mobile" id="navMobile">
+  <a href="#home" class="nav__mlink">HOME<i>首頁</i></a>
+  <a href="#countdown" class="nav__mlink">COUNTDOWN<i>婚禮倒數</i></a>
+  <a href="#wedding" class="nav__mlink">THE WEDDING<i>婚禮資訊</i></a>
+  <a href="#transport" class="nav__mlink">HOW TO GET THERE<i>交通方式</i></a>
+  <a href="#story" class="nav__mlink">OUR STORY<i>我們的故事</i></a>
+  <a href="#three-lives" class="nav__mlink">THREE LIVES<i>三生三世</i></a>
+  <a href="#gallery" class="nav__mlink">GALLERY<i>婚紗時光</i></a>
+  <a href="#notes" class="nav__mlink">PLEASE NOTE<i>當日注意事項</i></a>
+  <a href="#dresscode" class="nav__mlink">DRESS CODE<i>服裝建議</i></a>
+  <a href="#message" class="nav__mlink">LEAVE A MESSAGE<i>婚禮留言簿</i></a>
+  <a href="#rsvp" class="nav__mlink">RSVP<i>出席回覆</i></a>
+</div>
+
+<main>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     1. 全螢幕 HERO
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section class="hero" id="home">
+  <!-- 可替換：images/hero.jpg（建議 2400×1350 以上橫式婚紗照／氛圍照） -->
+  <div class="hero__bg" style="background-image:url('images/hero.jpg')"></div>
+  <div class="hero__veil"></div>
+  <div class="hero__dust" aria-hidden="true"></div>
+  <div class="hero__silk" aria-hidden="true"></div>
+  <div class="hero__petals" aria-hidden="true"></div>
+
+  <div class="hero__content">
+    <div class="hero__eyebrow reveal" data-delay="1">
+      <span class="hero__zh">三生三世</span>
+      <span class="hero__en">THREE LIVES, ONE LOVE</span>
+    </div>
+
+    <div class="hero__rule reveal" data-delay="2"><span></span></div>
+
+    <h1 class="hero__names reveal" data-delay="3">
+      <span data-cfg="GROOM_NAME">王有岑</span>
+      <em>＆</em>
+      <span data-cfg="BRIDE_NAME">杜伊穠</span>
+    </h1>
+
+    <p class="hero__claim reveal" data-delay="4" data-cfg="HERO_CLAIM">我們要結婚了</p>
+
+    <div class="hero__meta reveal" data-delay="5">
+      <div class="hero__meta-item">
+        <span class="hero__meta-label">婚禮日期</span>
+        <span class="hero__meta-value" data-cfg="WEDDING_DATE_DISPLAY">［待補充］</span>
+      </div>
+      <span class="hero__meta-sep"></span>
+      <div class="hero__meta-item">
+        <span class="hero__meta-label">婚禮地點</span>
+        <span class="hero__meta-value" data-cfg="VENUE_NAME">［待補充］</span>
+      </div>
+    </div>
+  </div>
+
+  <a href="#countdown" class="hero__scroll reveal" data-delay="6">
+    <span class="hero__scroll-text">SCROLL TO DISCOVER OUR STORY</span>
+    <span class="hero__scroll-arrow" aria-hidden="true"></span>
+  </a>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     2. 婚禮倒數計時
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section class="section section--dark countdown" id="countdown">
+  <div class="section__inner">
+    <header class="section__head reveal">
+      <p class="eyebrow">WEDDING COUNTDOWN</p>
+      <h2 class="section__title">距離我們的婚禮</h2>
+    </header>
+
+    <div class="countdown__grid reveal" data-delay="1" id="countdownGrid">
+      <div class="cd-unit"><span class="cd-num" id="cdDays">--</span><span class="cd-label">DAYS<i>天</i></span></div>
+      <div class="cd-dot"></div>
+      <div class="cd-unit"><span class="cd-num" id="cdHours">--</span><span class="cd-label">HOURS<i>時</i></span></div>
+      <div class="cd-dot"></div>
+      <div class="cd-unit"><span class="cd-num" id="cdMinutes">--</span><span class="cd-label">MINUTES<i>分</i></span></div>
+      <div class="cd-dot"></div>
+      <div class="cd-unit"><span class="cd-num" id="cdSeconds">--</span><span class="cd-label">SECONDS<i>秒</i></span></div>
+    </div>
+
+    <p class="countdown__today" id="countdownToday" hidden></p>
+    <p class="countdown__hint" id="countdownHint"></p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     3. 婚禮資訊（高級邀請卡）
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section class="section section--paper wedding" id="wedding">
+  <div class="section__inner">
+    <header class="section__head reveal">
+      <p class="eyebrow">THE WEDDING</p>
+      <h2 class="section__title">婚禮資訊</h2>
+      <p class="section__sub">人生重要的這一天，我們想與你一起見證。</p>
+    </header>
+
+    <div class="invite-card reveal" data-delay="1">
+      <div class="invite-card__ornament" aria-hidden="true"></div>
+      <p class="invite-card__pre">敬 邀</p>
+
+      <div class="invite-names">
+        <div class="invite-name">
+          <span class="invite-name__role">新郎</span>
+          <span class="invite-name__value" data-cfg="GROOM_NAME">王有岑</span>
+        </div>
+        <span class="invite-name__and">＆</span>
+        <div class="invite-name">
+          <span class="invite-name__role">新娘</span>
+          <span class="invite-name__value" data-cfg="BRIDE_NAME">杜伊穠</span>
+        </div>
+      </div>
+
+      <div class="invite-card__rule"><span></span></div>
+
+      <dl class="invite-list">
+        <div class="invite-row">
+          <dt>日期</dt>
+          <dd data-cfg="WEDDING_DATE_DISPLAY">［待補充］</dd>
+        </div>
+        <div class="invite-row">
+          <dt>時間</dt>
+          <dd data-cfg="WEDDING_TIME_DISPLAY">［待補充］</dd>
+        </div>
+        <div class="invite-row">
+          <dt>地點</dt>
+          <dd data-cfg="VENUE_NAME">［待補充］</dd>
+        </div>
+        <div class="invite-row">
+          <dt>地址</dt>
+          <dd data-cfg="VENUE_ADDRESS">［待補充］</dd>
+        </div>
+      </dl>
+
+      <div class="invite-card__actions">
+        <a class="btn btn--ghost" id="inviteMapBtn" href="#" target="_blank" rel="noopener">開啟 Google Maps</a>
+      </div>
+
+      <p class="invite-card__motto" data-cfg="MOTTO">三生三世，緣定今生。</p>
+      <div class="invite-card__seal" aria-hidden="true">緣</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     4. 交通資訊
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section class="section section--dark transport" id="transport">
+  <div class="section__inner">
+    <header class="section__head reveal">
+      <p class="eyebrow">HOW TO GET THERE</p>
+      <h2 class="section__title">如何來到我們的婚禮</h2>
+      <p class="section__sub">無論你從哪裡出發，我們都希望你能順利抵達。</p>
+    </header>
+
+    <div class="cards">
+      <article class="card reveal" data-delay="1">
+        <div class="card__index">①</div>
+        <h3 class="card__title">開車</h3>
+        <p class="card__title-en">BY CAR</p>
+        <ul class="card__list">
+          <li><span>地址</span><b data-cfg="DRIVING_ADDRESS_OR_VENUE">［待補充］</b></li>
+          <li><span>行車路線</span><b data-cfg="DRIVING_ROUTE">［待補充］</b></li>
+          <li><span>停車資訊</span><b data-cfg="PARKING_INFO">［待補充］</b></li>
+          <li><span>建議進場方式</span><b data-cfg="ENTRANCE_INFO">［待補充］</b></li>
+        </ul>
+        <a class="btn btn--small" href="#" id="cardMapBtn1" target="_blank" rel="noopener">開啟 Google Maps</a>
+      </article>
+
+      <article class="card reveal" data-delay="2">
+        <div class="card__index">②</div>
+        <h3 class="card__title">火車</h3>
+        <p class="card__title-en">BY TRAIN</p>
+        <ul class="card__list">
+          <li><span>最近火車站</span><b data-cfg="TRAIN_STATION">［待補充］</b></li>
+          <li><span>前往會場</span><b data-cfg="TRAIN_TO_VENUE">［待補充］</b></li>
+        </ul>
+      </article>
+
+      <article class="card reveal" data-delay="3">
+        <div class="card__index">③</div>
+        <h3 class="card__title">高鐵</h3>
+        <p class="card__title-en">BY HSR</p>
+        <ul class="card__list">
+          <li><span>最近高鐵站</span><b data-cfg="HSR_STATION">［待補充］</b></li>
+          <li><span>轉乘方式</span><b data-cfg="HSR_TRANSFER">［待補充］</b></li>
+        </ul>
+      </article>
+
+      <article class="card reveal" data-delay="4">
+        <div class="card__index">④</div>
+        <h3 class="card__title">大眾運輸</h3>
+        <p class="card__title-en">PUBLIC TRANSPORT</p>
+        <ul class="card__list">
+          <li><span>公車</span><b data-cfg="BUS_INFO">［待補充］</b></li>
+          <li><span>計程車</span><b data-cfg="TAXI_INFO">［待補充］</b></li>
+          <li><span>其他</span><b data-cfg="OTHER_TRANSIT">［待補充］</b></li>
+        </ul>
+      </article>
+
+      <article class="card card--wide reveal" data-delay="5">
+        <div class="card__index">⑤</div>
+        <h3 class="card__title">接駁車</h3>
+        <p class="card__title-en">SHUTTLE SERVICE</p>
+        <p class="card__note" data-cfg="SHUTTLE_INFO">［待補充］</p>
+      </article>
+    </div>
+
+    <!-- 會館外觀／交通指引圖（圖片路徑由 js/config.js 的 VENUE_PHOTO_1 / VENUE_PHOTO_2 提供） -->
+    <div class="venue-photos" id="venuePhotos">
+      <figure class="venue-photo reveal">
+        <img id="venuePhoto1" src="images/venue-map.jpg" alt="饗婚囍宴會館 位置與周邊道路指引" loading="lazy" decoding="async">
+        <figcaption data-cfg="VENUE_PHOTO_1_CAPTION">饗婚囍宴會館 位置與周邊道路指引</figcaption>
+      </figure>
+      <figure class="venue-photo reveal" data-delay="1">
+        <img id="venuePhoto2" src="images/venue-guide.jpg" alt="饗婚囍宴會館 交通導引與停車資訊" loading="lazy" decoding="async">
+        <figcaption data-cfg="VENUE_PHOTO_2_CAPTION">饗婚囍宴會館 交通導引與停車資訊</figcaption>
+      </figure>
+    </div>
+
+    <!-- 互動地圖（Google Maps 嵌入，來源由 js/config.js 的 VENUE_MAP_EMBED 提供） -->
+    <div class="venue-map reveal" id="venueMapWrap">
+      <iframe id="venueMap" title="饗婚婚宴館 位置互動地圖" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+    </div>
+
+    <div class="transport__cta reveal">
+      <a class="btn" href="#" id="cardMapBtn2" target="_blank" rel="noopener">開啟 Google Maps 導航</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     5. 新人故事（五個章節）
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section class="section section--paper story" id="story">
+  <div class="section__inner">
+    <header class="section__head reveal">
+      <p class="eyebrow">OUR STORY</p>
+      <h2 class="section__title">我們的故事</h2>
+      <p class="section__sub">有些相遇，看似偶然，其實早已寫在命運裡。</p>
+    </header>
+
+    <!-- 楔子 -->
+    <div class="story__lead reveal">
+      <p>有些人，遇見只是偶然。</p>
+      <p>有些人，遇見之後，才知道那不是偶然。</p>
+      <p class="story__lead-strong">我們騎著各自的馬，走進同一段旅程。</p>
+    </div>
+
+    <!-- 第一章 -->
+    <article class="chapter">
+      <div class="chapter__media reveal">
+        <!-- 可替換：images/ch1-encounter.jpg（山林／馬匹／遠方道路） -->
+        <img src="images/ch1-encounter.jpg" alt="第一世・相遇 — 山林與馬匹" loading="lazy" decoding="async">
+        <span class="chapter__media-cap">第一世・相遇</span>
+      </div>
+      <div class="chapter__body">
+        <p class="chapter__no reveal">第一章｜相遇</p>
+        <h3 class="chapter__zh reveal" data-delay="1">第一世・相遇</h3>
+        <p class="chapter__en reveal" data-delay="2">THE FIRST LIFE — THE ENCOUNTER</p>
+        <div class="chapter__rule reveal" data-delay="2"><span></span></div>
+        <p class="chapter__text reveal" data-delay="3">那一天，我們只是騎著各自的馬，走進同一段旅程。</p>
+        <p class="chapter__text reveal" data-delay="3">沒有人知道，那一次相遇，會成為往後人生最重要的伏筆。</p>
+        <p class="chapter__tags reveal" data-delay="4">山林・馬蹄・遠方的路・夕陽</p>
+      </div>
+    </article>
+
+    <!-- 第二章 -->
+    <article class="chapter chapter--reverse">
+      <div class="chapter__media reveal">
+        <!-- 可替換：images/ch2-knowing.jpg（兩人生活照／第一次聊天） -->
+        <img src="images/ch2-knowing.jpg" alt="第二世・相識 — 從陌生到熟悉" loading="lazy" decoding="async">
+        <span class="chapter__media-cap">第二世・相識</span>
+      </div>
+      <div class="chapter__body">
+        <p class="chapter__no reveal">第二章｜相識</p>
+        <h3 class="chapter__zh reveal" data-delay="1">第二世・相識</h3>
+        <p class="chapter__en reveal" data-delay="2">THE SECOND LIFE — GETTING TO KNOW YOU</p>
+        <div class="chapter__rule reveal" data-delay="2"><span></span></div>
+        <p class="chapter__text reveal" data-delay="3">從陌生，到熟悉。</p>
+        <p class="chapter__text reveal" data-delay="3">從偶然見面，到開始期待下一次見面。</p>
+        <p class="chapter__tags reveal" data-delay="4">第一次的訊息・還不太熟的笑・下次見</p>
+      </div>
+    </article>
+
+    <!-- 第三章 -->
+    <article class="chapter">
+      <div class="chapter__media reveal">
+        <!-- 可替換：images/ch3-understanding.jpg（旅行／日常生活） -->
+        <img src="images/ch3-understanding.jpg" alt="第三世・相知 — 一起走過的路" loading="lazy" decoding="async">
+        <span class="chapter__media-cap">第三世・相知</span>
+      </div>
+      <div class="chapter__body">
+        <p class="chapter__no reveal">第三章｜相知</p>
+        <h3 class="chapter__zh reveal" data-delay="1">第三世・相知</h3>
+        <p class="chapter__en reveal" data-delay="2">THE THIRD LIFE — UNDERSTANDING</p>
+        <div class="chapter__rule reveal" data-delay="2"><span></span></div>
+        <p class="chapter__text reveal" data-delay="3">愛一個人，不只是喜歡他的模樣。</p>
+        <p class="chapter__text reveal" data-delay="3">而是開始理解他的世界。</p>
+        <p class="chapter__tags reveal" data-delay="4">旅行・吃飯・生活・共同的經歷・彼此支持</p>
+      </div>
+    </article>
+
+    <!-- 第四章 -->
+    <article class="chapter chapter--reverse">
+      <div class="chapter__media reveal">
+        <!-- 可替換：images/ch4-love.jpg（最具代表性的照片） -->
+        <img src="images/ch4-love.jpg" alt="此生・相愛 — 最具代表性的畫面" loading="lazy" decoding="async">
+        <span class="chapter__media-cap">此生・相愛</span>
+      </div>
+      <div class="chapter__body">
+        <p class="chapter__no reveal">第四章｜相愛</p>
+        <h3 class="chapter__zh reveal" data-delay="1">此生・相愛</h3>
+        <p class="chapter__en reveal" data-delay="2">THIS LIFE — LOVE</p>
+        <div class="chapter__rule reveal" data-delay="2"><span></span></div>
+        <p class="chapter__text reveal" data-delay="3">後來我們才明白。</p>
+        <p class="chapter__text reveal" data-delay="3">所謂命中注定，不是第一次見面就知道答案。</p>
+        <p class="chapter__text reveal" data-delay="3">而是走過一段路後，回頭才發現。</p>
+        <p class="chapter__text story__strong reveal" data-delay="4">原來一路上，我們都在走向彼此。</p>
+      </div>
+    </article>
+
+    <!-- 第五章 -->
+    <article class="chapter">
+      <div class="chapter__media reveal">
+        <!-- 可替換：images/ch5-forever.jpg（婚禮／紅綢／燈籠／牽手） -->
+        <img src="images/ch5-forever.jpg" alt="今生・相守 — 決定一起走完人生" loading="lazy" decoding="async">
+        <span class="chapter__media-cap">今生・相守</span>
+      </div>
+      <div class="chapter__body">
+        <p class="chapter__no reveal">第五章｜相守</p>
+        <h3 class="chapter__zh reveal" data-delay="1">今生・相守</h3>
+        <p class="chapter__en reveal" data-delay="2">THIS LIFE — FOREVER</p>
+        <div class="chapter__rule reveal" data-delay="2"><span></span></div>
+        <p class="chapter__text reveal" data-delay="3">這一次，我們不只是一起走過一段旅程。</p>
+        <p class="chapter__text reveal" data-delay="3">而是決定，一起走完人生。</p>
+        <p class="chapter__text story__strong reveal" data-delay="4">這一世，我們決定不再錯過。</p>
+      </div>
+    </article>
+
+    <!-- 終章 -->
+    <div class="story__finale reveal">
+      <div class="story__finale-rule"><span></span></div>
+      <p class="story__finale-names"><span data-cfg="GROOM_NAME">王有岑</span> ＆ <span data-cfg="BRIDE_NAME">杜伊穠</span></p>
+      <p class="story__finale-line">請讓我們把下一章，寫成婚姻。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     16. 電影過場（敘事轉場）
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section class="interlude" id="interlude">
+  <div class="interlude__bg" style="background-image:url('images/tl2.jpg')"></div>
+  <div class="interlude__veil"></div>
+  <div class="interlude__content reveal">
+    <p class="interlude__mark">三生三世，我們走過不同的風景，</p>
+    <p class="interlude__mark interlude__mark--strong">最後都走到了彼此身旁。</p>
+    <div class="interlude__rule"><span></span></div>
+    <p class="interlude__en">THREE LIVES, ONE LOVE</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     6. 三生三世主題區
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section class="three-lives" id="three-lives">
+  <header class="section__head section__head--light reveal">
+    <p class="eyebrow">THREE LIVES, ONE LOVE</p>
+    <h2 class="section__title">三生三世</h2>
+  </header>
+
+  <div class="tl-panel">
+    <div class="tl-panel__bg" style="background-image:url('images/tl1.jpg')"></div>
+    <div class="tl-panel__veil"></div>
+    <div class="tl-panel__content reveal">
+      <p class="tl-panel__no">第一世</p>
+      <h3 class="tl-panel__zh">相遇</h3>
+      <p class="tl-panel__en">THE FIRST LIFE — ENCOUNTER</p>
+      <p class="tl-panel__text">馬匹、山林、旅途。我們在同一條路上，第一次看見彼此。</p>
+    </div>
+  </div>
+
+  <div class="tl-panel">
+    <div class="tl-panel__bg" style="background-image:url('images/tl2.jpg')"></div>
+    <div class="tl-panel__veil"></div>
+    <div class="tl-panel__content reveal">
+      <p class="tl-panel__no">第二世</p>
+      <h3 class="tl-panel__zh">相知</h3>
+      <p class="tl-panel__en">THE SECOND LIFE — UNDERSTANDING</p>
+      <p class="tl-panel__text">旅行、生活、同行。我們開始把彼此，放進日常裡。</p>
+    </div>
+  </div>
+
+  <div class="tl-panel">
+    <div class="tl-panel__bg" style="background-image:url('images/tl3.jpg')"></div>
+    <div class="tl-panel__veil"></div>
+    <div class="tl-panel__content reveal">
+      <p class="tl-panel__no">第三世</p>
+      <h3 class="tl-panel__zh">相守</h3>
+      <p class="tl-panel__en">THE THIRD LIFE — FOREVER</p>
+      <p class="tl-panel__text">婚禮、紅綢、燈籠、牽手。這一次，我們不再只是路過。</p>
+    </div>
+  </div>
+
+  <div class="tl-final">
+    <p class="tl-final__quote reveal" data-cfg="THREE_LIVES_QUOTE">若三生有幸，願每一世，都能遇見你。</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     7. 婚紗相簿（Masonry 瀑布流 ＋ Lightbox）
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section class="section section--dark gallery" id="gallery">
+  <div class="section__inner">
+    <header class="section__head reveal">
+      <p class="eyebrow">OUR PRE-WEDDING</p>
+      <h2 class="section__title">我們的三生三世</h2>
+      <p class="section__sub">戰國、唐代、明朝 — 三段前世，一個約定。</p>
+    </header>
+
+    <!-- 影片素材：電子喜帖（15 秒）＋結婚預告片（45 秒）
+         影片網址由 js/config.js 的 E_INVITATION_VIDEO_URL / TRAILER_VIDEO_URL 提供 -->
+    <div class="films">
+      <div class="trailer reveal" id="eInvitationBlock">
+        <div class="trailer__frame">
+          <video id="eInvitationVideo" class="trailer__video" controls playsinline preload="metadata"></video>
+          <div class="trailer__placeholder" id="eInvitationPlaceholder">
+            <span class="trailer__play" aria-hidden="true"></span>
+            <p class="trailer__ph-text" data-cfg="E_INVITATION_CAPTION">電子喜帖影片素材［待補充］</p>
+          </div>
+        </div>
+        <div class="trailer__meta">
+          <p class="trailer__tag">15 SEC</p>
+          <h3 class="trailer__title" data-cfg="E_INVITATION_TITLE">電子喜帖</h3>
+          <p class="trailer__desc" data-cfg="E_INVITATION_DESC">15 秒，把我們的喜訊，親手交到你手上。</p>
+        </div>
+      </div>
+
+      <div class="trailer reveal" data-delay="1" id="trailerBlock">
+        <div class="trailer__frame">
+          <video id="trailerVideo" class="trailer__video" controls playsinline preload="metadata"></video>
+          <div class="trailer__placeholder" id="trailerPlaceholder">
+            <span class="trailer__play" aria-hidden="true"></span>
+            <p class="trailer__ph-text" data-cfg="TRAILER_CAPTION">結婚預告片素材［待補充］</p>
+          </div>
+        </div>
+        <div class="trailer__meta">
+          <p class="trailer__tag">45 SEC</p>
+          <h3 class="trailer__title" data-cfg="TRAILER_TITLE">結婚預告片</h3>
+          <p class="trailer__desc" data-cfg="TRAILER_DESC">三段前世，一個約定。這是我們的故事預告。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 三生三世主題相簿（戰國／唐代／明朝，由 js/config.js 的 GALLERY_THEMES 產生；大圖 FEATURED ＋ 縮圖 MORE 展開） -->
+    <div class="gallery__themes" id="galleryThemes"></div>
+
+    <p class="gallery__arc reveal">從相遇，到相知。<br>從相愛，到相守。</p>
+
+    <p class="gallery__note reveal" data-delay="1">這不是一組婚紗照。<br>而是我們故事裡，留下的其中幾頁。</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════════════
+     8.5 文藝詩句過場（三生三世）
+     ══════════════════════════════════════════════════════════════════════════════ -->
+<section class="verse" id="verse" aria-label="文藝詩句">
+  <div class="verse__bg" aria-hidden="true"></div>
+  <div class="verse__veil" aria-hidden="true"></div>
+  <div class="verse__inner">
+    <p class="verse__mark reveal">世間所有的相遇，<br>都是久別重逢。</p>
+    <div class="verse__rule reveal" data-delay="1"><span></span></div>
+    <p class="verse__en reveal" data-delay="2">ALL ENCOUNTERS ARE REUNIONS</p>
+    <p class="verse__sub reveal" data-delay="3">願以三生煙火，換你一世迷離。</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     9. 婚禮注意事項
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section class="section section--dark notes" id="notes">
+  <div class="section__inner">
+    <header class="section__head reveal">
+      <p class="eyebrow">PLEASE NOTE</p>
+      <h2 class="section__title">婚禮當日注意事項</h2>
+      <p class="section__sub">希望你來得輕鬆，也玩得盡興。</p>
+    </header>
+
+    <div class="notes__grid">
+      <article class="note-card reveal">
+        <h3>婚禮日期</h3>
+        <p data-cfg="WEDDING_DATE_DISPLAY">［待補充］</p>
+      </article>
+      <article class="note-card reveal" data-delay="1">
+        <h3>報到時間</h3>
+        <p data-cfg="RECEIVE_TIME">［待補充］</p>
+      </article>
+      <article class="note-card reveal" data-delay="2">
+        <h3>婚宴時間</h3>
+        <p data-cfg="RECEPTION_TIME">［待補充］</p>
+      </article>
+      <article class="note-card reveal" data-delay="3">
+        <h3>停車資訊</h3>
+        <p data-cfg="PARKING_INFO">［待補充］</p>
+      </article>
+      <article class="note-card reveal" data-delay="4">
+        <h3>接駁車資訊</h3>
+        <p data-cfg="SHUTTLE_INFO">［待補充］</p>
+      </article>
+      <article class="note-card reveal" data-delay="5">
+        <h3>座位安排</h3>
+        <p data-cfg="SEATING_INFO">［待補充］</p>
+      </article>
+      <article class="note-card reveal" data-delay="6">
+        <h3>Dress Code</h3>
+        <p data-cfg="DRESS_CODE">Elegant Chinese Modern</p>
+      </article>
+      <article class="note-card reveal" data-delay="7">
+        <h3>拍照注意事項</h3>
+        <p data-cfg="PHOTO_NOTICE">［待補充］</p>
+      </article>
+      <article class="note-card reveal" data-delay="8">
+        <h3>禮金／紅包資訊</h3>
+        <p data-cfg="GIFT_INFO">［待補充］</p>
+      </article>
+      <article class="note-card reveal" data-delay="9">
+        <h3>其他提醒</h3>
+        <p data-cfg="EXTRA_NOTICE">［待補充］</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     10. Dress Code
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section class="section dress" id="dresscode">
+  <div class="dress__bg" aria-hidden="true"></div>
+  <div class="section__inner">
+    <header class="section__head section__head--light reveal">
+      <p class="eyebrow">DRESS CODE</p>
+      <h2 class="section__title" data-cfg="DRESS_CODE">Elegant Chinese Modern</h2>
+      <p class="section__sub">這一天，想在照片裡看見最好看的你。</p>
+    </header>
+
+    <div class="dress__cols">
+      <div class="dress__col reveal">
+        <p class="dress__label">男士</p>
+        <p class="dress__en">GENTLEMEN</p>
+        <p class="dress__value" data-cfg="DRESS_MEN">正式西裝／襯衫／正式服裝</p>
+      </div>
+      <div class="dress__divider" aria-hidden="true"><span></span></div>
+      <div class="dress__col reveal" data-delay="1">
+        <p class="dress__label">女士</p>
+        <p class="dress__en">LADIES</p>
+        <p class="dress__value" data-cfg="DRESS_LADIES">正式洋裝／旗袍／新中式服裝</p>
+      </div>
+    </div>
+
+    <p class="dress__note reveal" data-delay="2" data-cfg="DRESS_NOTE">服裝只是建議，以舒適自在為優先。</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     11. 賓客留言簿
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<section class="section section--paper message" id="message">
+  <div class="section__inner">
+    <header class="section__head reveal">
+      <p class="eyebrow">LEAVE A MESSAGE</p>
+      <h2 class="section__title">留下你想對我們說的話。</h2>
+      <p class="section__sub">你的每一句祝福，都會被好好收藏。</p>
+    </header>
+
+    <form class="msg-form reveal" id="msgForm" novalidate>
+      <div class="msg-form__row">
+        <label for="msgName">姓名</label>
+        <input type="text" id="msgName" name="name" placeholder="你的名字" maxlength="40" required>
+      </div>
+      <div class="msg-form__row">
+        <label for="msgText">留言</label>
+        <textarea id="msgText" name="message" rows="4" placeholder="想對我們說的話…" maxlength="500" required></textarea>
+      </div>
+      <button class="btn btn--solid" type="submit">送出祝福</button>
+      <p class="msg-form__status" id="msgStatus" role="status" aria-live="polite"></p>
+    </form>
+
+    <div class="msg-grid" id="msgGrid"></div>
+    <p class="msg-empty" id="msgEmpty">還沒有留言，歡迎寫下第一句祝福。</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════
+     18. 出席回覆（RSVP）
+     ═══════════════════════════════════════════════════════════════════════════════ -->
+<section class="section section--paper rsvp" id="rsvp">
+  <div class="section__inner">
+    <header class="section__head reveal">
+      <p class="eyebrow">RSVP</p>
+      <h2 class="section__title" data-cfg="RSVP_TITLE">出席回覆</h2>
+      <p class="section__sub" data-cfg="RSVP_SUB">為了替你們保留最好的位置，請於婚禮前完成出席回覆。</p>
+    </header>
+
+    <div class="rsvp__card reveal">
+      <p class="rsvp__intro" data-cfg="RSVP_INTRO">請點擊下方按鈕填寫出席回覆表單。填寫完成後，我們將依您留下的電子信箱，寄送專屬於您的電子喜帖。</p>
+
+      <ul class="rsvp__fields" id="rsvpFields"></ul>
+
+      <div class="rsvp__actions">
+        <a class="btn btn--solid" id="rsvpBtn" href="#" target="_blank" rel="noopener" data-cfg="RSVP_BTN_TEXT">前往填寫出席回覆表單</a>
+      </div>
+
+      <p class="rsvp__note" id="rsvpNote" data-cfg="RSVP_NOTE">表單連結［待補充］，請於 js/config.js 的 GOOGLE_FORM_URL 填入。</p>
+    </div>
+
+    <div class="rsvp__embed reveal" id="rsvpEmbedWrap">
+      <h3 class="rsvp__embed-title" data-cfg="RSVP_EMBED_TITLE">出席回覆表單</h3>
+
+      <div class="rsvp__embed-frame" id="rsvpEmbedFrame" hidden>
+        <iframe id="rsvpIframe" title="出席回覆表單" loading="lazy" allowfullscreen></iframe>
+      </div>
+
+      <div class="rsvp__embed-placeholder" id="rsvpEmbedPlaceholder">
+        <p class="rsvp__embed-ph-title" data-cfg="RSVP_EMBED_PH_TITLE">表單嵌入區塊（尚未設定網址）</p>
+        <p class="rsvp__embed-ph-text" data-cfg="RSVP_EMBED_PH_TEXT">此區塊已預留給 Google 出席回覆表單。填入表單網址後，這裡會自動載入可填寫的嵌入表單，賓客無需離開本頁即可完成回覆。</p>
+        <ol class="rsvp__embed-steps" id="rsvpEmbedSteps"></ol>
+        <p class="rsvp__embed-ph-hint" data-cfg="RSVP_EMBED_PH_HINT">設定方式：開啟 js/config.js，將 GOOGLE_FORM_URL 填入你的 Google 表單連結即可。</p>
+      </div>
+    </div>
+
+    <div class="rsvp__ecard reveal">
+      <h3 class="rsvp__ecard-title" data-cfg="RSVP_ECARD_TITLE">電子喜帖</h3>
+      <p class="rsvp__ecard-text" data-cfg="RSVP_ECARD_TEXT">填寫表單並留下電子信箱後，系統將自動寄送電子喜帖給您。若未收到，請檢查垃圾郵件匣。</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     15. 頁尾（含中式印章）
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<footer class="footer">
+  <div class="footer__inner">
+    <p class="footer__names"><span data-cfg="GROOM_NAME">王有岑</span> ＆ <span data-cfg="BRIDE_NAME">杜伊穠</span></p>
+    <p class="footer__en">THREE LIVES, ONE LOVE</p>
+    <div class="footer__rule"><span></span></div>
+    <p class="footer__date" data-cfg="WEDDING_DATE_DISPLAY">［待補充］</p>
+    <p class="footer__thanks" data-cfg="FOOTER_THANKS">Thank you for being part of our story.</p>
+    <div class="footer__seal" aria-hidden="true">緣定今生</div>
+    <p class="footer__hash" data-cfg="WEDDING_HASHTAG">#三生三世緣定今生</p>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     12. 音樂控制（預設關閉）
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- 閱讀進度條 -->
+<div class="progress" id="progress" aria-hidden="true"><span></span></div>
+
+<!-- 回到頂端 -->
+<button class="totop" id="toTop" aria-label="回到頂端">
+  <span class="totop__arrow" aria-hidden="true">↑</span>
+  <span class="totop__text">TOP</span>
+</button>
+
+<div class="music" id="music">
+  <button class="music__btn" id="musicBtn" aria-label="播放背景音樂" aria-pressed="false">
+    <span class="music__bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    <span class="music__label" id="musicLabel">MUSIC OFF</span>
+  </button>
+  <audio id="bgm" loop preload="none"></audio>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     Lightbox
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="照片檢視" hidden>
+  <button class="lb-close" id="lbClose" aria-label="關閉">×</button>
+  <button class="lb-nav lb-prev" id="lbPrev" aria-label="上一張">‹</button>
+  <figure class="lb-stage">
+    <img class="lb-img" id="lbImg" src="" alt="">
+    <figcaption class="lb-cap" id="lbCap"></figcaption>
+  </figure>
+  <button class="lb-nav lb-next" id="lbNext" aria-label="下一張">›</button>
+  <p class="lb-counter" id="lbCounter">1 / 1</p>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
