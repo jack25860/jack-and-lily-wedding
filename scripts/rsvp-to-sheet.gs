@@ -22,10 +22,166 @@ var HEADERS = ['序號', '您的姓名', '您的信箱', '您是哪一方的賓�
   '是否能出席本次盛宴', '出席人數', '出席大人人數', '出席兒童人數', '需要兒童椅數量'];
 
 /** 電子喜帖寄件者顯示名稱 */
+/** 婚禮網站域名（用於將相對路徑轉成絕對網址） */
+var SITE_BASE = 'https://jack25860.github.io/jack-and-lily-wedding/';
+
 var ECARD_SENDER_NAME = '三生三世・緣定今生';
 
-/** 版本標記：前端據此判斷此端點是否支援「電子喜帖內嵌圖片」 */
-var ENDPOINT_VERSION = 'v34';
+/** 電子喜帖隨機婚紗照池：涵蓋相簿全部照片（戰國 14 + 唐代 47 + 明朝 81 = 142）
+ *  前端會從 js/config.js 的 ECARD_PHOTO_POOL 隨機選一張並以 photo 傳入；
+ *  若前端未傳入 photo，本腳本會從此清單自行隨機挑選，確保雙方一致。 */
+var ECARD_PHOTO_POOL = [
+  'images/album/zg1.jpg',
+  'images/album/zg2.jpg',
+  'images/album/zg3.jpg',
+  'images/album/zg4.jpg',
+  'images/album/zg5.jpg',
+  'images/album/zg6.jpg',
+  'images/album/tg1.jpg',
+  'images/album/tg2.jpg',
+  'images/album/tg3.jpg',
+  'images/album/tg4.jpg',
+  'images/album/tg5.jpg',
+  'images/album/tg6.jpg',
+  'images/album/p01.jpg',
+  'images/album/p02.jpg',
+  'images/album/p03.jpg',
+  'images/album/p04.jpg',
+  'images/album/p05.jpg',
+  'images/album/p06.jpg',
+  'images/album/p07.jpg',
+  'images/album/p08.jpg',
+  'images/album/p09.jpg',
+  'images/album/p10.jpg',
+  'images/album/p11.jpg',
+  'images/album/p12.jpg',
+  'images/album/p13.jpg',
+  'images/album/p14.jpg',
+  'images/album/p15.jpg',
+  'images/album/p16.jpg',
+  'images/album/p17.jpg',
+  'images/album/p18.jpg',
+  'images/album/p19.jpg',
+  'images/album/p20.jpg',
+  'images/album/p21.jpg',
+  'images/album/p22.jpg',
+  'images/album/p23.jpg',
+  'images/album/p24.jpg',
+  'images/album/p25.jpg',
+  'images/album/p26.jpg',
+  'images/album/p27.jpg',
+  'images/album/p28.jpg',
+  'images/album/p29.jpg',
+  'images/album/p30.jpg',
+  'images/album/p31.jpg',
+  'images/album/p32.jpg',
+  'images/album/p33.jpg',
+  'images/album/p34.jpg',
+  'images/album/p35.jpg',
+  'images/album/p36.jpg',
+  'images/album/p37.jpg',
+  'images/album/p38.jpg',
+  'images/album/p39.jpg',
+  'images/album/p40.jpg',
+  'images/album/p41.jpg',
+  'images/album/p42.jpg',
+  'images/album/p43.jpg',
+  'images/album/p44.jpg',
+  'images/album/p45.jpg',
+  'images/album/p46.jpg',
+  'images/album/p47.jpg',
+  'images/album/p48.jpg',
+  'images/album/p49.jpg',
+  'images/album/p50.jpg',
+  'images/album/p51.jpg',
+  'images/album/p52.jpg',
+  'images/album/p53.jpg',
+  'images/album/p54.jpg',
+  'images/album/p55.jpg',
+  'images/album/p56.jpg',
+  'images/album/n01.jpg',
+  'images/album/n02.jpg',
+  'images/album/n03.jpg',
+  'images/album/n04.jpg',
+  'images/album/n05.jpg',
+  'images/album/n06.jpg',
+  'images/album/n07.jpg',
+  'images/album/n08.jpg',
+  'images/album/n09.jpg',
+  'images/album/n10.jpg',
+  'images/album/n11.jpg',
+  'images/album/n12.jpg',
+  'images/album/n13.jpg',
+  'images/album/n14.jpg',
+  'images/album/n15.jpg',
+  'images/album/n16.jpg',
+  'images/album/n17.jpg',
+  'images/album/n18.jpg',
+  'images/album/n19.jpg',
+  'images/album/n20.jpg',
+  'images/album/n21.jpg',
+  'images/album/n22.jpg',
+  'images/album/n23.jpg',
+  'images/album/n24.jpg',
+  'images/album/n25.jpg',
+  'images/album/n26.jpg',
+  'images/album/n27.jpg',
+  'images/album/n28.jpg',
+  'images/album/n29.jpg',
+  'images/album/n30.jpg',
+  'images/album/n31.jpg',
+  'images/album/n32.jpg',
+  'images/album/n33.jpg',
+  'images/album/n34.jpg',
+  'images/album/n35.jpg',
+  'images/album/n36.jpg',
+  'images/album/n37.jpg',
+  'images/album/n38.jpg',
+  'images/album/n39.jpg',
+  'images/album/n40.jpg',
+  'images/album/n41.jpg',
+  'images/album/n42.jpg',
+  'images/album/n43.jpg',
+  'images/album/n44.jpg',
+  'images/album/n45.jpg',
+  'images/album/n46.jpg',
+  'images/album/n47.jpg',
+  'images/album/n48.jpg',
+  'images/album/n49.jpg',
+  'images/album/n50.jpg',
+  'images/album/n51.jpg',
+  'images/album/n52.jpg',
+  'images/album/n53.jpg',
+  'images/album/n54.jpg',
+  'images/album/n55.jpg',
+  'images/album/n56.jpg',
+  'images/album/n57.jpg',
+  'images/album/n58.jpg',
+  'images/album/n59.jpg',
+  'images/album/n60.jpg',
+  'images/album/n61.jpg',
+  'images/album/n62.jpg',
+  'images/album/n63.jpg',
+  'images/album/n64.jpg',
+  'images/album/n65.jpg',
+  'images/album/n66.jpg',
+  'images/album/n67.jpg',
+  'images/album/n68.jpg',
+  'images/album/n69.jpg',
+  'images/album/n70.jpg',
+  'images/album/n71.jpg',
+  'images/album/n72.jpg',
+  'images/album/n73.jpg',
+  'images/album/n74.jpg'
+];
+
+/** 隨機選一張婚紗照網址 */
+function randomPhoto_() {
+  if (!ECARD_PHOTO_POOL.length) return '';
+  return ECARD_PHOTO_POOL[Math.floor(Math.random() * ECARD_PHOTO_POOL.length)];
+}
+
+var ENDPOINT_VERSION = 'v35';
 
 function doGet() {
   return ContentService.createTextOutput('RSVP endpoint is running. ' + ENDPOINT_VERSION)
@@ -142,7 +298,8 @@ function sendEcard_(data) {
   var greeting = pick_(data, ['greeting']) || '親愛的朋友，您好：';
   var body = pick_(data, ['body']) || '誠摯地邀請您一同見證我們的婚禮。三生三世，緣定今生，期待與您相見。';
   var inviteText = pick_(data, ['inviteText']) || '誠摯地邀請您參加本次婚禮，新郎與新娘敬上。';
-  var photoUrl = pick_(data, ['photo']);
+  var photoUrl = pick_(data, ['photo']) || randomPhoto_();
+  if (photoUrl && photoUrl.indexOf('http') !== 0) photoUrl = SITE_BASE + photoUrl;
   var videoUrl = pick_(data, ['videoUrl']);
   var videoPoster = pick_(data, ['videoPoster']);
   var site = pick_(data, ['site']);
