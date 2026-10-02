@@ -189,15 +189,16 @@ function randomPhoto_() {
   return ECARD_PHOTO_POOL[Math.floor(Math.random() * ECARD_PHOTO_POOL.length)];
 }
 
-var ENDPOINT_VERSION = 'v41';
+var ENDPOINT_VERSION = 'v42';
 
 /**
  * 電子喜帖去重（僅防「同一瞬間連點」造成的重複寄信）：
  * 同一收件人 + 主旨於此秒數內只寄一次。
- * v41：由 90 秒縮短為 8 秒 —— 90 秒會把「刻意連續寄送給同一人」誤判為重複點擊而擋掉；
- * 8 秒足以涵蓋連點／網路重試，且使用者送出完成後稍候即可再次寄送給同一人。
+ * v41：由 90 秒縮短為 8 秒 —— 90 秒會把「刻意連續寄送給同一人」誤判為重複點擊而擋掉。
+ * v42：再縮短為 3 秒 —— 僅攔截「同一瞬間連點／網路重試」；使用者送出完成後幾乎可立即再次寄送給同一人。
+ * 前端另於寄送成功後清空收件人欄位，避免殘留舊值造成誤送。
  */
-var ECARD_DEDUPE_SECONDS = 8;
+var ECARD_DEDUPE_SECONDS = 3;
 /** 最近一次電子喜帖寄送結果（供 doGet?diag=1 遠端診斷） */
 var LAST_SEND_KEY = 'ECARD_LAST_SEND';
 
