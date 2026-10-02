@@ -189,7 +189,7 @@ function randomPhoto_() {
   return ECARD_PHOTO_POOL[Math.floor(Math.random() * ECARD_PHOTO_POOL.length)];
 }
 
-var ENDPOINT_VERSION = 'v37';
+var ENDPOINT_VERSION = 'v38';
 
 function doGet(e) {
   var p = (e && e.parameter) ? e.parameter : {};
@@ -200,7 +200,10 @@ function doGet(e) {
       version: ENDPOINT_VERSION,
       mailScope: mailScopeOk_(),
       sender: ECARD_SENDER_NAME,
-      quota: mailQuota_()
+      quota: mailQuota_(),
+      photoPool: ECARD_PHOTO_POOL.length,
+      videoPoster: ECARD_VIDEO_POSTER,
+      videoUrl: ECARD_VIDEO_URL || ''
     });
   }
   return ContentService.createTextOutput('RSVP endpoint is running. ' + ENDPOINT_VERSION)
@@ -352,6 +355,8 @@ function sendEcard_(data) {
   if (photoUrl && photoUrl.indexOf('http') !== 0) photoUrl = SITE_BASE + photoUrl;
   var videoUrl = pick_(data, ['videoUrl']) || ECARD_VIDEO_URL;
   var videoPoster = pick_(data, ['videoPoster']) || ECARD_VIDEO_POSTER;
+  // 修正：相對路徑（如 images/tl1.jpg）必須轉成絕對網址，否則 UrlFetchApp 抓不到圖 → 信件缺影片示意圖
+  if (videoPoster && videoPoster.indexOf('http') !== 0) videoPoster = SITE_BASE + videoPoster;
   var site = pick_(data, ['site']);
 
   var inlineImages = {};
