@@ -116,3 +116,31 @@
   .chapter__media:before{inset:9px}
   .section__head .eyebrow{gap:12px}
 }
+
+/* ── RSVP 嵌入表單：外框對齊網站酒紅／金／宣紙米色 ──
+   Google 表單為 docs.google.com 跨來源 iframe，本站 CSS 無法進入其內部
+   （contentDocument 被 Same-Origin Policy 阻擋）；此處僅統一「容器外框」，
+   使表單區塊的邊框、底色、留白與宣紙底融合，不再是一塊冷白硬邊。 */
+.rsvp__embed-frame{
+  position:relative;
+  border:1px solid rgba(201,169,97,.62);
+  background:var(--paper);
+  padding:12px;
+  border-radius:3px;
+  box-shadow:0 34px 90px -44px rgba(19,16,16,.5),0 0 0 1px rgba(110,22,38,.12) inset;
+}
+.rsvp__embed-frame iframe{
+  border:1px solid rgba(110,22,38,.16);
+  border-radius:2px;
+  background:#fff;
+}
+.rsvp__embed-frame:before,.rsvp__embed-frame:after{
+  content:"";position:absolute;width:20px;height:20px;
+  border:1px solid rgba(201,169,97,.55);pointer-events:none;
+}
+.rsvp__embed-frame:before{top:6px;left:6px;border-right:0;border-bottom:0}
+.rsvp__embed-frame:after{bottom:6px;right:6px;border-left:0;border-top:0}
+@media(max-width:640px){
+  .rsvp__embed-frame{padding:8px}
+  .rsvp__embed-frame:before,.rsvp__embed-frame:after{display:none}
+}
