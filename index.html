@@ -728,7 +728,7 @@ sweep(document)})();</script>
     </header>
 
     <div class="rsvp__card reveal">
-      <p class="rsvp__intro" data-cfg="RSVP_INTRO">請於下方填寫出席回覆，送出後將於新分頁開啟 Google 表單並自動帶入您填寫的內容，確認後即可完成回覆。</p>
+      <p class="rsvp__intro" data-cfg="RSVP_INTRO">請於下方填寫出席回覆，送出後我們會立即收到通知，並同步記錄於賓客名單；本頁會顯示「感謝您的回覆」並自動清空表單。</p>
 
       <form class="rsvp-form" id="rsvpForm" novalidate>
         <div class="rsvp-form__grid">
@@ -814,12 +814,12 @@ sweep(document)})();</script>
           <button type="submit" class="rsvp-cta" id="rsvpSubmit">
             <span class="rsvp-cta__seal" aria-hidden="true">囍</span>
             <span class="rsvp-cta__body">
-              <span class="rsvp-cta__text" data-cfg="RSVP_BTN_TEXT">送出並開啟回覆表單</span>
-              <span class="rsvp-cta__en" aria-hidden="true">SUBMIT · OPEN FORM</span>
+              <span class="rsvp-cta__text" data-cfg="RSVP_BTN_TEXT">送出回覆</span>
+              <span class="rsvp-cta__en" aria-hidden="true">SUBMIT · RSVP</span>
             </span>
             <span class="rsvp-cta__arrow" aria-hidden="true">↗</span>
           </button>
-          <p class="rsvp-cta__hint" data-cfg="RSVP_CTA_HINT">送出後將於新分頁開啟 Google 表單，您填寫的內容會自動帶入對應欄位，確認後送出即完成回覆。</p>
+          <p class="rsvp-cta__hint" data-cfg="RSVP_CTA_HINT">送出後將於本頁顯示「感謝您的回覆」，表單會自動回到預設狀態，不需切換頁面。</p>
         </div>
 
         <p class="rsvp-form__status" id="rsvpStatus" role="status" aria-live="polite"></p>
@@ -925,6 +925,20 @@ sweep(document)})();</script>
   </figure>
   <button class="lb-nav lb-next" id="lbNext" aria-label="下一張">›</button>
   <p class="lb-counter" id="lbCounter">1 / 1</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════
+     出席回覆送出成功提示（置於 body 層，避免 .reveal 的 will-change 造成 fixed 定位被裁切）
+     ═══════════════════════════════════════════════════════════════════════════════ -->
+<div class="rsvp-thanks" id="rsvpThanks" role="dialog" aria-modal="true" aria-labelledby="rsvpThanksTitle" hidden>
+  <div class="rsvp-thanks__card">
+    <span class="rsvp-thanks__seal" aria-hidden="true">囍</span>
+    <p class="rsvp-thanks__title" id="rsvpThanksTitle" data-cfg="RSVP_THANKS_TITLE">感謝您的回覆</p>
+    <span class="rsvp-thanks__rule" aria-hidden="true"></span>
+    <p class="rsvp-thanks__text" data-cfg="RSVP_THANKS_TEXT">您的出席回覆已經收到，我們會將您的心意記在賓客名單上。</p>
+    <p class="rsvp-thanks__note" data-cfg="RSVP_THANKS_NOTE">如需修改回覆，直接重新填寫一次即可。</p>
+    <button type="button" class="rsvp-thanks__close" id="rsvpThanksClose" data-cfg="RSVP_THANKS_CLOSE">關閉</button>
+  </div>
 </div>
 
 <script src="js/config.js"></script>
