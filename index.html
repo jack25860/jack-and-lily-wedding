@@ -749,6 +749,7 @@ sweep(document)})();</script>
 
       <div class="rsvp__actions">
         <a class="btn btn--solid" id="rsvpBtn" href="#" target="_blank" rel="noopener" data-cfg="RSVP_BTN_TEXT">前往填寫出席回覆表單</a>
+        <a class="rsvp__fallback" id="rsvpFallback" href="https://forms.gle/eMPxMdQGSe145r329" target="_blank" rel="noopener">表單無法顯示？在新分頁開啟報名表單 ↗</a>
       </div>
 
       <p class="rsvp__note" id="rsvpNote" data-cfg="RSVP_NOTE">表單連結［待補充］，請於 js/config.js 的 GOOGLE_FORM_URL 填入。</p>
@@ -772,6 +773,16 @@ sweep(document)})();</script>
     <div class="rsvp__ecard reveal">
       <h3 class="rsvp__ecard-title" data-cfg="RSVP_ECARD_TITLE">電子喜帖</h3>
       <p class="rsvp__ecard-text" data-cfg="RSVP_ECARD_TEXT">填寫表單並留下電子信箱後，系統將自動寄送電子喜帖給您。若未收到，請檢查垃圾郵件匣。</p>
+
+      <figure class="rsvp__ecard-preview">
+        <img id="ecardPhoto" src="images/tl1.jpg" alt="電子喜帖示意圖" loading="lazy" decoding="async">
+        <figcaption data-cfg="ECARD_PHOTO_CAPTION">［電子喜帖示意圖：暫以婚紗照代替，正式喜帖待提供］</figcaption>
+      </figure>
+
+      <div class="rsvp__ecard-actions">
+        <button type="button" class="btn btn--ghost btn--small" id="ecardMailBtn" data-cfg="ECARD_MAIL_BTN_TEXT">寄送喜帖邀請信</button>
+        <span class="rsvp__ecard-hint" data-cfg="ECARD_MAIL_HINT">輸入賓客的電子信箱，將開啟郵件並自動帶入電子喜帖主旨、內文與示意圖片。</span>
+      </div>
     </div>
   </div>
 </section>
