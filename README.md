@@ -1,6 +1,6 @@
 # 三生三世・緣定今生 · 婚禮網站
 
-王有岑 ＆ 杜伊嵐 婚禮邀請網站（純靜態：HTML / CSS / Vanilla JS，無需建置流程）。
+王有岑 ＆ 杜伊穠 婚禮邀請網站（純靜態：HTML / CSS / Vanilla JS，無需建置流程）。
 
 **版本：v21** — 網站網址改為 `jack-and-lily-wedding`（GitHub repo 與 GitHub Pages 網域同步更名），並更新 canonical／Open Graph 分享網址。前版 v20 已將「我們的故事」五章照片統一為彩色水墨風格（相遇／相識／相知／相愛／相守）。
 
