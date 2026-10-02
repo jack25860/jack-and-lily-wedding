@@ -103,7 +103,7 @@ def run(pw, label, viewport, mobile):
     val3 = page.eval_on_selector("#ecardTo", "el => el.value")
     chk(label, "去重後清空收件人欄位", val3 == "", val3)
     chk(label, "去重後顯示剛剛已寄出", "剛剛已寄出" in txt3, txt3)
-    chk(label, "去重提示為 3 秒窗期", "3 秒" in txt3, txt3)
+    chk(label, "去重提示為 8 秒窗期", "8 秒" in txt3, txt3)
     page.unroute("**/script.google.com/**")
 
     page.screenshot(path=f"{OUT}/ecard_{label}.png", full_page=False)

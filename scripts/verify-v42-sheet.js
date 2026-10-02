@@ -176,11 +176,11 @@ console.log('== v42 Apps Script harness ==\n');
   chk('ecard-dedupe', '不同收件人各自寄出', sb.__sent.length === 2, sb.__sent.length);
 }
 
-// ---------- 4b. 【v42】去重窗期縮短為 3 秒；窗期過後可再次寄送同一人 ----------
+// ---------- 4b. 【v42】去重窗期維持 8 秒；窗期過後可再次寄送同一人 ----------
 {
   const sb = makeSandbox({ mailScope: true });
   const d = JSON.parse(get(sb, { diag: '1' }).getContent());
-  chk('ecard-dedupe', 'diag dedupeSeconds=3（v42 縮短）', d.dedupeSeconds === 3, d.dedupeSeconds);
+  chk('ecard-dedupe', 'diag dedupeSeconds=8（v42 維持不變）', d.dedupeSeconds === 8, d.dedupeSeconds);
   const payload = { type: 'ecard', to: 'guest@example.com', subject: 's', greeting: 'g', body: 'b', inviteText: 'i', photo: 'images/album/zg1.jpg', site: 'https://x/' };
   const r1 = JSON.parse(post(sb, payload).getContent());
   chk('ecard-dedupe', '第一次寄出 ok 且未去重', r1.ok === true && !r1.deduped, r1);
