@@ -27,6 +27,11 @@ var SITE_BASE = 'https://jack25860.github.io/jack-and-lily-wedding/';
 
 var ECARD_SENDER_NAME = '三生三世・緣定今生';
 
+/** 電子喜帖影片網址（留空 = 以圖片代替；填入後信件會自動改為可點擊的影片縮圖） */
+var ECARD_VIDEO_URL = '';
+/** 電子喜帖影片示意圖（影片尚未提供時顯示） */
+var ECARD_VIDEO_POSTER = 'images/tl1.jpg';
+
 /** 電子喜帖隨機婚紗照池：涵蓋相簿全部照片（戰國 39 + 唐代 47 + 明朝 56 = 142）
  *  前端會從 js/config.js 的 ECARD_PHOTO_POOL 隨機選一張並以 photo 傳入；
  *  若前端未傳入 photo，本腳本會從此清單自行隨機挑選，確保雙方一致。 */
@@ -184,11 +189,53 @@ function randomPhoto_() {
   return ECARD_PHOTO_POOL[Math.floor(Math.random() * ECARD_PHOTO_POOL.length)];
 }
 
-var ENDPOINT_VERSION = 'v36';
+var ENDPOINT_VERSION = 'v37';
 
-function doGet() {
+function doGet(e) {
+  var p = (e && e.parameter) ? e.parameter : {};
+  // 健康檢查：GET /exec?diag=1 → 回傳 JSON（含是否已取得 Gmail 寄信權限）
+  if (p.diag) {
+    return json_({
+      ok: true,
+      version: ENDPOINT_VERSION,
+      mailScope: mailScopeOk_(),
+      sender: ECARD_SENDER_NAME,
+      quota: mailQuota_()
+    });
+  }
   return ContentService.createTextOutput('RSVP endpoint is running. ' + ENDPOINT_VERSION)
     .setMimeType(ContentService.MimeType.TEXT);
+}
+
+/** 是否已取得 Gmail 寄信權限（未授權時回傳 false，不拋錯） */
+function mailScopeOk_() {
+  try { MailApp.getRemainingDailyQuota(); return true; } catch (e1) {}
+  try { GmailApp.getAliases(); return true; } catch (e2) {}
+  return false;
+}
+
+/** 剩餘寄信配額（-1 = 無法取得，通常代表尚未授權） */
+function mailQuota_() {
+  try { return MailApp.getRemainingDailyQuota(); } catch (e) { return -1; }
+}
+
+/**
+ * 【一次性授權用】在 Apps Script 編輯器選擇本函式並按「執行」，
+ * 會跳出 Google 授權視窗（要求 Gmail 寄信權限），同意後即完成授權。
+ * 授權完成後請至「部署 → 管理部署 → 編輯 → 版本：新版本 → 部署」。
+ */
+function testEcard() {
+  var to = Session.getActiveUser().getEmail();
+  var r = sendEcard_({
+    to: to,
+    subject: '【測試】電子喜帖寄送測試',
+    greeting: '測試：',
+    body: '若您收到本信，代表 Gmail 寄信權限已正確授權。',
+    inviteText: '誠摯地邀請您參加本次婚禮，新郎與新娘敬上。',
+    site: SITE_BASE
+  });
+  Logger.log(JSON.stringify(r));
+  return r;
 }
 
 function doPost(e) {
@@ -303,8 +350,8 @@ function sendEcard_(data) {
   var inviteText = pick_(data, ['inviteText']) || '誠摯地邀請您參加本次婚禮，新郎與新娘敬上。';
   var photoUrl = pick_(data, ['photo']) || randomPhoto_();
   if (photoUrl && photoUrl.indexOf('http') !== 0) photoUrl = SITE_BASE + photoUrl;
-  var videoUrl = pick_(data, ['videoUrl']);
-  var videoPoster = pick_(data, ['videoPoster']);
+  var videoUrl = pick_(data, ['videoUrl']) || ECARD_VIDEO_URL;
+  var videoPoster = pick_(data, ['videoPoster']) || ECARD_VIDEO_POSTER;
   var site = pick_(data, ['site']);
 
   var inlineImages = {};
@@ -351,11 +398,20 @@ function sendEcard_(data) {
       '</div>' +
     '</div>';
 
-  GmailApp.sendEmail(to, subject, plainFallback_(greeting, body, inviteText, site), {
-    htmlBody: html,
-    name: ECARD_SENDER_NAME,
-    inlineImages: inlineImages
-  });
+  try {
+    GmailApp.sendEmail(to, subject, plainFallback_(greeting, body, inviteText, site), {
+      htmlBody: html,
+      name: ECARD_SENDER_NAME,
+      inlineImages: inlineImages
+    });
+  } catch (err) {
+    var msg = String(err);
+    // 最常見：部署時未授予 Gmail 寄信權限（OAuth scope）
+    if (/permission|authoriz|scope/i.test(msg)) {
+      return { ok: false, error: 'mail_scope_missing', detail: msg };
+    }
+    return { ok: false, error: 'mail_send_failed', detail: msg };
+  }
   return { ok: true, inline: Object.keys(inlineImages).length };
 }
 
