@@ -823,6 +823,18 @@ sweep(document)})();</script>
         </div>
 
         <p class="rsvp-form__status" id="rsvpStatus" role="status" aria-live="polite"></p>
+
+        <!-- v32：送出失敗時的備援出口（不跳轉、不清空、資料保留） -->
+        <div class="rsvp-fallback" id="rsvpFallback" hidden>
+          <p class="rsvp-fallback__title" data-cfg="RSVP_FALLBACK_TITLE">回覆尚未送出</p>
+          <p class="rsvp-fallback__text" data-cfg="RSVP_FALLBACK_TEXT">回覆系統暫時無法使用，您的填寫內容已完整保留。請改用下列任一方式把回覆交給我們，造成不便敬請見諒。</p>
+          <div class="rsvp-fallback__ways">
+            <a class="btn btn--ghost" id="rsvpFallbackForm" href="#" target="_blank" rel="noopener" data-cfg="RSVP_FALLBACK_FORM_BTN">用 Google 表單回覆</a>
+            <button type="button" class="btn btn--ghost" id="rsvpFallbackCopy" data-cfg="RSVP_FALLBACK_COPY_BTN">複製回覆內容</button>
+            <a class="btn btn--ghost" id="rsvpFallbackMail" href="#" data-cfg="RSVP_FALLBACK_MAIL_BTN">用 Email 寄送</a>
+          </div>
+          <p class="rsvp-fallback__note" id="rsvpFallbackNote" role="status" aria-live="polite"></p>
+        </div>
       </form>
     </div>
 

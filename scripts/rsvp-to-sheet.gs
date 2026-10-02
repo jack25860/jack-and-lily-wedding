@@ -43,7 +43,7 @@
  */
 
 /** 試算表 ID（留空 = 使用「本腳本所綁定的試算表」）。若為獨立腳本，請填入 ID。 */
-var SPREADSHEET_ID = '';
+var SPREADSHEET_ID = '1oxlmhFgKS93pIWfRInJF0AXqpXRLxeU8v5ZJCnZFpW0';
 
 /** 工作表名稱（留空 = 使用第一個工作表）。 */
 var SHEET_NAME = '';
