@@ -565,7 +565,7 @@ sweep(document)})();</script>
 
     <!-- 影片素材：結婚預告片（45 秒）
          影片網址由 js/config.js 的 TRAILER_VIDEO_URL 提供 -->
-    <div class="films films--single">
+    <div class="films films--single films--hero">
       <div class="trailer reveal" id="trailerBlock">
         <div class="trailer__frame">
           <video id="trailerVideo" class="trailer__video" controls playsinline preload="metadata"></video>
@@ -770,36 +770,42 @@ sweep(document)})();</script>
             </div>
           </fieldset>
 
-          <div class="rsvp-form__row">
-            <label for="rsvpAdults">出席大人人數 <i>ADULTS</i></label>
-            <select id="rsvpAdults" name="adults">
-              <option value="1" selected>1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-            </select>
-          </div>
+          <fieldset class="rsvp-form__row rsvp-form__row--full rsvp-form__fieldset rsvp-nums" id="rsvpNumWrap">
+            <legend>出席人數 <i>GUESTS</i></legend>
+            <p class="rsvp-nums__hint">選擇「出席」時，請填寫本次出席的大人人數、兒童人數與需要的兒童椅數量。選擇「不克出席」時，這些欄位會自動隱藏且不需填寫。</p>
+            <div class="rsvp-nums__grid">
+              <div class="rsvp-form__row">
+                <label for="rsvpAdults">出席大人人數 <i>ADULTS</i></label>
+                <select id="rsvpAdults" name="adults" required>
+                  <option value="1" selected>1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
 
-          <div class="rsvp-form__row">
-            <label for="rsvpChildren">出席兒童人數 <i>CHILDREN</i></label>
-            <select id="rsvpChildren" name="children">
-              <option value="0" selected>0</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-            </select>
-          </div>
+              <div class="rsvp-form__row">
+                <label for="rsvpChildren">出席兒童人數 <i>CHILDREN</i></label>
+                <select id="rsvpChildren" name="children" required>
+                  <option value="0" selected>0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                </select>
+              </div>
 
-          <div class="rsvp-form__row rsvp-form__row--full" id="rsvpChairRow">
-            <label for="rsvpChairs">需要兒童椅數量 <i>KIDS CHAIRS</i></label>
-            <select id="rsvpChairs" name="chairs">
-              <option value="0" selected>0</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-            </select>
-          </div>
+              <div class="rsvp-form__row" id="rsvpChairRow">
+                <label for="rsvpChairs">需要兒童椅數量 <i>KIDS CHAIRS</i></label>
+                <select id="rsvpChairs" name="chairs" required>
+                  <option value="0" selected>0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                </select>
+              </div>
+            </div>
+          </fieldset>
         </div>
 
         <div class="rsvp-form__actions">
