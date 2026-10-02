@@ -19,7 +19,7 @@
 .ecard-show__slider{position:absolute;inset:0}
 .ecard-show__slide{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transform:scale(1.05);transition:opacity 1.5s var(--ease-soft),transform 7.5s linear;will-change:opacity,transform}
 .ecard-show__slide.is-on{opacity:1;transform:scale(1.13)}
-.ecard-show__veil{position:absolute;inset:0;background:linear-gradient(96deg,rgba(10,8,8,.92) 0%,rgba(12,9,9,.74) 34%,rgba(12,9,9,.22) 62%,rgba(10,8,8,.5) 100%),radial-gradient(110% 88% at 80% 38%,rgba(110,22,38,.42),transparent 68%)}
+.ecard-show__veil{position:absolute;inset:0;background:linear-gradient(96deg,rgba(8,6,6,.95) 0%,rgba(10,8,8,.9) 30%,rgba(10,8,8,.78) 52%,rgba(10,8,8,.5) 74%,rgba(8,6,6,.44) 100%),radial-gradient(110% 88% at 80% 38%,rgba(110,22,38,.4),transparent 68%)}
 .ecard-show__frame{position:absolute;inset:12px;border:1px solid rgba(201,169,97,.3);pointer-events:none}
 .ecard-show__frame:before,.ecard-show__frame:after{content:"";position:absolute;width:30px;height:30px;border:1px solid rgba(201,169,97,.62)}
 .ecard-show__frame:before{top:-1px;left:-1px;border-right:0;border-bottom:0}
@@ -28,10 +28,10 @@
 .ecard-show__eyebrow{display:inline-flex;align-items:center;gap:14px;font-family:var(--en-caps);font-size:.64rem;letter-spacing:.44em;text-indent:.44em;color:var(--gold)}
 .ecard-show__eyebrow:before{content:"";width:clamp(22px,4vw,40px);height:1px;flex:none;background:linear-gradient(90deg,transparent,var(--gold))}
 .ecard-show__title{margin-top:16px;font-family:var(--zh);font-weight:400;font-size:clamp(1.2rem,3.4vw,2.3rem);letter-spacing:.16em;line-height:1.5;color:#fbf7ef;text-shadow:0 4px 30px rgba(0,0,0,.72);text-wrap:balance}
-.ecard-show__names{margin-top:14px;font-size:clamp(.94rem,2.1vw,1.26rem);letter-spacing:.2em;color:var(--gold-light)}
+.ecard-show__names{margin-top:14px;font-size:clamp(.94rem,2.1vw,1.26rem);letter-spacing:.2em;color:var(--gold-light);text-shadow:0 2px 16px rgba(0,0,0,.9),0 1px 3px rgba(0,0,0,.75)}
 .ecard-show__names em{font-family:var(--en);font-style:normal;color:var(--gold);margin:0 .5em}
-.ecard-show__meta{margin-top:9px;font-size:.8rem;letter-spacing:.24em;color:#ebdcb6c4}
-.ecard-show__text{margin-top:15px;max-width:54ch;font-size:clamp(.82rem,1.65vw,.95rem);letter-spacing:.1em;line-height:2.05;color:#f5f0e7c4}
+.ecard-show__meta{margin-top:9px;font-size:.8rem;letter-spacing:.24em;color:#ebdcb6ea;text-shadow:0 2px 16px rgba(0,0,0,.9),0 1px 3px rgba(0,0,0,.75)}
+.ecard-show__text{margin-top:15px;max-width:54ch;font-size:clamp(.82rem,1.65vw,.95rem);letter-spacing:.1em;line-height:2.05;color:#f5f0e7e2;text-shadow:0 2px 16px rgba(0,0,0,.9),0 1px 3px rgba(0,0,0,.75)}
 .ecard-show__cta{position:relative;display:inline-flex;align-items:center;gap:16px;min-height:56px;margin-top:clamp(20px,2.6vw,30px);padding:12px 26px 12px 16px;background:linear-gradient(180deg,rgba(125,28,46,.95),rgba(110,22,38,.95) 55%,rgba(92,18,32,.95));border:1px solid var(--gold);border-radius:3px;color:var(--gold-light);box-shadow:0 18px 40px -20px #4a0e19d9,0 0 0 1px rgba(201,169,97,.32) inset;overflow:hidden;transition:transform .5s var(--ease),box-shadow .5s var(--ease-soft),border-color .5s}
 .ecard-show__cta:before{content:"";position:absolute;top:0;left:-130%;width:55%;height:100%;background:linear-gradient(100deg,transparent,rgba(235,220,182,.32),transparent);transform:skew(-18deg);pointer-events:none;transition:left .9s var(--ease-soft)}
 .ecard-show__cta:hover:before{left:135%}
@@ -41,7 +41,6 @@
 .ecard-show__cta-body{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left}
 .ecard-show__cta-text{font-family:var(--zh);font-size:clamp(.92rem,2vw,1.04rem);letter-spacing:.16em;color:#fbf7ef}
 .ecard-show__cta-en{font-family:var(--en-caps);font-size:.56rem;letter-spacing:.32em;color:var(--gold)}
-.ecard-show__hint{margin-top:14px;max-width:44ch;font-size:.76rem;letter-spacing:.1em;line-height:1.9;color:#ebdcb6ab}
 .ecard-show__dots{position:absolute;right:clamp(20px,4vw,44px);bottom:clamp(18px,3vw,34px);z-index:4;display:flex;gap:6px}
 .ecard-dot{width:26px;height:26px;padding:0;display:grid;place-items:center;background:none;border:0}
 .ecard-dot:before{content:"";width:7px;height:7px;border-radius:50%;border:1px solid rgba(201,169,97,.75);transition:background .45s,transform .45s,box-shadow .45s}
@@ -64,4 +63,4 @@
 .ecard-panel__status{margin-top:16px;font-size:.86rem;letter-spacing:.12em;line-height:1.9;color:var(--wine);min-height:1.5em}
 .ecard-panel__status.is-err{color:#a4232f}
 @media(max-width:880px){.ecard-show{aspect-ratio:4/3}.ecard-show__content{max-width:min(560px,88%)}}
-@media(max-width:760px){.ecard-show{aspect-ratio:auto}.ecard-show__veil{background:linear-gradient(180deg,rgba(10,8,8,.62) 0%,rgba(10,8,8,.3) 22%,rgba(10,8,8,.86) 52%,rgba(8,6,6,.97) 100%),radial-gradient(92% 58% at 50% 14%,rgba(110,22,38,.34),transparent 72%)}.ecard-show__frame{inset:9px}.ecard-show__content{position:relative;inset:auto;max-width:100%;justify-content:flex-start;padding:clamp(84px,26vw,140px) 22px 28px}.ecard-show__title{font-size:clamp(1.15rem,5.4vw,1.6rem)}.ecard-show__text{font-size:.82rem}.ecard-show__cta{width:100%;justify-content:flex-start;padding:12px 18px;gap:13px}.ecard-show__cta-seal{width:34px;height:34px;font-size:.98rem}.ecard-show__dots{top:16px;right:16px;bottom:auto;left:auto}}
+@media(max-width:760px){.ecard-show{aspect-ratio:auto}.ecard-show__veil{background:linear-gradient(180deg,rgba(8,6,6,.34) 0%,rgba(8,6,6,.32) 26%,rgba(8,6,6,.74) 42%,rgba(6,5,5,.94) 56%,rgba(5,4,4,.975) 100%),radial-gradient(92% 58% at 50% 14%,rgba(110,22,38,.34),transparent 72%)}.ecard-show__frame{inset:9px}.ecard-show__content{position:relative;inset:auto;max-width:100%;justify-content:flex-start;padding:clamp(84px,26vw,140px) 22px 28px;background:linear-gradient(180deg,rgba(6,5,5,0) 0%,rgba(6,5,5,.52) 30%,rgba(6,5,5,.82) 52%,rgba(4,3,3,.92) 100%)}.ecard-show__title{font-size:clamp(1.15rem,5.4vw,1.6rem)}.ecard-show__text{font-size:.82rem}.ecard-show__cta{width:100%;justify-content:flex-start;padding:12px 18px;gap:13px}.ecard-show__cta-seal{width:34px;height:34px;font-size:.98rem}.ecard-show__dots{top:16px;right:16px;bottom:auto;left:auto}}
