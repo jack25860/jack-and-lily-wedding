@@ -189,7 +189,12 @@ function randomPhoto_() {
   return ECARD_PHOTO_POOL[Math.floor(Math.random() * ECARD_PHOTO_POOL.length)];
 }
 
-var ENDPOINT_VERSION = 'v38';
+var ENDPOINT_VERSION = 'v39';
+
+/** 電子喜帖去重（避免連點重複寄信）：同一收件人 + 主旨於此秒數內只寄一次 */
+var ECARD_DEDUPE_SECONDS = 90;
+/** 最近一次電子喜帖寄送結果（供 doGet?diag=1 遠端診斷） */
+var LAST_SEND_KEY = 'ECARD_LAST_SEND';
 
 function doGet(e) {
   var p = (e && e.parameter) ? e.parameter : {};
@@ -203,7 +208,10 @@ function doGet(e) {
       quota: mailQuota_(),
       photoPool: ECARD_PHOTO_POOL.length,
       videoPoster: ECARD_VIDEO_POSTER,
-      videoUrl: ECARD_VIDEO_URL || ''
+      videoUrl: ECARD_VIDEO_URL || '',
+      siteBase: SITE_BASE,
+      dedupeSeconds: ECARD_DEDUPE_SECONDS,
+      lastEcard: readLastSend_()
     });
   }
   return ContentService.createTextOutput('RSVP endpoint is running. ' + ENDPOINT_VERSION)
@@ -345,7 +353,16 @@ function mapFields_(data) {
 
 function sendEcard_(data) {
   var to = pick_(data, ['to', 'email']);
-  if (!to || to.indexOf('@') < 0) return { ok: false, error: 'invalid recipient' };
+  if (!to || to.indexOf('@') < 0) return { ok: false, error: 'invalid_recipient' };
+
+  // 冪等性：同一收件人 + 主旨於 ECARD_DEDUPE_SECONDS 內只寄一次（避免連點重複寄信）
+  var dkey = dedupeKey_(to, pick_(data, ['subject']));
+  var cache = null;
+  try { cache = CacheService.getScriptCache(); } catch (e0) { cache = null; }
+  if (cache && cache.get(dkey)) {
+    var prev = readLastSend_();
+    return { ok: true, deduped: true, inline: (prev && prev.inline != null) ? prev.inline : 0 };
+  }
 
   var subject = pick_(data, ['subject']) || '【三生三世・緣定今生】誠摯邀請您參加我們的婚禮';
   var greeting = pick_(data, ['greeting']) || '親愛的朋友，您好：';
@@ -411,13 +428,19 @@ function sendEcard_(data) {
     });
   } catch (err) {
     var msg = String(err);
-    // 最常見：部署時未授予 Gmail 寄信權限（OAuth scope）
-    if (/permission|authoriz|scope/i.test(msg)) {
-      return { ok: false, error: 'mail_scope_missing', detail: msg };
-    }
-    return { ok: false, error: 'mail_send_failed', detail: msg };
+    // 錯誤分類：讓前端能區分「授權未完成／配額用盡／收件者無效／其他」
+    var code = 'mail_send_failed';
+    if (/permission|authoriz|scope/i.test(msg)) code = 'mail_scope_missing';
+    else if (/quota|limit|exceeded|too many/i.test(msg)) code = 'mail_quota_exceeded';
+    else if (/invalid|not a valid|recipient/i.test(msg)) code = 'invalid_recipient';
+    var fail = { ok: false, error: code, detail: msg };
+    recordLastSend_(to, fail);
+    return fail;
   }
-  return { ok: true, inline: Object.keys(inlineImages).length };
+  var result = { ok: true, inline: Object.keys(inlineImages).length, photo: !!photoTag, poster: !!videoTag };
+  if (cache) { try { cache.put(dkey, '1', ECARD_DEDUPE_SECONDS); } catch (e2) {} }
+  recordLastSend_(to, result);
+  return result;
 }
 
 function plainFallback_(greeting, body, inviteText, site) {
@@ -440,6 +463,33 @@ function fetchBlob_(url) {
 /* ------------------------------------------------------------------ *
  *  共用
  * ------------------------------------------------------------------ */
+
+/** 去重鍵：收件人（小寫）+ 主旨前 60 字 */
+function dedupeKey_(to, subject) {
+  return 'ecard:' + String(to).toLowerCase() + ':' + String(subject || '').slice(0, 60);
+}
+
+/** 記錄最近一次電子喜帖寄送結果（供遠端診斷） */
+function recordLastSend_(to, result) {
+  try {
+    PropertiesService.getScriptProperties().setProperty(LAST_SEND_KEY, JSON.stringify({
+      at: new Date().toISOString(),
+      to: to,
+      ok: !!result.ok,
+      error: result.error || '',
+      inline: (result.inline != null) ? result.inline : null,
+      deduped: !!result.deduped
+    }));
+  } catch (e) {}
+}
+
+/** 讀取最近一次電子喜帖寄送結果 */
+function readLastSend_() {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(LAST_SEND_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
 
 function pick_(obj, keys) {
   for (var i = 0; i < keys.length; i++) {
