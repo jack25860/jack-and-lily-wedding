@@ -78,18 +78,36 @@
 
 ---
 
-## 📝 RSVP 出席回覆表單（Google 表單）
+## 📝 RSVP 出席回覆表單（直接寫入 Google 試算表）
 
-1. 開啟 <https://forms.new>，建立表單，建議欄位：
-   **姓名**、**是否出席**（出席／不出席）、**出席人數**、**飲食需求**、**祝福留言**
-2. 點右上角 **傳送 → 連結 → 勾選「縮短網址」→ 複製**
-3. 開啟 `js/config.js`，將連結貼到：
+v31 起，RSVP 送出後**不再寄送任何 email 通知**，改為把填寫內容**直接寫入 Google 試算表**，
+並在頁面上顯示「感謝您的回覆」提示、自動清空表單（不跳轉新分頁）。
+
+**資料落地**：`https://docs.google.com/spreadsheets/d/1oxlmhFgKS93pIWfRInJF0AXqpXRLxeU8v5ZJCnZFpW0/edit`
+
+**欄位順序（10 欄，與試算表標題列一致）**：
+`序號 / 您的姓名 / 您的信箱 / 您是哪一方的賓客 / 與新人的關係 / 是否能出席本次盛宴 / 出席人數 / 出席大人人數 / 出席兒童人數 / 需要兒童椅數量`
+（序號由 Apps Script 自動遞增：第一筆 1，之後 2、3、4…）
+
+### 一次性設定（約 5 分鐘）
+
+1. 開啟上述試算表 → 上方選單「**擴充功能 (Extensions)**」→「**Apps Script**」
+2. 刪除編輯器預設內容，貼上 `scripts/rsvp-to-sheet.gs` 全文，按 💾 儲存
+3. 右上「**部署 (Deploy)**」→「**新增部署**」→ 類型「**網頁應用程式**」
+   · 執行身分：**我 (Me)**　· 具有存取權的使用者：**所有人 (Anyone)** → 部署並完成授權
+4. 複製結尾為 **`/exec`** 的網址，填入 `js/config.js`：
    ```js
-   GOOGLE_FORM_URL:"https://docs.google.com/forms/d/e/XXXX/viewform",
+   SHEET_WEBAPP_URL:"https://script.google.com/macros/s/…/exec",
    ```
-4. 提交並推送；按鈕與頁面內嵌表單會自動啟用。
+5. 重新部署網站即生效
 
-> 未填入有效網址時，按鈕會顯示為停用狀態（避免賓客點到壞掉的連結）。
+> 驗證：瀏覽器直接開啟該 `/exec` 網址，出現「RSVP endpoint is running.」即部署成功。
+> 未填入 `SHEET_WEBAPP_URL` 時，送出會提示「回覆系統尚未設定完成」，不會誤導賓客。
+
+### 電子喜帖（與 RSVP 通知信不同，維持手動寄送）
+
+電子喜帖仍由網頁最後的「寄送喜帖邀請信」按鈕**手動**寄出（FormSubmit → `jack25860@gmail.com`），
+不會自動寄送，也不受 RSVP 流程影響。
 
 ---
 
