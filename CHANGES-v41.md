@@ -47,11 +47,11 @@ if (cache && cache.get(dkey)) {
 
 | 面向 | 做法 |
 |---|---|
-| **防連點** | 保留 `CacheService` 去重，但窗期由 **90 秒 → 10 秒**。10 秒足以涵蓋「同一瞬間連點」與網路重試，不會誤擋正常操作。 |
-| **可連續寄送** | 送出完成後只要間隔 **10 秒**，即可再次寄送給同一人（原本需等 90 秒）。 |
-| **狀態透明** | 前端新增 `deduped` 分支：若後端回 `deduped:true`，**不再顯示「已送出」**，改顯示「剛剛已寄出（10 秒內的重複送出已略過）。若要再次寄送給同一位，請稍候 10 秒後再按一次。」 |
+| **防連點** | 保留 `CacheService` 去重，但窗期由 **90 秒 → 8 秒**。8 秒足以涵蓋「同一瞬間連點」與網路重試，不會誤擋正常操作。 |
+| **可連續寄送** | 送出完成後只要間隔 **8 秒**，即可再次寄送給同一人（原本需等 90 秒）。 |
+| **狀態透明** | 前端新增 `deduped` 分支：若後端回 `deduped:true`，**不再顯示「已送出」**，改顯示「剛剛已寄出（8 秒內的重複送出已略過）。若要再次寄送給同一位，請稍候 8 秒後再按一次。」 |
 
-**為何不直接移除去重？** 完全移除會讓「連點兩下」變成寄出兩封相同喜帖給同一位賓客（對收件人是明顯的打擾）。10 秒窗期在兩者間取得平衡：連點被吸收，正常連續寄送不受影響。
+**為何不直接移除去重？** 完全移除會讓「連點兩下」變成寄出兩封相同喜帖給同一位賓客（對收件人是明顯的打擾）。8 秒窗期在兩者間取得平衡：連點被吸收，正常連續寄送不受影響。
 
 **為何不改為「內容完全相同才去重」？** 同一人＋同一主旨的喜帖內容本來就幾乎相同（隨機婚紗照除外），以內容比對無法區分「連點」與「刻意重寄」，反而更容易誤擋。時間窗是更可靠的訊號。
 
@@ -60,7 +60,7 @@ if (cache && cache.get(dkey)) {
 **`scripts/rsvp-to-sheet.gs`**
 ```js
 var ENDPOINT_VERSION = 'v41';        // 由 v39 → v41
-var ECARD_DEDUPE_SECONDS = 10;       // 由 90 → 10
+var ECARD_DEDUPE_SECONDS = 8;        // 由 90 → 8
 ```
 （`dedupeKey_`、`recordLastSend_`、`doGet(?diag=1)` 的 `dedupeSeconds` 皆自動反映新值，無需另改。）
 
@@ -68,7 +68,7 @@ var ECARD_DEDUPE_SECONDS = 10;       // 由 90 → 10
 ```js
 postRow(sheetUrl,payload).then(function(r){
   done();
-  if(r&&r.deduped){ errMsg("剛剛已寄出（10 秒內的重複送出已略過）。若要再次寄送給同一位，請稍候 10 秒後再按一次。"); return; }
+  if(r&&r.deduped){ errMsg("剛剛已寄出（8 秒內的重複送出已略過）。若要再次寄送給同一位，請稍候 8 秒後再按一次。"); return; }
   if(r&&r.ok===false){ ... }
   okMsg();
 });
@@ -108,5 +108,5 @@ repo 裡的 `scripts/rsvp-to-sheet.gs` 只是版本控管副本；**部署到 Gi
 |---|---|
 | `index.html` | `#rsvpAdults` 新增 6–10 選項 |
 | `js/app.js` | 電子喜帖送出回呼新增 `deduped` 分支與明確提示 |
-| `scripts/rsvp-to-sheet.gs` | `ENDPOINT_VERSION` → v41；`ECARD_DEDUPE_SECONDS` 90 → 10 |
+| `scripts/rsvp-to-sheet.gs` | `ENDPOINT_VERSION` → v41；`ECARD_DEDUPE_SECONDS` 90 → 8 |
 | `CHANGES-v41.md` | 新增（本檔） |
