@@ -77,12 +77,21 @@ def reveal_scroll(page):
     page.wait_for_timeout(400)
 
 
+def pick(page, name, value):
+    """點選視覺隱藏的 radio（真正的 click ⇒ 會觸發 change 事件）"""
+    page.evaluate(
+        """([n,v])=>{const el=document.querySelector(`input[name="${n}"][value="${v}"]`);
+           if(el) el.click();}""",
+        [name, value],
+    )
+
+
 def fill_form(page, attend="出席", adults="2", children="1", chairs="1"):
     page.fill("#rsvpName", "QA測試賓客")
     page.fill("#rsvpEmail", "qa.v32@example.com")
-    page.check(f'input[name="side"][value="女方"]')
-    page.check(f'input[name="relation"][value="朋友"]')
-    page.check(f'input[name="attend"][value="{attend}"]')
+    pick(page, "side", "女方")
+    pick(page, "relation", "朋友")
+    pick(page, "attend", attend)
     if attend == "出席":
         page.select_option("#rsvpAdults", adults)
         page.select_option("#rsvpChildren", children)
@@ -169,8 +178,7 @@ def run():
         check("B2 未開啟新分頁", len(popups), 0)
         check("B3 感謝提示未顯示", page.evaluate("document.querySelector('#rsvpThanks').hidden"))
         check("B4 備援區塊已顯示", page.evaluate("!document.querySelector('#rsvpFallback').hidden"))
-        check("B5 備援標題", page.inner_text("#rsvpFallbackTitle") if page.query_selector("#rsvpFallbackTitle")
-              else page.inner_text(".rsvp-fallback__title"), "回覆尚未送出")
+        check("B5 備援標題", page.inner_text(".rsvp-fallback__title"), "回覆尚未送出")
         status_txt = page.inner_text("#rsvpStatus")
         check("B6 狀態含『尚未設定完成』", "尚未設定完成" in status_txt)
         check("B7 狀態帶 is-err 樣式",

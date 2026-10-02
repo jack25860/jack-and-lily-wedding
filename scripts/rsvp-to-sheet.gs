@@ -1,127 +1,64 @@
 /**
- * ═══════════════════════════════════════════════════════════════════════════════
- *  出席回覆（RSVP）自動寫入 Google 試算表 — Google Apps Script Web App (doPost)
- *  婚禮網站：https://jack25860.github.io/jack-and-lily-wedding/
- * ═══════════════════════════════════════════════════════════════════════════════
+ * 三生三世・緣定今生 — RSVP 寫入 + 電子喜帖寄送（Google Apps Script Web App）
  *
- * 【這個腳本做什麼】
- *   婚禮網站的「出席回覆」表單送出後，前端會把填寫內容 POST 到本腳本，
- *   本腳本會把資料「依序往下寫入」指定試算表，並自動產生序號（1、2、3…）。
+ * 功能：
+ *   1) RSVP 回覆 → 依序寫入 Google 試算表（序號自動 +1）
+ *   2) 電子喜帖 → 以 HTML 信件寄出，圖片「內嵌」於信件中（非連結）
  *
- * 【欄位順序】（與試算表標題列完全一致）
- *   A 序號 | B 您的姓名 | C 您的信箱 | D 您是哪一方的賓客 | E 與新人的關係
- *   F 是否能出席本次盛宴 | G 出席人數 | H 出席大人人數 | I 出席兒童人數 | J 需要兒童椅數量
- *
- * ─────────────────────────────────────────────────────────────────────────────
- * 【一次性安裝步驟 — 約 5 分鐘】
- *
- * 1. 開啟你的回覆試算表：
- *    https://docs.google.com/spreadsheets/d/1oxlmhFgKS93pIWfRInJF0AXqpXRLxeU8v5ZJCnZFpW0/edit
- *    → 上方選單「擴充功能 (Extensions)」→「Apps Script」
- *
- * 2. 刪除編輯器裡預設的程式碼，把本檔案「全部內容」貼上，按 💾 儲存。
- *    ※ 若腳本是從試算表直接開啟的，下方 SPREADSHEET_ID 可留空（會自動使用本試算表）。
- *
- * 3. 右上角「部署 (Deploy)」→「新增部署 (New deployment)」
- *      · 類型：選「網頁應用程式 (Web app)」
- *      · 說明：RSVP 寫入
- *      · 執行身分 (Execute as)：**我 (Me)**
- *      · 具有存取權的使用者 (Who has access)：**所有人 (Anyone)**
- *      → 按「部署」，並在跳出的視窗「授予存取權」完成授權（選你的帳號 → 進階 → 前往… → 允許）
- *
- * 4. 複製產生的「網頁應用程式網址」，它長這樣：
- *    https://script.google.com/macros/s/AKfycb................/exec
- *    ⚠️ 一定要是結尾是「/exec」的那一串（不是結尾 /dev）。
- *
- * 5. 把該網址填進網站設定檔 js/config.js 的 SHEET_WEBAPP_URL：
- *    SHEET_WEBAPP_URL:"https://script.google.com/macros/s/AKfycb......../exec",
- *    儲存後重新部署網站即可。
- *
- * ※ 驗證：在瀏覽器直接開啟該 /exec 網址，若出現「RSVP endpoint is running.」表示部署成功。
- * ※ 之後若修改本腳本，需「管理部署」→ 編輯 → 版本選「新版本」→ 部署，網址才會生效。
- * ═══════════════════════════════════════════════════════════════════════════════
+ * 部署：擴充功能 → Apps Script → 貼上本檔 → 部署 → 新增部署 →
+ *       類型「網頁應用程式」→ 執行身分「我」→ 存取權「所有人」→ 取得 /exec 網址
  */
 
-/** 試算表 ID（留空 = 使用「本腳本所綁定的試算表」）。若為獨立腳本，請填入 ID。 */
+/** 試算表 ID（留空 = 使用本腳本所綁定的試算表） */
 var SPREADSHEET_ID = '1oxlmhFgKS93pIWfRInJF0AXqpXRLxeU8v5ZJCnZFpW0';
-
-/** 工作表名稱（留空 = 使用第一個工作表）。 */
-var SHEET_NAME = '';
-
-/** 標題列在第幾列。 */
+var SHEET_NAME = '';        // 留空 = 第一個工作表
 var HEADER_ROW = 1;
-
-/** 是否在寫入前自動補上標題列（當工作表為空時）。 */
-var AUTO_HEADER = true;
-
-/** 序號從幾號開始。 */
-var START_NO = 1;
-
-/** 寫入時要忽略的前端欄位（不出現在試算表欄位中的輔助欄位）。 */
+var AUTO_HEADER = true;     // 工作表為空時自動補標題列
+var START_NO = 1;           // 序號起始值
 var IGNORED_KEYS = [];
 
-/** 標題列（同時決定欄位順序）。 */
-var HEADERS = [
-  '序號',
-  '您的姓名',
-  '您的信箱',
-  '您是哪一方的賓客',
-  '與新人的關係',
-  '是否能出席本次盛宴',
-  '出席人數',
-  '出席大人人數',
-  '出席兒童人數',
-  '需要兒童椅數量'
-];
+/** 標題列（同時決定欄位順序） */
+var HEADERS = ['序號', '您的姓名', '您的信箱', '您是哪一方的賓客', '與新人的關係',
+  '是否能出席本次盛宴', '出席人數', '出席大人人數', '出席兒童人數', '需要兒童椅數量'];
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   以下不需修改
-   ═══════════════════════════════════════════════════════════════════════════ */
+/** 電子喜帖寄件者顯示名稱 */
+var ECARD_SENDER_NAME = '三生三世・緣定今生';
 
-/** GET：用瀏覽器開啟 /exec 時的健康檢查。 */
 function doGet() {
-  return ContentService
-    .createTextOutput('RSVP endpoint is running.')
+  return ContentService.createTextOutput('RSVP endpoint is running.')
     .setMimeType(ContentService.MimeType.TEXT);
 }
 
-/** POST：前端送出的 JSON → 寫入試算表。 */
 function doPost(e) {
   try {
     var data = parseIncoming_(e);
-
+    if (String(data.type || '').toLowerCase() === 'ecard') {
+      return json_(sendEcard_(data));
+    }
     var lock = LockService.getScriptLock();
-    lock.waitLock(20000); // 併發送出時排隊，避免兩筆搶到同一個序號
+    lock.waitLock(20000);          // 併發送出時排隊，避免搶同一個序號
     try {
       var sheet = getSheet_();
       ensureHeader_(sheet);
-
-      var row = buildRow_(sheet, data);
-      sheet.appendRow(row);
+      sheet.appendRow(buildRow_(sheet, data));
     } finally {
       lock.releaseLock();
     }
-
     return json_({ ok: true });
   } catch (err) {
     return json_({ ok: false, error: String(err) });
   }
 }
 
-/** 解析前端送來的內容（支援 JSON 與一般表單編碼）。 */
+/* ------------------------------------------------------------------ *
+ *  RSVP → 試算表
+ * ------------------------------------------------------------------ */
+
 function parseIncoming_(e) {
   var data = {};
-
   if (e && e.postData && e.postData.contents) {
-    var raw = e.postData.contents;
-    try {
-      data = JSON.parse(raw);
-    } catch (err) {
-      data = {};
-    }
+    try { data = JSON.parse(e.postData.contents); } catch (err) { data = {}; }
   }
-
-  // 兼容 application/x-www-form-urlencoded 或 FormSubmit 風格的繞送
   if (e && e.parameter) {
     for (var k in e.parameter) {
       if (!Object.prototype.hasOwnProperty.call(data, k) || data[k] === '' || data[k] == null) {
@@ -129,28 +66,18 @@ function parseIncoming_(e) {
       }
     }
   }
-
-  if (typeof data === 'string') {
-    data = {};
-  }
+  if (typeof data === 'string') data = {};
   return data || {};
 }
 
 function getSheet_() {
-  var ss = SPREADSHEET_ID
-    ? SpreadsheetApp.openById(SPREADSHEET_ID)
-    : SpreadsheetApp.getActiveSpreadsheet();
-  if (!ss) {
-    throw new Error('找不到試算表，請在 SPREADSHEET_ID 填入試算表 ID。');
-  }
-  if (SHEET_NAME) {
-    var named = ss.getSheetByName(SHEET_NAME);
-    if (named) return named;
-  }
+  var ss = SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID)
+                          : SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) throw new Error('找不到試算表，請在 SPREADSHEET_ID 填入試算表 ID。');
+  if (SHEET_NAME) { var named = ss.getSheetByName(SHEET_NAME); if (named) return named; }
   return ss.getSheets()[0];
 }
 
-/** 工作表若為空，補上標題列。 */
 function ensureHeader_(sheet) {
   if (!AUTO_HEADER) return;
   if (sheet.getLastRow() === 0) {
@@ -158,57 +85,41 @@ function ensureHeader_(sheet) {
   }
 }
 
-/**
- * 組出要寫入的一列：
- * 序號 = 資料列數 + 起始值（第一筆為 1，之後自動 +1）
- */
 function buildRow_(sheet, data) {
-  var values = mapFields_(data);
-  var nextNo = nextSerial_(sheet);
-  var row = [];
+  var values = mapFields_(data), nextNo = nextSerial_(sheet), row = [];
   for (var i = 0; i < HEADERS.length; i++) {
-    if (HEADERS[i] === '序號') {
-      row.push(nextNo);
-    } else {
-      row.push(values[HEADERS[i]] == null ? '' : values[HEADERS[i]]);
-    }
+    row.push(HEADERS[i] === '序號' ? nextNo
+      : (values[HEADERS[i]] == null ? '' : values[HEADERS[i]]));
   }
   return row;
 }
 
-/** 序號：既有資料筆數（不含標題列）+ 起始值。 */
 function nextSerial_(sheet) {
   var last = sheet.getLastRow();
   var dataRows = last >= HEADER_ROW ? last - HEADER_ROW : 0;
   return START_NO + dataRows;
 }
 
-/** 前端欄位 → 試算表欄位值。 */
 function mapFields_(data) {
   var attend = pick_(data, ['attend', '是否能出席本次盛宴', 'ATTEND']);
   var attending = attend !== '不克出席';
-
-  var adults = attending ? toInt_(pick_(data, ['adults', '出席大人人數', 'ADULTS'])) : 0;
+  var adults   = attending ? toInt_(pick_(data, ['adults', '出席大人人數', 'ADULTS'])) : 0;
   var children = attending ? toInt_(pick_(data, ['children', '出席兒童人數', 'CHILDREN'])) : 0;
-  var chairs = attending ? toInt_(pick_(data, ['chairs', '需要兒童椅數量', 'CHAIRS'])) : 0;
-
+  var chairs   = attending ? toInt_(pick_(data, ['chairs', '需要兒童椅數量', 'CHAIRS'])) : 0;
   var guests = pick_(data, ['guests', '出席人數', 'GUESTS']);
-  if (guests === '' || guests == null) {
-    guests = attending ? adults + children : 0;
-  }
+  if (guests === '' || guests == null) guests = attending ? adults + children : 0;
 
   var out = {};
-  out['您的姓名'] = pick_(data, ['name', '您的姓名', 'NAME']);
-  out['您的信箱'] = pick_(data, ['email', '您的信箱', 'EMAIL']);
+  out['您的姓名']         = pick_(data, ['name', '您的姓名', 'NAME']);
+  out['您的信箱']         = pick_(data, ['email', '您的信箱', 'EMAIL']);
   out['您是哪一方的賓客'] = pick_(data, ['side', '您是哪一方的賓客', 'SIDE']);
-  out['與新人的關係'] = pick_(data, ['relation', '與新人的關係', 'RELATION']);
+  out['與新人的關係']     = pick_(data, ['relation', '與新人的關係', 'RELATION']);
   out['是否能出席本次盛宴'] = attend;
-  out['出席人數'] = guests;
-  out['出席大人人數'] = attending ? adults : '';
-  out['出席兒童人數'] = attending ? children : '';
-  out['需要兒童椅數量'] = attending ? chairs : '';
+  out['出席人數']         = guests;
+  out['出席大人人數']     = attending ? adults : '';
+  out['出席兒童人數']     = attending ? children : '';
+  out['需要兒童椅數量']   = attending ? chairs : '';
 
-  // 自訂欄位（若你之後在 HEADERS 增加欄位，前端同名欄位會自動帶入）
   for (var k in data) {
     if (IGNORED_KEYS.indexOf(k) !== -1) continue;
     if (!out[k]) out[k] = data[k];
@@ -216,23 +127,110 @@ function mapFields_(data) {
   return out;
 }
 
+/* ------------------------------------------------------------------ *
+ *  電子喜帖 → HTML 內嵌圖片信件
+ * ------------------------------------------------------------------ */
+
+function sendEcard_(data) {
+  var to = pick_(data, ['to', 'email']);
+  if (!to || to.indexOf('@') < 0) return { ok: false, error: 'invalid recipient' };
+
+  var subject = pick_(data, ['subject']) || '【三生三世・緣定今生】誠摯邀請您參加我們的婚禮';
+  var greeting = pick_(data, ['greeting']) || '親愛的朋友，您好：';
+  var body = pick_(data, ['body']) || '誠摯地邀請您一同見證我們的婚禮。三生三世，緣定今生，期待與您相見。';
+  var inviteText = pick_(data, ['inviteText']) || '誠摯地邀請您參加本次婚禮，新郎與新娘敬上。';
+  var photoUrl = pick_(data, ['photo']);
+  var videoUrl = pick_(data, ['videoUrl']);
+  var videoPoster = pick_(data, ['videoPoster']);
+  var site = pick_(data, ['site']);
+
+  var inlineImages = {};
+  var photoTag = '';
+  if (photoUrl) {
+    var pb = fetchBlob_(photoUrl);
+    if (pb) { inlineImages['couplePhoto'] = pb; photoTag = '<img src="cid:couplePhoto" alt="婚紗照" style="display:block;width:100%;max-width:560px;height:auto;border:0;border-radius:2px">'; }
+  }
+
+  // 影片：目前以圖片代替；之後只要在 ECARD_VIDEO_URL 填入影片網址即可自動改為可點擊的影片縮圖
+  var videoTag = '';
+  if (videoUrl) {
+    var vb = videoPoster ? fetchBlob_(videoPoster) : null;
+    if (vb) {
+      inlineImages['videoPoster'] = vb;
+      videoTag = '<a href="' + esc_(videoUrl) + '" target="_blank" style="text-decoration:none">' +
+        '<img src="cid:videoPoster" alt="電子喜帖影片" style="display:block;width:100%;max-width:560px;height:auto;border:0;border-radius:2px">' +
+        '<div style="margin-top:8px;font-size:13px;color:#6E1626;letter-spacing:.08em">▶ 點此觀看電子喜帖影片</div></a>';
+    } else {
+      videoTag = '<a href="' + esc_(videoUrl) + '" target="_blank" style="color:#6E1626">▶ 點此觀看電子喜帖影片</a>';
+    }
+  } else if (videoPoster) {
+    var vpb = fetchBlob_(videoPoster);
+    if (vpb) {
+      inlineImages['videoPoster'] = vpb;
+      videoTag = '<img src="cid:videoPoster" alt="電子喜帖影片（示意圖）" style="display:block;width:100%;max-width:560px;height:auto;border:0;border-radius:2px">' +
+        '<div style="margin-top:8px;font-size:12px;color:#8a7a5c;letter-spacing:.06em">［電子喜帖影片示意圖：目前以圖片代替，之後可替換為影片］</div>';
+    }
+  }
+
+  var html = '' +
+    '<div style="margin:0;padding:24px 12px;background:#f5f0e7;font-family:\'Noto Serif TC\',\'PingFang TC\',\'Microsoft JhengHei\',serif;color:#3a2a2a">' +
+      '<div style="max-width:600px;margin:0 auto;background:#fffdf8;border:1px solid #C9A961;padding:28px 24px">' +
+        '<div style="text-align:center;font-size:12px;letter-spacing:.4em;color:#C9A961">WEDDING INVITATION</div>' +
+        '<h1 style="margin:14px 0 6px;text-align:center;font-size:22px;font-weight:400;letter-spacing:.18em;color:#6E1626">三生三世・緣定今生</h1>' +
+        '<div style="width:52px;height:1px;margin:14px auto;background:#C9A961"></div>' +
+        (videoTag ? '<div style="margin:18px 0">' + videoTag + '</div>' : '') +
+        (photoTag ? '<div style="margin:18px 0">' + photoTag + '</div>' : '') +
+        '<p style="margin:18px 0 0;font-size:15px;line-height:2;letter-spacing:.06em">' + esc_(greeting) + '</p>' +
+        '<p style="margin:10px 0 0;font-size:15px;line-height:2;letter-spacing:.06em">' + esc_(body) + '</p>' +
+        '<p style="margin:16px 0 0;font-size:15px;line-height:2;letter-spacing:.06em;color:#6E1626">' + esc_(inviteText) + '</p>' +
+        (site ? '<p style="margin:22px 0 0;text-align:center"><a href="' + esc_(site) + '" style="display:inline-block;padding:12px 26px;background:#6E1626;color:#EFE5D2;text-decoration:none;letter-spacing:.16em;font-size:14px;border:1px solid #C9A961">前往婚禮網站</a></p>' : '') +
+        '<p style="margin:24px 0 0;text-align:center;font-size:12px;color:#8a7a5c;letter-spacing:.1em">新郎與新娘 敬上</p>' +
+      '</div>' +
+    '</div>';
+
+  GmailApp.sendEmail(to, subject, plainFallback_(greeting, body, inviteText, site), {
+    htmlBody: html,
+    name: ECARD_SENDER_NAME,
+    inlineImages: inlineImages
+  });
+  return { ok: true, inline: Object.keys(inlineImages).length };
+}
+
+function plainFallback_(greeting, body, inviteText, site) {
+  return greeting + '\n\n' + body + '\n\n' + inviteText + '\n\n' + (site || '') + '\n\n新郎與新娘 敬上';
+}
+
+function fetchBlob_(url) {
+  try {
+    var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    if (res.getResponseCode() !== 200) return null;
+    var blob = res.getBlob();
+    var ct = blob.getContentType() || '';
+    if (ct.indexOf('image/') !== 0) return null;
+    return blob;
+  } catch (err) {
+    return null;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ *  共用
+ * ------------------------------------------------------------------ */
+
 function pick_(obj, keys) {
   for (var i = 0; i < keys.length; i++) {
     var k = keys[i];
-    if (obj && obj[k] != null && String(obj[k]).trim() !== '') {
-      return String(obj[k]).trim();
-    }
+    if (obj && obj[k] != null && String(obj[k]).trim() !== '') return String(obj[k]).trim();
   }
   return '';
 }
-
-function toInt_(v) {
-  var n = parseInt(v, 10);
-  return isNaN(n) ? 0 : n;
+function toInt_(v) { var n = parseInt(v, 10); return isNaN(n) ? 0 : n; }
+function esc_(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
 }
-
 function json_(obj) {
-  return ContentService
-    .createTextOutput(JSON.stringify(obj))
+  return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
 }
