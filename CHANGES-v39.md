@@ -92,3 +92,21 @@ v38 後端只區分 `mail_scope_missing` 與 `mail_send_failed`，配額用盡�
 ## 五、維持不變（已回歸驗證）
 
 酒紅 `#6E1626`／金 `#C9A961`／宣紙米色；RSVP 送出流程不變；電子喜帖為**手動寄送**、信件內直接內嵌圖片與隨機婚紗照（142 張全池）；桌機與行動版不破版、無水平捲動。
+
+---
+
+## 六、部署與線上驗證（第 3 棒完成）
+
+- **GitHub Actions**：`deploy-site.yml` run **#42 completed / success**（`workflow_dispatch`，input `zip_url` 帶 `?tk=` 簽章）；Pages build 隨之觸發。
+- **線上檔案與 v39 建置檔 md5 完全一致**：`index.html` `a9799319…`、`js/app.js` `6100e87b…`、`js/config.js` `60d832e6…`、`css/styles.css` `12a21303…`。
+- 線上 `CHANGES-v39.md` → HTTP 200。
+- 線上 `scripts/rsvp-to-sheet.gs` → `ENDPOINT_VERSION = 'v39'`，且含 `ECARD_DEDUPE_SECONDS`、`readLastSend_`、`mail_quota_exceeded`。
+- 線上 `js/app.js` → 含 `network_unreachable`（2 處），**`no-cors` 已完全移除（0 處）**。
+
+## 七、交棒 round 3 of 4 → Product Manager（第 4 棒）
+
+**已完成**：架構面審查與修補（4 項缺陷）、離線驗證 63/63、v39 部署上線並經線上 md5／內容驗證。
+
+**仍待使用者手動完成（唯一阻塞點，非本接力可代為執行）**：Google 端 Apps Script 專案仍為 **v35** 且**未授予 Gmail 寄信權限**。請依「四、使用者待辦」操作（貼上 v39 `.gs` → 執行 `testEcard` 授權 → 管理部署→新版本）。完成後 `/exec?diag=1` 應回 `"version":"v39"` 且 `"mailScope":true`。
+
+**第 4 棒（Product Manager）任務**：對修復結果做完整驗證 — 真實瀏覽器實測電子喜帖寄送流程、確認信件確實寄達（需使用者完成授權後）、RSVP 回歸不破壞，並回報最終結論。**完成條件：電子喜帖信件確認可寄達且驗證通過 — 不要循環回頭。**
