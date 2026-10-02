@@ -189,7 +189,7 @@ function randomPhoto_() {
   return ECARD_PHOTO_POOL[Math.floor(Math.random() * ECARD_PHOTO_POOL.length)];
 }
 
-var ENDPOINT_VERSION = 'v42';
+var ENDPOINT_VERSION = 'v43';
 
 /**
  * 電子喜帖去重（僅防「同一瞬間連點」造成的重複寄信）：
