@@ -563,25 +563,10 @@ sweep(document)})();</script>
       <p class="section__sub">戰國、唐代、明朝 — 三段前世，一個約定。</p>
     </header>
 
-    <!-- 影片素材：電子喜帖（15 秒）＋結婚預告片（45 秒）
-         影片網址由 js/config.js 的 E_INVITATION_VIDEO_URL / TRAILER_VIDEO_URL 提供 -->
-    <div class="films">
-      <div class="trailer reveal" id="eInvitationBlock">
-        <div class="trailer__frame">
-          <video id="eInvitationVideo" class="trailer__video" controls playsinline preload="metadata"></video>
-          <div class="trailer__placeholder" id="eInvitationPlaceholder">
-            <span class="trailer__play" aria-hidden="true"></span>
-            <p class="trailer__ph-text" data-cfg="E_INVITATION_CAPTION">電子喜帖影片素材［待補充］</p>
-          </div>
-        </div>
-        <div class="trailer__meta">
-          <p class="trailer__tag">15 SEC</p>
-          <h3 class="trailer__title" data-cfg="E_INVITATION_TITLE">電子喜帖</h3>
-          <p class="trailer__desc" data-cfg="E_INVITATION_DESC">15 秒，把我們的喜訊，親手交到你手上。</p>
-        </div>
-      </div>
-
-      <div class="trailer reveal" data-delay="1" id="trailerBlock">
+    <!-- 影片素材：結婚預告片（45 秒）
+         影片網址由 js/config.js 的 TRAILER_VIDEO_URL 提供 -->
+    <div class="films films--single">
+      <div class="trailer reveal" id="trailerBlock">
         <div class="trailer__frame">
           <video id="trailerVideo" class="trailer__video" controls playsinline preload="metadata"></video>
           <div class="trailer__placeholder" id="trailerPlaceholder">
@@ -743,31 +728,94 @@ sweep(document)})();</script>
     </header>
 
     <div class="rsvp__card reveal">
-      <p class="rsvp__intro" data-cfg="RSVP_INTRO">請點擊下方按鈕填寫出席回覆表單。填寫完成後，我們將依您留下的電子信箱，寄送專屬於您的電子喜帖。</p>
+      <p class="rsvp__intro" data-cfg="RSVP_INTRO">請於下方填寫出席回覆，送出後將於新分頁開啟 Google 表單並自動帶入您填寫的內容，確認後即可完成回覆。</p>
 
-      <ul class="rsvp__fields" id="rsvpFields"></ul>
+      <form class="rsvp-form" id="rsvpForm" novalidate>
+        <div class="rsvp-form__grid">
+          <div class="rsvp-form__row rsvp-form__row--full">
+            <label for="rsvpName">您的姓名 <i>NAME</i></label>
+            <input type="text" id="rsvpName" name="name" placeholder="請輸入您的姓名" maxlength="40" autocomplete="name" required>
+          </div>
 
-      <div class="rsvp__actions">
-        <a class="rsvp__cta" id="rsvpBtn" href="https://forms.gle/eMPxMdQGSe145r329" target="_blank" rel="noopener" data-cfg="RSVP_BTN_TEXT">填寫出席回覆表單</a>
-        <a class="rsvp__fallback" id="rsvpFallback" href="https://forms.gle/eMPxMdQGSe145r329" target="_blank" rel="noopener">表單無法顯示？在新分頁開啟報名表單</a>
-      </div>
+          <div class="rsvp-form__row rsvp-form__row--full">
+            <label for="rsvpEmail">您的信箱 <i>EMAIL</i></label>
+            <input type="email" id="rsvpEmail" name="email" placeholder="guest@example.com" maxlength="80" autocomplete="email" required>
+          </div>
 
-      <p class="rsvp__note" id="rsvpNote" data-cfg="RSVP_NOTE">表單連結［待補充］，請於 js/config.js 的 GOOGLE_FORM_URL 填入。</p>
-    </div>
+          <fieldset class="rsvp-form__row rsvp-form__row--full rsvp-form__fieldset">
+            <legend>您是哪一方的賓客 <i>SIDE</i></legend>
+            <div class="rsvp-form__chips" id="rsvpSide">
+              <label class="rsvp-chip"><input type="radio" name="side" value="男方" checked><span>男方</span></label>
+              <label class="rsvp-chip"><input type="radio" name="side" value="女方"><span>女方</span></label>
+            </div>
+          </fieldset>
 
-    <div class="rsvp__embed reveal" id="rsvpEmbedWrap">
-      <h3 class="rsvp__embed-title" data-cfg="RSVP_EMBED_TITLE">出席回覆表單</h3>
+          <fieldset class="rsvp-form__row rsvp-form__row--full rsvp-form__fieldset">
+            <legend>與新人的關係 <i>RELATION</i></legend>
+            <div class="rsvp-form__chips" id="rsvpRelation">
+              <label class="rsvp-chip"><input type="radio" name="relation" value="家人" checked><span>家人</span></label>
+              <label class="rsvp-chip"><input type="radio" name="relation" value="親戚"><span>親戚</span></label>
+              <label class="rsvp-chip"><input type="radio" name="relation" value="朋友"><span>朋友</span></label>
+              <label class="rsvp-chip"><input type="radio" name="relation" value="同事"><span>同事</span></label>
+              <label class="rsvp-chip"><input type="radio" name="relation" value="同學"><span>同學</span></label>
+              <label class="rsvp-chip"><input type="radio" name="relation" value="長輩友人"><span>長輩友人</span></label>
+            </div>
+          </fieldset>
 
-      <div class="rsvp__embed-frame" id="rsvpEmbedFrame" hidden>
-        <iframe id="rsvpIframe" title="出席回覆表單" loading="lazy" allowfullscreen></iframe>
-      </div>
+          <fieldset class="rsvp-form__row rsvp-form__row--full rsvp-form__fieldset">
+            <legend>是否能出席本次盛宴 <i>ATTENDANCE</i></legend>
+            <div class="rsvp-form__chips" id="rsvpAttend">
+              <label class="rsvp-chip"><input type="radio" name="attend" value="出席" checked><span>出席</span></label>
+              <label class="rsvp-chip"><input type="radio" name="attend" value="不克出席"><span>不克出席</span></label>
+            </div>
+          </fieldset>
 
-      <div class="rsvp__embed-placeholder" id="rsvpEmbedPlaceholder">
-        <p class="rsvp__embed-ph-title" data-cfg="RSVP_EMBED_PH_TITLE">表單嵌入區塊（尚未設定網址）</p>
-        <p class="rsvp__embed-ph-text" data-cfg="RSVP_EMBED_PH_TEXT">此區塊已預留給 Google 出席回覆表單。填入表單網址後，這裡會自動載入可填寫的嵌入表單，賓客無需離開本頁即可完成回覆。</p>
-        <ol class="rsvp__embed-steps" id="rsvpEmbedSteps"></ol>
-        <p class="rsvp__embed-ph-hint" data-cfg="RSVP_EMBED_PH_HINT">設定方式：開啟 js/config.js，將 GOOGLE_FORM_URL 填入你的 Google 表單連結即可。</p>
-      </div>
+          <div class="rsvp-form__row">
+            <label for="rsvpAdults">出席大人人數 <i>ADULTS</i></label>
+            <select id="rsvpAdults" name="adults">
+              <option value="1" selected>1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
+          </div>
+
+          <div class="rsvp-form__row">
+            <label for="rsvpChildren">出席兒童人數 <i>CHILDREN</i></label>
+            <select id="rsvpChildren" name="children">
+              <option value="0" selected>0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
+          </div>
+
+          <div class="rsvp-form__row rsvp-form__row--full" id="rsvpChairRow">
+            <label for="rsvpChairs">需要兒童椅數量 <i>KIDS CHAIRS</i></label>
+            <select id="rsvpChairs" name="chairs">
+              <option value="0" selected>0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="rsvp-form__actions">
+          <button type="submit" class="rsvp-cta" id="rsvpSubmit">
+            <span class="rsvp-cta__seal" aria-hidden="true">囍</span>
+            <span class="rsvp-cta__body">
+              <span class="rsvp-cta__text" data-cfg="RSVP_BTN_TEXT">送出並開啟回覆表單</span>
+              <span class="rsvp-cta__en" aria-hidden="true">SUBMIT · OPEN FORM</span>
+            </span>
+            <span class="rsvp-cta__arrow" aria-hidden="true">↗</span>
+          </button>
+          <p class="rsvp-cta__hint" data-cfg="RSVP_CTA_HINT">送出後將於新分頁開啟 Google 表單，您填寫的內容會自動帶入對應欄位，確認後送出即完成回覆。</p>
+        </div>
+
+        <p class="rsvp-form__status" id="rsvpStatus" role="status" aria-live="polite"></p>
+      </form>
     </div>
 
     <div class="rsvp__ecard reveal">
