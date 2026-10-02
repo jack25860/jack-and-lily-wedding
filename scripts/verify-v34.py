@@ -71,6 +71,9 @@ with sync_playwright() as p:
     # intercept the sheet POST
     posts = []
     def slow_sheet(route):
+        if route.request.method == "GET":
+            route.fulfill(status=200, body="RSVP endpoint is running. v34")
+            return
         posts.append(route.request.post_data)
         page.wait_for_timeout(700)
         route.fulfill(status=200, body="{}")
@@ -199,6 +202,9 @@ with sync_playwright() as p:
     pg.select_option("#rsvpChairs", "2")
     mposts = []
     def slow_sheet_m(route):
+        if route.request.method == "GET":
+            route.fulfill(status=200, body="RSVP endpoint is running. v34")
+            return
         mposts.append(route.request.post_data)
         pg.wait_for_timeout(700)
         route.fulfill(status=200, body="{}")

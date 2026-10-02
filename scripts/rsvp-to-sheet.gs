@@ -24,8 +24,11 @@ var HEADERS = ['序號', '您的姓名', '您的信箱', '您是哪一方的賓�
 /** 電子喜帖寄件者顯示名稱 */
 var ECARD_SENDER_NAME = '三生三世・緣定今生';
 
+/** 版本標記：前端據此判斷此端點是否支援「電子喜帖內嵌圖片」 */
+var ENDPOINT_VERSION = 'v34';
+
 function doGet() {
-  return ContentService.createTextOutput('RSVP endpoint is running.')
+  return ContentService.createTextOutput('RSVP endpoint is running. ' + ENDPOINT_VERSION)
     .setMimeType(ContentService.MimeType.TEXT);
 }
 
