@@ -825,18 +825,52 @@ sweep(document)})();</script>
     </div>
 
     <div class="rsvp__ecard reveal">
-      <h3 class="rsvp__ecard-title" data-cfg="RSVP_ECARD_TITLE">電子喜帖</h3>
-      <p class="rsvp__ecard-text" data-cfg="RSVP_ECARD_TEXT">填寫表單並留下電子信箱後，系統將自動寄送電子喜帖給您。若未收到，請檢查垃圾郵件匣。</p>
+      <!-- 電子喜帖：視覺主視覺（大圖自動輪播），寄信入口低調融入畫面，無欄位式表單外觀 -->
+      <aside class="ecard-show" id="ecardShow" aria-label="電子喜帖">
+        <div class="ecard-show__slider" id="ecardSlider" aria-hidden="true">
+          <span class="ecard-show__slide is-on" style="background-image:url(images/ecard-poster-silk.jpg)"></span>
+          <span class="ecard-show__slide" style="background-image:url(images/ecard-poster-couple.jpg)"></span>
+          <span class="ecard-show__slide" style="background-image:url(images/ecard-poster-still.jpg)"></span>
+        </div>
+        <div class="ecard-show__veil" aria-hidden="true"></div>
+        <div class="ecard-show__frame" aria-hidden="true"></div>
 
-      <figure class="rsvp__ecard-preview">
-        <img id="ecardPhoto" src="images/tl1.jpg" alt="電子喜帖示意圖" loading="lazy" decoding="async">
-        <figcaption data-cfg="ECARD_PHOTO_CAPTION">［電子喜帖示意圖：暫以婚紗照代替，正式喜帖待提供］</figcaption>
-      </figure>
+        <div class="ecard-show__content">
+          <p class="ecard-show__eyebrow" data-cfg="RSVP_ECARD_TITLE">電子喜帖</p>
+          <p class="ecard-show__title" data-cfg="ECARD_SHOW_TITLE">三生三世，緣定今生</p>
+          <p class="ecard-show__names"><span data-cfg="GROOM_NAME">王有岑</span><em>＆</em><span data-cfg="BRIDE_NAME">杜伊甯</span></p>
+          <p class="ecard-show__meta" data-cfg="WEDDING_DATE_DISPLAY">［待補充］</p>
+          <p class="ecard-show__text" data-cfg="RSVP_ECARD_TEXT">填寫出席回覆表單並留下您的電子信箱後，我們將依該信箱寄送專屬於您的電子喜帖。</p>
+          <button type="button" class="ecard-show__cta" id="ecardMailBtn" aria-expanded="false" aria-controls="ecardPanel">
+            <span class="ecard-show__cta-seal" aria-hidden="true">囍</span>
+            <span class="ecard-show__cta-body">
+              <span class="ecard-show__cta-text" data-cfg="ECARD_MAIL_BTN_TEXT">寄送喜帖邀請信</span>
+              <span class="ecard-show__cta-en" aria-hidden="true">SEND · E-CARD</span>
+            </span>
+          </button>
+          <p class="ecard-show__hint" data-cfg="ECARD_MAIL_HINT">點擊後輸入賓客的電子信箱，我們將寄出電子喜帖邀請信。</p>
+        </div>
 
-      <div class="rsvp__ecard-actions">
-        <button type="button" class="btn btn--ghost btn--small" id="ecardMailBtn" data-cfg="ECARD_MAIL_BTN_TEXT">寄送喜帖邀請信</button>
-        <span class="rsvp__ecard-hint" data-cfg="ECARD_MAIL_HINT">輸入賓客的電子信箱，將開啟郵件並自動帶入電子喜帖主旨、內文與示意圖片。</span>
-      </div>
+        <div class="ecard-show__dots" id="ecardDots">
+          <button type="button" class="ecard-dot is-on" data-slide="0" aria-label="喜帖畫面 1"></button>
+          <button type="button" class="ecard-dot" data-slide="1" aria-label="喜帖畫面 2"></button>
+          <button type="button" class="ecard-dot" data-slide="2" aria-label="喜帖畫面 3"></button>
+        </div>
+      </aside>
+
+      <form class="ecard-panel" id="ecardPanel" hidden novalidate>
+        <p class="ecard-panel__title" data-cfg="ECARD_PANEL_TITLE">寄送電子喜帖</p>
+        <p class="ecard-panel__sub" data-cfg="ECARD_PANEL_SUB">輸入賓客的電子信箱，我們將寄出專屬於您的電子喜帖。</p>
+        <div class="ecard-panel__row">
+          <label for="ecardTo">賓客電子信箱 <i>EMAIL</i></label>
+          <input type="email" id="ecardTo" name="email" placeholder="guest@example.com" maxlength="80" autocomplete="email">
+        </div>
+        <div class="ecard-panel__actions">
+          <button type="button" class="ecard-panel__send" id="ecardSendBtn"><span aria-hidden="true">✉</span><span data-cfg="ECARD_SEND_BTN_TEXT">確認送出喜帖</span></button>
+          <button type="button" class="btn btn--ghost btn--small ecard-panel__cancel" id="ecardCancelBtn" data-cfg="ECARD_CANCEL_BTN_TEXT">取消</button>
+        </div>
+        <p class="ecard-panel__status" id="ecardStatus" role="status" aria-live="polite"></p>
+      </form>
     </div>
   </div>
 </section>
