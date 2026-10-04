@@ -913,7 +913,7 @@ sweep(document)})();</script>
 </footer>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
-     12. 音樂控制（預設關閉）
+     12. 背景音樂（強制播放，無開關）
      ═══════════════════════════════════════════════════════════════════════════ -->
 <!-- 閱讀進度條 -->
 <div class="progress" id="progress" aria-hidden="true"><span></span></div>
@@ -924,13 +924,8 @@ sweep(document)})();</script>
   <span class="totop__text">TOP</span>
 </button>
 
-<div class="music" id="music">
-  <button class="music__btn" id="musicBtn" aria-label="播放背景音樂" aria-pressed="false">
-    <span class="music__bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-    <span class="music__label" id="musicLabel">MUSIC OFF</span>
-  </button>
-  <audio id="bgm" loop preload="none"></audio>
-</div>
+<!-- 背景音樂：強制播放，不提供任何開關 -->
+<audio id="bgm" loop preload="auto"></audio>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
      Lightbox
