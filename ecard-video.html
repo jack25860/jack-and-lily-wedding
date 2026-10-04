@@ -125,7 +125,7 @@ body:before{
   <div class="frame">
     <video id="ecardVideo" class="frame__video"
            poster="images/ecard-video-poster.jpg"
-           autoplay loop playsinline preload="auto"
+           autoplay loop muted playsinline preload="auto"
            controlslist="nodownload" disablepictureinpicture
            aria-label="電子喜帖影片，自動循環播放並自動開啟配樂">
       <!-- 依序嘗試：MP4／H.264 + AAC（Safari、iOS、多數桌面瀏覽器）→ WebM／VP9 + Opus（VP9 系瀏覽器）。 -->
@@ -154,13 +154,29 @@ body:before{
 </div>
 
 <script>
-/* v51 影片卡住修正：任何事件（點擊／暫停／緩衝／visibility 切換／play() 失敗）都不會讓影片停止，
+/* v52 影片卡住修正：任何事件（點擊／暫停／緩衝／visibility 切換／play() 失敗）都不會讓影片停止，
    並以硬性看門狗最終保底，確保影片持續循環運轉。
-   音效：預設 muted=false、volume>0；頁面上不提供任何音效開關（政策擋下時於首次互動自動解除靜音）。 */
+   音效：預設 muted=false、volume>0；頁面上不提供任何音效開關（政策擋下時於首次互動自動解除靜音）。
+   v52 新增：明確設定 muted + playsinline + preload，並在必要時主動 load()，
+   解決行動瀏覽器「非靜音自動播放被政策擋下 → 影片完全不啟動」的問題。 */
 (function(){
   "use strict";
   var v = document.getElementById("ecardVideo");
   if(!v) return;
+
+  /* v52：強化初始播放。行動瀏覽器（iOS/Android）即使有 autoplay 屬性，仍可能因
+     「非靜音自動播放」政策而完全不啟動；因此明確設定 playsinline + preload，
+     並在尚未開始載入時主動 load()，確保影片一定會開始下載與播放。
+     音效維持 v51 的「預設開啟」：由 play() 內的 sound() 解除靜音；
+     若政策擋下則自動退回靜音續播，並於首次互動自動開聲（頁面不提供任何音效開關）。 */
+  try{
+    v.playsInline = true;
+    v.setAttribute("playsinline","");
+    v.setAttribute("webkit-playsinline","");
+    v.preload = "auto";
+    if(!v.getAttribute("src") && !v.querySelector("source")){ v.setAttribute("src","media/ecard-video.mp4"); }
+    if(v.readyState === 0){ v.load(); }
+  }catch(e){}
 
   var soundBlocked = false;   // 被自動播放政策擋下時先靜音續播，首次互動再自動開聲
   var unlocked = false;
@@ -230,10 +246,15 @@ body:before{
   window.addEventListener("scroll", unlock, {passive:true});
 
   // 6) 硬性看門狗：每 400ms 檢查一次，只要該在播放卻停了就重啟（最終保底）
+  var lastT = -1, frozen = 0;
   window.setInterval(function(){
     if(document.hidden){ return; }
     if(v.ended){ try{ v.currentTime = 0; }catch(e){} play(); return; }
-    if(v.paused){ play(); }
+    if(v.paused){ play(); return; }
+    // v52：播放中但時間完全沒有前進（解碼／緩衝卡死）→ 強制重新載入並續播
+    if(v.currentTime === lastT){ frozen++; } else { frozen = 0; }
+    lastT = v.currentTime;
+    if(frozen >= 8){ frozen = 0; try{ v.load(); }catch(e){} play(); }
   }, 400);
 
   play();
