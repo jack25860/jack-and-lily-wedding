@@ -30,11 +30,12 @@ var ECARD_SENDER_NAME = '三生三世・緣定今生';
 /** 電子喜帖影片網址（留空 = 以圖片代替；填入後信件會自動改為可點擊的影片縮圖） */
 var ECARD_VIDEO_URL = 'https://jack25860.github.io/jack-and-lily-wedding/ecard-video.html';
 /**
- * v45：信件內「自動循環播放」的循環 GIF。
+ * v46：信件內「直接內嵌、一打開就自動循環播放」的循環 GIF（主要呈現）。
  * 置於 GitHub Pages（公開可存取，外部收件人亦能載入）。
  * 為什麼不用影片：Gmail／Outlook 等主流信箱會封鎖 <video> 標籤與 JavaScript，
  * autoplay／loop 在信件內不會生效；且 cid: 內嵌附件在 Gmail 網頁版不會解析。
  * 動畫 GIF 透過「公開網址」引用，是唯一會被信箱自動播放的動態形式。
+ * v46 規格：360×480、31 格、32 色、約 1.3 MB（符合信件 GIF 建議的 1–2 MB）。
  */
 var ECARD_LOOP_GIF_URL = 'https://jack25860.github.io/jack-and-lily-wedding/media/ecard-loop.gif';
 /** 電子喜帖影片示意圖（影片尚未提供時顯示） */
@@ -197,7 +198,7 @@ function randomPhoto_() {
   return ECARD_PHOTO_POOL[Math.floor(Math.random() * ECARD_PHOTO_POOL.length)];
 }
 
-var ENDPOINT_VERSION = 'v45';
+var ENDPOINT_VERSION = 'v46';
 
 /**
  * 電子喜帖去重（僅防「同一瞬間連點」造成的重複寄信）：
@@ -396,14 +397,17 @@ function sendEcard_(data) {
     if (pb) { inlineImages['couplePhoto'] = pb; photoTag = '<img src="cid:couplePhoto" alt="婚紗照" style="display:block;width:100%;max-width:560px;height:auto;border:0;border-radius:2px">'; }
   }
 
-  // 影片：目前以圖片代替；之後只要在 ECARD_VIDEO_URL 填入影片網址即可自動改為可點擊的影片縮圖
+  // v46：信件內「直接內嵌、一打開就自動循環播放」的循環 GIF（主要呈現，非連結）。
+  // 為什麼不用 <video>：Gmail／Outlook 等主流信箱會封鎖 <video> 標籤與 JavaScript，
+  // autoplay／loop 在信件內不會生效；且 cid: 內嵌附件在 Gmail 網頁版不會解析。
+  // 動畫 GIF 透過「公開網址」引用，是唯一會被信箱自動播放的動態形式。
+  // 主要呈現＝GIF 直接顯示；點擊放大／看完整影片為「加分」的次要連結。
   var videoTag = '';
   if (videoUrl) {
-    // v45：信件內無法自動播放影片（Gmail／Outlook 封鎖 <video> 與 JS，autoplay／loop 不生效），
-    // 故改為「公開網址的循環 GIF（信箱自動播放）」＋「點擊前往網站播放完整循環影片」。
     videoTag = '<a href="' + esc_(videoUrl) + '" target="_blank" style="text-decoration:none">' +
-      '<img src="' + esc_(ECARD_LOOP_GIF_URL) + '" alt="電子喜帖（自動循環播放）" width="430" style="display:block;width:100%;max-width:430px;height:auto;border:0;border-radius:2px;margin:0 auto">' +
-      '<div style="margin-top:8px;font-size:13px;color:#6E1626;letter-spacing:.08em">▶ 點此觀看完整循環影片</div></a>';
+      '<img src="' + esc_(ECARD_LOOP_GIF_URL) + '" alt="電子喜帖（自動循環播放）" width="360" style="display:block;width:100%;max-width:360px;height:auto;border:0;border-radius:2px;margin:0 auto">' +
+      '</a>' +
+      '<div style="margin-top:10px;text-align:center"><a href="' + esc_(videoUrl) + '" target="_blank" style="color:#6E1626;text-decoration:none;font-size:13px;letter-spacing:.08em">▶ 點此觀看完整循環影片</a></div>';
   } else if (videoPoster) {
     var vpb = fetchBlob_(videoPoster);
     if (vpb) {
