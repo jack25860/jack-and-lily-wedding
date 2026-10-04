@@ -6,6 +6,7 @@
 <title>電子喜帖 · 循環播放｜三生三世・緣定今生</title>
 <meta name="description" content="Jack &amp; Lily 的電子喜帖影片，自動循環播放。三生三世，緣定今生。">
 <meta name="robots" content="noindex">
+<meta name="theme-color" content="#4A0E19">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=Cormorant+Garamond:ital,wght@0,400;1,400&family=Noto+Serif+TC:wght@300;400;500&display=swap" rel="stylesheet">
@@ -62,7 +63,7 @@ body:before{
   position:relative;width:min(100%,520px);margin:0 auto;
   aspect-ratio:3/4;
   background:#0e0b0a;border:1px solid rgba(201,169,97,.46);border-radius:3px;
-  overflow:hidden;
+  overflow:hidden;cursor:pointer;
   box-shadow:0 44px 96px -46px rgba(19,16,16,.95),0 0 0 1px rgba(201,169,97,.18) inset
 }
 .frame__video{display:block;width:100%;height:100%;object-fit:cover;background:#0e0b0a}
@@ -80,6 +81,18 @@ body:before{
 .badge i{width:6px;height:6px;border-radius:50%;background:var(--gold);flex:none;animation:pulse 2.4s var(--ease) infinite}
 @keyframes pulse{0%,to{opacity:.45;transform:scale(.86)}50%{opacity:1;transform:scale(1.16)}}
 
+/* ── 音效提示 ── */
+.hint{
+  margin:0;display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  padding:9px 20px;border:1px dashed rgba(201,169,97,.55);border-radius:100px;
+  background:rgba(110,22,38,.2);text-align:center;
+  font-size:clamp(.78rem,1.9vw,.86rem);letter-spacing:.16em;color:var(--gold-light)
+}
+.hint i{display:inline-block;font-style:normal;color:var(--gold);animation:notePulse 1.9s var(--ease) infinite}
+.hint b{font-weight:400;color:#fbf7ef}
+@keyframes notePulse{0%,to{opacity:.5;transform:translateY(0)}50%{opacity:1;transform:translateY(-2px)}}
+.hint.is-hidden{display:none}
+
 /* ── 說明與操作 ── */
 .note{text-align:center;max-width:44ch;font-size:clamp(.84rem,2vw,.96rem);letter-spacing:.12em;line-height:2.1;color:#f5f0e7c7}
 .note strong{color:var(--gold-light);font-weight:400}
@@ -94,6 +107,24 @@ body:before{
 .btn:hover{background:var(--wine);border-color:var(--wine);color:#fbf7ef;transform:translateY(-2px)}
 .btn--solid{background:var(--wine);border-color:var(--wine);color:var(--gold-light)}
 .btn--solid:hover{background:var(--wine-deep)}
+
+/* 音效按鈕（主要行動：金色實心，未開啟時帶呼吸光環） */
+.btn--sound{
+  position:relative;
+  background:linear-gradient(180deg,#EBDCB6,var(--gold));
+  border-color:var(--gold);color:var(--wine-dark)
+}
+.btn--sound:hover{background:linear-gradient(180deg,var(--gold),#B08F45);border-color:#B08F45;color:var(--wine-dark)}
+.btn--sound .ico{font-size:1.04rem;line-height:1;transform:translateY(-1px)}
+.btn--sound.is-on{background:none;border-color:var(--line-gold);color:var(--gold-light)}
+.btn--sound.is-on:hover{background:var(--wine);border-color:var(--wine);color:#fbf7ef}
+.btn--sound.is-on .ico{filter:none}
+.btn--sound:not(.is-on):after{
+  content:"";position:absolute;inset:-5px;border:1px solid rgba(201,169,97,.6);border-radius:4px;
+  animation:soundRing 2.4s var(--ease) infinite;pointer-events:none
+}
+@keyframes soundRing{0%{opacity:.9;transform:scale(1)}72%,to{opacity:0;transform:scale(1.07)}}
+
 .foot{margin-top:clamp(6px,1.6vw,14px);text-align:center;font-size:.72rem;letter-spacing:.2em;color:var(--grey-1)}
 .foot a{color:var(--gold);text-decoration:underline;text-underline-offset:4px}
 .foot a:hover{color:var(--gold-light)}
@@ -104,7 +135,7 @@ body:before{
   .actions{flex-direction:column}
 }
 @media(prefers-reduced-motion:reduce){
-  .badge i{animation:none}
+  .badge i,.hint i,.btn--sound:not(.is-on):after{animation:none}
   *{transition-duration:.001ms!important}
 }
 </style>
@@ -125,8 +156,8 @@ body:before{
            poster="images/ecard-video-poster.jpg"
            autoplay loop muted playsinline preload="auto"
            controlslist="nodownload" disablepictureinpicture
-           aria-label="電子喜帖影片，自動循環播放">
-      <!-- 依序嘗試：MP4／H.264（Safari、iOS、多數桌面瀏覽器）→ WebM／VP9 與 Opus（VP9 系瀏覽器）。 -->
+           aria-label="電子喜帖影片，自動循環播放；可開啟音效">
+      <!-- 依序嘗試：MP4／H.264 + AAC（Safari、iOS、多數桌面瀏覽器）→ WebM／VP9 + Opus（VP9 系瀏覽器）。 -->
       <source src="media/ecard-video.mp4" type="video/mp4">
       <source src="media/ecard-video.webm" type="video/webm">
       您的瀏覽器不支援影片播放，請<a href="media/ecard-video.mp4">下載影片</a>觀看。
@@ -135,16 +166,21 @@ body:before{
     <span class="badge"><i aria-hidden="true"></i><span>LOOP · 循環播放</span></span>
   </div>
 
+  <p class="hint" id="soundHint"><i aria-hidden="true">&#9834;</i> 想聽音樂，<b>點一下即可開啟音效</b></p>
+
   <p class="note">
     三生三世，緣定今生。<br>
-    <strong>影片會自動循環播放</strong>，可靜靜看完這一段屬於我們的故事。
+    <strong>影片會自動循環播放</strong>；點「開啟音效」或影片畫面，即可聽見這一段的配樂。
   </p>
 
   <div class="actions">
-    <a class="btn btn--solid" href="./">← 回到婚禮網站</a>
+    <button class="btn btn--sound" type="button" id="soundBtn" aria-pressed="false" aria-label="開啟音效">
+      <span class="ico" id="soundIco" aria-hidden="true">&#128263;</span><span id="soundLabel">開啟音效</span>
+    </button>
     <button class="btn" type="button" id="toggleBtn" aria-pressed="false">
       <span id="toggleLabel">暫停播放</span>
     </button>
+    <a class="btn btn--solid" href="./">← 回到婚禮網站</a>
   </div>
 
   <p class="foot">
@@ -160,35 +196,82 @@ body:before{
   var v = document.getElementById("ecardVideo");
   var btn = document.getElementById("toggleBtn");
   var label = document.getElementById("toggleLabel");
-  if(!v || !btn || !label) return;
+  var soundBtn = document.getElementById("soundBtn");
+  var soundLabel = document.getElementById("soundLabel");
+  var soundIco = document.getElementById("soundIco");
+  var hint = document.getElementById("soundHint");
+  var frame = document.querySelector(".frame");
+  if(!v || !btn || !label || !soundBtn) return;
 
-  function sync(){
+  function syncPlay(){
     var playing = !v.paused && !v.ended;
     btn.setAttribute("aria-pressed", playing ? "true" : "false");
     label.textContent = playing ? "暫停播放" : "繼續播放";
   }
-  v.addEventListener("play", sync);
-  v.addEventListener("pause", sync);
-  v.addEventListener("ended", sync);
+
+  // 音效狀態 → 按鈕外觀、圖示、文字、提示
+  function syncSound(){
+    var on = !v.muted;
+    soundBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    soundBtn.setAttribute("aria-label", on ? "關閉音效" : "開啟音效");
+    soundBtn.classList.toggle("is-on", on);
+    if(soundIco) soundIco.textContent = on ? "\uD83D\uDD0A" : "\uD83D\uDD07";
+    if(soundLabel) soundLabel.textContent = on ? "關閉音效" : "開啟音效";
+    if(hint) hint.classList.toggle("is-hidden", on);
+  }
+
+  function ensurePlay(){
+    var p = v.play();
+    if(p && typeof p.catch === "function"){ p.catch(function(){}); }
+  }
+
+  // 解除靜音必須在使用者手勢中執行 → 由 click 觸發，不會被瀏覽器政策中斷
+  function soundOn(){
+    v.muted = false;
+    if(v.volume === 0){ v.volume = 1; }
+    ensurePlay();
+    syncSound();
+  }
+  function soundOff(){ v.muted = true; syncSound(); }
+  function toggleSound(){ if(v.muted){ soundOn(); } else { soundOff(); } }
+
+  v.addEventListener("play", syncPlay);
+  v.addEventListener("pause", syncPlay);
+  v.addEventListener("ended", syncPlay);
+  v.addEventListener("volumechange", syncSound);
 
   btn.addEventListener("click", function(){
-    if(v.paused){ var p = v.play(); if(p && p.catch){ p.catch(function(){}); } }
-    else { v.pause(); }
+    if(v.paused){ ensurePlay(); } else { v.pause(); }
   });
 
-  // 部分行動瀏覽器（省電模式）會忽略 autoplay；改為靜音後重試一次，仍失敗則不報錯。
-  v.muted = true;
-  function tryPlay(){
-    var attempt = v.play();
-    if(attempt && typeof attempt.catch === "function"){
-      attempt.catch(function(){ sync(); });
-    }
+  soundBtn.addEventListener("click", function(e){
+    e.stopPropagation();
+    gestureUsed = true;          // 已由按鈕處理，之後不必再自動解除靜音
+    toggleSound();
+  });
+
+  // 點影片畫面同樣可切換音效
+  if(frame){
+    frame.addEventListener("click", function(){ toggleSound(); });
   }
-  // 來源切換（例如 H.264 無法解碼而改用 WebM）後重新嘗試播放，確保仍會自動循環。
-  v.addEventListener("loadeddata", function(){ if(v.paused){ tryPlay(); } sync(); });
-  v.addEventListener("canplay",  function(){ if(v.paused){ tryPlay(); } sync(); });
-  tryPlay();
-  sync();
+
+  // 首次點擊頁面任意處（連結、按鈕、影片框除外）→ 僅嘗試解除靜音一次
+  var gestureUsed = false;
+  document.addEventListener("click", function(e){
+    if(gestureUsed) return;
+    var t = e.target;
+    if(t && t.closest && (t.closest("a") || t.closest("#soundBtn") || t.closest("#toggleBtn") || t.closest(".frame"))) return;
+    gestureUsed = true;
+    if(v.muted){ soundOn(); } else { syncSound(); }
+  }, true);
+
+  // 符合瀏覽器政策：靜音自動播放 → 進頁面即自動循環；使用者點按鈕即可聽音樂
+  v.muted = true;
+  v.addEventListener("loadeddata", function(){ if(v.paused){ ensurePlay(); } syncPlay(); syncSound(); });
+  v.addEventListener("canplay",  function(){ if(v.paused){ ensurePlay(); } syncPlay(); syncSound(); });
+  ensurePlay();
+  syncPlay();
+  syncSound();
 })();
 </script>
 </body>
