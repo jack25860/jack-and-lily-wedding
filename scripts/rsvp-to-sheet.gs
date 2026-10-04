@@ -402,7 +402,7 @@ function sendEcard_(data) {
     // v45：信件內無法自動播放影片（Gmail／Outlook 封鎖 <video> 與 JS，autoplay／loop 不生效），
     // 故改為「公開網址的循環 GIF（信箱自動播放）」＋「點擊前往網站播放完整循環影片」。
     videoTag = '<a href="' + esc_(videoUrl) + '" target="_blank" style="text-decoration:none">' +
-      '<img src="' + esc_(ECARD_LOOP_GIF_URL) + '" alt="電子喜帖（自動循環播放）" width="430" style="display:block;width:100%;max-width:560px;height:auto;border:0;border-radius:2px">' +
+      '<img src="' + esc_(ECARD_LOOP_GIF_URL) + '" alt="電子喜帖（自動循環播放）" width="430" style="display:block;width:100%;max-width:430px;height:auto;border:0;border-radius:2px;margin:0 auto">' +
       '<div style="margin-top:8px;font-size:13px;color:#6E1626;letter-spacing:.08em">▶ 點此觀看完整循環影片</div></a>';
   } else if (videoPoster) {
     var vpb = fetchBlob_(videoPoster);
