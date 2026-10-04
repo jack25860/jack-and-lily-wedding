@@ -110,6 +110,20 @@ body:before{
 .foot a{color:var(--gold);text-decoration:underline;text-underline-offset:4px}
 .foot a:hover{color:var(--gold-light)}
 
+/* ── v55：漂浮音效開關（與結婚網站 .music 同位置、同視覺：酒紅 #6E1626／金 #C9A961／宣紙米色） ── */
+.sound{position:fixed;right:clamp(14px,2.4vw,30px);bottom:clamp(14px,2.4vw,30px);z-index:800}
+.sound__btn{display:flex;align-items:center;gap:12px;padding:12px 20px;background:rgba(15,12,11,.82);border:1px solid var(--line-gold);border-radius:100px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:background .55s var(--ease),border-color .55s,transform .55s var(--ease)}
+.sound__btn:hover{background:rgba(110,22,38,.9);transform:translateY(-2px)}
+.sound__bars{display:flex;align-items:flex-end;gap:2.5px;height:14px}
+.sound__bars i{display:block;width:2px;height:4px;background:var(--gold);transition:height .4s var(--ease),background .4s}
+.sound__btn.playing .sound__bars i{background:var(--gold-light);animation:eq .95s ease-in-out infinite alternate}
+.sound__btn.playing .sound__bars i:nth-child(2){animation-delay:.14s}
+.sound__btn.playing .sound__bars i:nth-child(3){animation-delay:.28s}
+.sound__btn.playing .sound__bars i:nth-child(4){animation-delay:.42s}
+@keyframes eq{0%{height:4px}100%{height:14px}}
+.sound__label{font-family:var(--en-caps);font-size:.6rem;letter-spacing:.26em;color:var(--gold-light);white-space:nowrap}
+@media(max-width:640px){.sound__label{display:none}.sound__btn{padding:14px}}
+
 @media(max-width:640px){
   .frame{width:100%}
   .btn{width:100%}
@@ -165,6 +179,14 @@ body:before{
 
 </div>
 
+<!-- v55：漂浮音效開關（預設開啟；可開／關聲音，影片維持循環播放） -->
+<div class="sound" id="sound">
+  <button class="sound__btn playing" id="soundBtn" aria-label="關閉影片音效" aria-pressed="true">
+    <span class="sound__bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    <span class="sound__label" id="soundLabel">SOUND ON</span>
+  </button>
+</div>
+
 <script>
 /* v54 Android 影片播放修正（使用者回報：電子喜帖在 Android 手機上，只要點擊畫面周圍或滑動頁面，影片就會暫停；iPhone 正常）：
    根因（v52/v53 皆未解）：Android Chrome 對「點擊 <video> 區域」的預設行為與 iOS 不同 ——
@@ -207,8 +229,10 @@ body:before{
   var soundBlocked = false;   // 被自動播放政策擋下時先靜音續播，首次互動再自動開聲
   var unlocked = false;
   var lastPlayAt = 0;
+  var userOff = false;        // v55：使用者是否已用漂浮開關關閉音效（預設 false＝預設開啟）
 
   function sound(){
+    if(userOff){ return; }   // v55：使用者已關閉音效時，不再自動解除靜音
     try{
       v.muted = false;
       v.defaultMuted = false;
@@ -275,9 +299,12 @@ body:before{
   window.addEventListener("scroll", function(){ window.setTimeout(resume, 0); }, {passive:true});
 
   // 5) 首次任何互動即自動解除靜音（不是開關；頁面上不會有任何音效控制）
-  function unlock(){
+  function unlock(e){
     if(unlocked) return;
+    // v55：若首次互動就是點擊漂浮音效開關，交由開關處理，避免「先自動開聲、再被開關關掉」的競態
+    if(e && e.target && e.target.closest && e.target.closest("#soundBtn")) return;
     unlocked = true;
+    if(userOff){ var p0 = v.play(); if(p0 && typeof p0.catch === "function"){ p0.catch(function(){}); } return; }
     soundBlocked = false;
     sound();
     var p = v.play();
@@ -295,6 +322,35 @@ body:before{
     if(v.ended){ try{ v.currentTime = 0; }catch(e){} play(); return; }
     if(v.paused){ play(); }
   }, 500);
+
+  // 7) v55：漂浮音效開關（預設開啟；可開／關聲音，影片維持循環播放）
+  var soundBtn = document.getElementById("soundBtn");
+  var soundLabel = document.getElementById("soundLabel");
+  function syncSound(){
+    var on = !userOff;
+    if(soundBtn){
+      soundBtn.classList.toggle("playing", on);
+      soundBtn.setAttribute("aria-pressed", on ? "true" : "false");
+      soundBtn.setAttribute("aria-label", on ? "關閉影片音效" : "開啟影片音效");
+    }
+    if(soundLabel){ soundLabel.textContent = on ? "SOUND ON" : "SOUND OFF"; }
+  }
+  if(soundBtn){
+    soundBtn.addEventListener("click", function(e){
+      e.stopPropagation();
+      if(v.muted || v.volume === 0){
+        userOff = false; soundBlocked = false; unlocked = true;
+        sound();
+        var p = v.play(); if(p && typeof p.catch === "function"){ p.catch(function(){}); }
+      } else {
+        userOff = true;
+        try{ v.muted = true; }catch(err){}
+      }
+      syncSound();
+    });
+  }
+  ["volumechange","play","pause","playing"].forEach(function(ev){ v.addEventListener(ev, syncSound); });
+  syncSound();
 
   play();
 })();

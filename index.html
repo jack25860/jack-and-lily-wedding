@@ -106,6 +106,8 @@ sweep(document)})();</script>
 <link rel="preload" as="image" href="images/hero.jpg">
 <!-- v52：背景音樂預先下載，讓開啟後 3 秒內即可出聲（不等待 JS 初始化） -->
 <link rel="preload" as="audio" href="audio/wedding-theme.mp3" type="audio/mpeg">
+<!-- v55：清除舊版可能殘留的「音樂關閉／靜音」localStorage 值，確保背景音樂一律預設開啟（不受舊狀態影響） -->
+<script>(function(){try{var ks=[],i;for(i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&/music|muted|bgm|sound/i.test(k)){ks.push(k)}}for(i=0;i<ks.length;i++){localStorage.removeItem(ks[i])}}catch(e){}})();</script>
 </head>
 <body class="is-loading">
 
