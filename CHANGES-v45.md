@@ -50,6 +50,7 @@
 |---|---|---|
 | `media/ecard-loop.gif` | **430 × 573**、6 fps、64 色、**來回（boomerang）無縫循環** | **1.96 MB** |
 | `media/ecard-video.mp4` | 720 × 960、H.264 + AAC、`+faststart` | 4.4 MB |
+| `media/ecard-video.webm` | 720 × 960、**VP9 + Opus**（H.264 無法解碼時的備援） | 6.7 MB |
 | `images/ecard-video-poster.jpg` | 720 × 960 海報圖 | 161 KB |
 
 - **GIF 循環技巧**：取影片 8.0–10.6 秒（花瓣紛飛、字卡浮現段），**正放後倒放拼接**，首尾影格完全相同 → 循環無跳格、無縫接軌。
@@ -64,12 +65,24 @@
 |---|---|
 | `ecard-video.html` | **新增** — 網站端影片播放頁（直式 3:4 金框、酒紅／金／宣紙米色、自動循環播放＋暫停鈕、返回網站連結、RWD） |
 | `media/ecard-loop.gif` | **新增** — 信件內自動循環播放的 GIF |
-| `media/ecard-video.mp4` | **新增** — 網路版循環影片 |
+| `media/ecard-video.mp4` | **新增** — 網路版循環影片（H.264） |
+| `media/ecard-video.webm` | **新增** — 備援影片（VP9 + Opus，供不支援 H.264 的瀏覽器） |
 | `images/ecard-video-poster.jpg` | **新增** — 影片海報圖 |
 | `scripts/rsvp-to-sheet.gs` | 信件 HTML：影片區塊改為「**循環 GIF ＋ 點擊看完整影片**」；新增 `ECARD_LOOP_GIF_URL`；`ECARD_VIDEO_URL` 填入播放頁網址；`ENDPOINT_VERSION` → `v45` |
 | `js/config.js` | `ECARD_VIDEO_URL` 填入播放頁網址（原本為空字串） |
 
 **維持不變**：酒紅 `#6E1626`／金 `#C9A961`／宣紙米色；RSVP 送出流程；電子喜帖為**手動寄送**、信件內直接內嵌圖片與隨機婚紗照（**142 張全池**）；大人出席人數上限 10 人；電子喜帖去重窗期 8 秒；寄送成功後清空輸入框；結婚預告片區塊（v44 倒數上映文案）；婚禮當日注意事項區塊。
+
+### 影片格式備援（雙來源）
+
+播放頁使用**雙來源**而非單一檔案，確保任何瀏覽器都能自動循環播放：
+
+```html
+<source src="media/ecard-video.mp4"  type="video/mp4">   <!-- H.264：Safari / iOS / 多數桌面瀏覽器 -->
+<source src="media/ecard-video.webm" type="video/webm">  <!-- VP9：支援 VP9 但不含 H.264 解碼器的瀏覽器 -->
+```
+
+**為什麼需要 WebM？** 驗證時發現本機的開源 Chromium（Playwright headless shell）**不含 H.264 解碼器**，載入 MP4 時出現 `DEMUXER_ERROR_NO_SUPPORTED_STREAMS`，影片完全無法播放。真實使用者裝置（Safari／Chrome／Edge 正式版）皆有 H.264，MP4 即足夠；但加上 VP9 備援可讓**不含專利解碼器**的瀏覽器環境也能正常播放，屬提升相容性、非修補功能缺陷。播放器另於 `loadeddata` / `canplay` 時重試 `play()`，確保切換來源後仍自動循環。
 
 ---
 

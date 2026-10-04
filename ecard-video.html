@@ -122,11 +122,15 @@ body:before{
 
   <div class="frame">
     <video id="ecardVideo" class="frame__video"
-           src="media/ecard-video.mp4"
            poster="images/ecard-video-poster.jpg"
            autoplay loop muted playsinline preload="auto"
            controlslist="nodownload" disablepictureinpicture
-           aria-label="電子喜帖影片，自動循環播放"></video>
+           aria-label="電子喜帖影片，自動循環播放">
+      <!-- 依序嘗試：MP4／H.264（Safari、iOS、多數桌面瀏覽器）→ WebM／VP9 與 Opus（VP9 系瀏覽器）。 -->
+      <source src="media/ecard-video.mp4" type="video/mp4">
+      <source src="media/ecard-video.webm" type="video/webm">
+      您的瀏覽器不支援影片播放，請<a href="media/ecard-video.mp4">下載影片</a>觀看。
+    </video>
     <div class="frame__inner" aria-hidden="true"></div>
     <span class="badge"><i aria-hidden="true"></i><span>LOOP · 循環播放</span></span>
   </div>
@@ -174,10 +178,16 @@ body:before{
 
   // 部分行動瀏覽器（省電模式）會忽略 autoplay；改為靜音後重試一次，仍失敗則不報錯。
   v.muted = true;
-  var attempt = v.play();
-  if(attempt && typeof attempt.catch === "function"){
-    attempt.catch(function(){ sync(); });
+  function tryPlay(){
+    var attempt = v.play();
+    if(attempt && typeof attempt.catch === "function"){
+      attempt.catch(function(){ sync(); });
+    }
   }
+  // 來源切換（例如 H.264 無法解碼而改用 WebM）後重新嘗試播放，確保仍會自動循環。
+  v.addEventListener("loadeddata", function(){ if(v.paused){ tryPlay(); } sync(); });
+  v.addEventListener("canplay",  function(){ if(v.paused){ tryPlay(); } sync(); });
+  tryPlay();
   sync();
 })();
 </script>
