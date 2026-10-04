@@ -119,7 +119,7 @@ body:before{
     <p class="eyebrow">E-INVITATION</p>
     <h1 class="title">電子喜帖</h1>
     <div class="rule"><span></span></div>
-    <p class="names"><span>王宥岑</span><em>&amp;</em><span>杜伊穠</span></p>
+    <p class="names"><span>王宥岑</span><em>&amp;</em><span>杜伊儀</span></p>
   </header>
 
   <div class="frame">
@@ -154,21 +154,24 @@ body:before{
 </div>
 
 <script>
-/* v52 影片卡住修正：任何事件（點擊／暫停／緩衝／visibility 切換／play() 失敗）都不會讓影片停止，
-   並以硬性看門狗最終保底，確保影片持續循環運轉。
-   音效：預設 muted=false、volume>0；頁面上不提供任何音效開關（政策擋下時於首次互動自動解除靜音）。
-   v52 新增：明確設定 muted + playsinline + preload，並在必要時主動 load()，
-   解決行動瀏覽器「非靜音自動播放被政策擋下 → 影片完全不啟動」的問題。 */
+/* v53 Android 影片播放修正（使用者回報：電子喜帖在 Android 手機上「像影片一樣」反覆跳回開頭）：
+   根因：v52 的硬性看門狗在「播放中但 currentTime 未前進」連續 8 次（約 3.2 秒）時呼叫 load()。
+   在 Android Chrome 上，行動網路／省電模式／緩衝期間 currentTime 常會短暫停頓，
+   於是看門狗反覆 load() → 影片不斷跳回開頭（iPhone 因事件序列不同而未觸發）。
+   修正：
+   1) 移除「播放中 currentTime 未前進就 load()」的邏輯 —— 絕不因緩衝而重新載入影片。
+   2) 看門狗改為「只在真正 paused 時 play()」，並加入節流，避免 play() 風暴。
+   3) 移除會與瀏覽器原生播放／暫停互相打架的 touchend／dblclick／mousedown 監聽。
+   4) 保留：autoplay loop muted playsinline、首次互動自動解除靜音、stalled/waiting 自我修復、
+      visibilitychange/focus/pageshow 續播、ended 歸零續播。
+   5) 音效：預設 muted=false、volume>0；頁面上不提供任何音效開關（政策擋下時於首次互動自動解除靜音）。 */
 (function(){
   "use strict";
   var v = document.getElementById("ecardVideo");
   if(!v) return;
 
-  /* v52：強化初始播放。行動瀏覽器（iOS/Android）即使有 autoplay 屬性，仍可能因
-     「非靜音自動播放」政策而完全不啟動；因此明確設定 playsinline + preload，
-     並在尚未開始載入時主動 load()，確保影片一定會開始下載與播放。
-     音效維持 v51 的「預設開啟」：由 play() 內的 sound() 解除靜音；
-     若政策擋下則自動退回靜音續播，並於首次互動自動開聲（頁面不提供任何音效開關）。 */
+  /* 強化初始播放：行動瀏覽器（iOS/Android）即使有 autoplay 屬性，仍可能因「非靜音自動播放」政策而不啟動；
+     因此明確設定 playsinline + preload，並在尚未開始載入時主動 load()，確保影片一定會開始下載與播放。 */
   try{
     v.playsInline = true;
     v.setAttribute("playsinline","");
@@ -180,6 +183,7 @@ body:before{
 
   var soundBlocked = false;   // 被自動播放政策擋下時先靜音續播，首次互動再自動開聲
   var unlocked = false;
+  var lastPlayAt = 0;
 
   function sound(){
     try{
@@ -190,15 +194,20 @@ body:before{
     }catch(e){}
   }
 
-  // 唯一的播放入口：永遠嘗試播放；play() 被拒也絕不讓影片就此停下
+  // 唯一的播放入口：只在「真的暫停」時才呼叫 play()，並節流，避免 play() 風暴
   function play(){
-    if(!soundBlocked){ sound(); }
+    if(document.hidden){ return; }
+    if(!soundBlocked){ sound(); }               // 一律確保「預設開啟配樂」的意圖（設定屬性不會被政策擋）
+    if(!v.paused && !v.ended){ return; }        // 已在播放 → 不重複呼叫 play()
+    var now = Date.now();
+    if(now - lastPlayAt < 300){ return; }       // 節流：300ms 內不重複
+    lastPlayAt = now;
     if(v.ended){ try{ v.currentTime = 0; }catch(e){} }
     var p = v.play();
     if(p && typeof p.catch === "function"){
       p.catch(function(){
-        if(unlocked){ return; }        // 已互動過仍被擋 → 交由看門狗持續重試
-        soundBlocked = true;           // 自動播放政策擋下 → 先靜音讓畫面持續運轉
+        if(unlocked){ return; }                 // 已互動過仍被擋 → 交由看門狗持續重試
+        soundBlocked = true;                    // 自動播放政策擋下 → 先靜音讓畫面持續運轉
         try{ v.muted = true; }catch(e){}
         var p2 = v.play();
         if(p2 && typeof p2.catch === "function"){ p2.catch(function(){}); }
@@ -207,7 +216,7 @@ body:before{
   }
   function resume(){ if(document.hidden){ return; } if(v.ended || v.paused){ play(); } }
 
-  // 1) 任何「被暫停／卡住」的來源 → 立刻恢復（暫停、停頓、緩衝、錯誤皆涵蓋）
+  // 1) 任何「被暫停／卡住」的來源 → 立刻恢復（暫停、停頓、緩衝、錯誤皆涵蓋）；絕不 load()
   ["pause","stalled","waiting","suspend","emptied","abort"].forEach(function(ev){
     v.addEventListener(ev, function(){ window.setTimeout(resume, 0); });
   });
@@ -220,7 +229,8 @@ body:before{
   });
 
   // 3) 點擊畫面任何一處都絕不暫停影片（capture：先於任何其他處理器）
-  ["click","pointerdown","mousedown","touchstart","touchend","dblclick"].forEach(function(t){
+  //    v53：不再監聽 touchend／dblclick／mousedown，避免與瀏覽器原生播放／暫停互相打架。
+  ["click","pointerdown","touchstart"].forEach(function(t){
     document.addEventListener(t, function(){ window.setTimeout(resume, 0); }, true);
   });
   document.addEventListener("keydown", function(){ window.setTimeout(resume, 0); }, true);
@@ -245,17 +255,13 @@ body:before{
   });
   window.addEventListener("scroll", unlock, {passive:true});
 
-  // 6) 硬性看門狗：每 400ms 檢查一次，只要該在播放卻停了就重啟（最終保底）
-  var lastT = -1, frozen = 0;
+  // 6) 看門狗：每 500ms 檢查一次，只在「真的暫停」時續播（最終保底）。
+  //    v53：移除「播放中 currentTime 未前進就 load()」——那正是 Android 上影片反覆跳回開頭的原因。
   window.setInterval(function(){
     if(document.hidden){ return; }
     if(v.ended){ try{ v.currentTime = 0; }catch(e){} play(); return; }
-    if(v.paused){ play(); return; }
-    // v52：播放中但時間完全沒有前進（解碼／緩衝卡死）→ 強制重新載入並續播
-    if(v.currentTime === lastT){ frozen++; } else { frozen = 0; }
-    lastT = v.currentTime;
-    if(frozen >= 8){ frozen = 0; try{ v.load(); }catch(e){} play(); }
-  }, 400);
+    if(v.paused){ play(); }
+  }, 500);
 
   play();
 })();
