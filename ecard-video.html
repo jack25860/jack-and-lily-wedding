@@ -67,6 +67,16 @@ body:before{
   box-shadow:0 44px 96px -46px rgba(19,16,16,.95),0 0 0 1px rgba(201,169,97,.18) inset
 }
 .frame__video{display:block;width:100%;height:100%;object-fit:cover;background:#0e0b0a}
+/* v54：影片帶原生 controls（讓 Android Chrome 的「點擊影片」行為改為切換控制列，而非暫停播放），
+   但以 CSS 將原生控制列完全隱藏，維持 v53 的極簡視覺與「頁面上不出現任何音效開關」的設計。 */
+.frame__video::-webkit-media-controls,
+.frame__video::-webkit-media-controls-enclosure,
+.frame__video::-webkit-media-controls-panel,
+.frame__video::-webkit-media-controls-play-button,
+.frame__video::-webkit-media-controls-start-playback-button,
+.frame__video::-webkit-media-controls-overlay-play-button{display:none!important;-webkit-appearance:none!important;opacity:0!important;pointer-events:none!important}
+/* v54：透明防護層，蓋在影片之上，攔截所有點擊／觸控，確保任何 tap 都不會傳到 <video> 而觸發原生暫停。 */
+.frame__shield{position:absolute;inset:0;z-index:2;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .frame__inner{position:absolute;inset:12px;border:1px solid rgba(201,169,97,.28);pointer-events:none}
 .frame__inner:before,.frame__inner:after{content:"";position:absolute;width:26px;height:26px;border:1px solid rgba(201,169,97,.6)}
 .frame__inner:before{top:-1px;left:-1px;border-right:0;border-bottom:0}
@@ -126,13 +136,15 @@ body:before{
     <video id="ecardVideo" class="frame__video"
            poster="images/ecard-video-poster.jpg"
            autoplay loop muted playsinline preload="auto"
-           controlslist="nodownload" disablepictureinpicture
+           controls controlslist="nodownload noplaybackrate nofullscreen" disablepictureinpicture
            aria-label="電子喜帖影片，自動循環播放並自動開啟配樂">
       <!-- 依序嘗試：MP4／H.264 + AAC（Safari、iOS、多數桌面瀏覽器）→ WebM／VP9 + Opus（VP9 系瀏覽器）。 -->
       <source src="media/ecard-video.mp4" type="video/mp4">
       <source src="media/ecard-video.webm" type="video/webm">
       您的瀏覽器不支援影片播放，請<a href="media/ecard-video.mp4">下載影片</a>觀看。
     </video>
+    <!-- v54：透明防護層，攔截所有點擊／觸控，避免任何 tap 傳到 <video> 觸發 Android 原生暫停。 -->
+    <div class="frame__shield" aria-hidden="true"></div>
     <div class="frame__inner" aria-hidden="true"></div>
     <span class="badge"><i aria-hidden="true"></i><span>LOOP · 循環播放</span></span>
   </div>
@@ -154,7 +166,18 @@ body:before{
 </div>
 
 <script>
-/* v53 Android 影片播放修正（使用者回報：電子喜帖在 Android 手機上「像影片一樣」反覆跳回開頭）：
+/* v54 Android 影片播放修正（使用者回報：電子喜帖在 Android 手機上，只要點擊畫面周圍或滑動頁面，影片就會暫停；iPhone 正常）：
+   根因（v52/v53 皆未解）：Android Chrome 對「點擊 <video> 區域」的預設行為與 iOS 不同 ——
+   沒有原生 controls 的 <video>，Android Chrome 會把 tap 當成「切換播放／暫停」，
+   因此點到影片（或滑動時手指落在影片上）就會 pause()。
+   修正（v54）：
+   1) <video> 加上原生 controls：Android Chrome 對「有 controls 的影片」點擊行為改為切換控制列而非暫停播放。
+   2) 以 CSS 將原生控制列完全隱藏（::-webkit-media-controls*），維持極簡視覺且不出現任何音效開關。
+   3) 影片上方加透明防護層 .frame__shield，攔截所有點擊／觸控，任何 tap 都不會傳到 <video>。
+   4) 保留 v53 全部修正（絕不因緩衝 load()、只在真正 paused 時 play()、stalled/waiting 自我修復、
+      visibilitychange/focus/pageshow 續播、ended 歸零續播、首次互動自動解除靜音）。
+   ── 以下為 v53 修正紀錄 ──
+   v53 Android 影片播放修正（使用者回報：電子喜帖在 Android 手機上「像影片一樣」反覆跳回開頭）：
    根因：v52 的硬性看門狗在「播放中但 currentTime 未前進」連續 8 次（約 3.2 秒）時呼叫 load()。
    在 Android Chrome 上，行動網路／省電模式／緩衝期間 currentTime 常會短暫停頓，
    於是看門狗反覆 load() → 影片不斷跳回開頭（iPhone 因事件序列不同而未觸發）。
@@ -206,8 +229,9 @@ body:before{
     var p = v.play();
     if(p && typeof p.catch === "function"){
       p.catch(function(){
-        if(unlocked){ return; }                 // 已互動過仍被擋 → 交由看門狗持續重試
-        soundBlocked = true;                    // 自動播放政策擋下 → 先靜音讓畫面持續運轉
+        // v54：被自動播放政策擋下（含 Android 上「非手勢的 unmuted play」）→ 先靜音讓畫面持續運轉，
+        // 絕不讓影片卡住。移除 v53 的「已互動就 return」早退，避免 Android 上永久 paused。
+        soundBlocked = true;
         try{ v.muted = true; }catch(e){}
         var p2 = v.play();
         if(p2 && typeof p2.catch === "function"){ p2.catch(function(){}); }
@@ -220,6 +244,8 @@ body:before{
   ["pause","stalled","waiting","suspend","emptied","abort"].forEach(function(ev){
     v.addEventListener(ev, function(){ window.setTimeout(resume, 0); });
   });
+  // v54：pause 事件立即復播（不等待 setTimeout、且略過節流），把 Android 原生 tap-to-pause 的體感降到最低。
+  v.addEventListener("pause", function(){ if(!document.hidden){ lastPlayAt = 0; play(); } });
   v.addEventListener("ended", function(){ try{ v.currentTime = 0; }catch(e){} play(); });
   v.addEventListener("error", function(){ window.setTimeout(resume, 150); }, true);
 
@@ -231,9 +257,16 @@ body:before{
   // 3) 點擊畫面任何一處都絕不暫停影片（capture：先於任何其他處理器）
   //    v53：不再監聽 touchend／dblclick／mousedown，避免與瀏覽器原生播放／暫停互相打架。
   ["click","pointerdown","touchstart"].forEach(function(t){
-    document.addEventListener(t, function(){ window.setTimeout(resume, 0); }, true);
+    document.addEventListener(t, function(){ resume(); window.setTimeout(resume, 0); }, true);
   });
   document.addEventListener("keydown", function(){ window.setTimeout(resume, 0); }, true);
+  // v54：影片上方透明防護層攔截所有點擊／觸控，任何 tap 都不會傳到 <video> 觸發原生暫停。
+  var shield = document.querySelector(".frame__shield");
+  if(shield){
+    ["click","pointerdown","touchstart","touchend","mousedown","mouseup","dblclick"].forEach(function(t){
+      shield.addEventListener(t, function(){ resume(); window.setTimeout(resume, 0); }, {passive:true});
+    });
+  }
 
   // 4) 分頁／視窗切換後回復時立即續播
   document.addEventListener("visibilitychange", function(){ if(!document.hidden){ resume(); } });
