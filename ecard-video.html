@@ -154,58 +154,89 @@ body:before{
 </div>
 
 <script>
+/* v51 影片卡住修正：任何事件（點擊／暫停／緩衝／visibility 切換／play() 失敗）都不會讓影片停止，
+   並以硬性看門狗最終保底，確保影片持續循環運轉。
+   音效：預設 muted=false、volume>0；頁面上不提供任何音效開關（政策擋下時於首次互動自動解除靜音）。 */
 (function(){
   "use strict";
   var v = document.getElementById("ecardVideo");
   if(!v) return;
 
-  function ensurePlay(){
-    var p = v.play();
-    if(p && typeof p.catch === "function"){ p.catch(function(){}); }
+  var soundBlocked = false;   // 被自動播放政策擋下時先靜音續播，首次互動再自動開聲
+  var unlocked = false;
+
+  function sound(){
+    try{
+      v.muted = false;
+      v.defaultMuted = false;
+      v.removeAttribute("muted");
+      if(!v.volume){ v.volume = 1; }
+    }catch(e){}
   }
 
-  // 強制開啟音效：不提供任何關閉選項
-  function forceSound(){
-    v.muted = false;
-    v.defaultMuted = false;
-    v.removeAttribute("muted");
-    if(!v.volume){ v.volume = 1; }
-  }
-
-  // 先嘗試「有聲自動播放」；若被瀏覽器自動播放政策擋下，
-  // 先靜音播放確保畫面會動，待使用者第一次任何互動時立即解除靜音並播放（不提供關閉選項）。
-  function start(){
-    forceSound();
+  // 唯一的播放入口：永遠嘗試播放；play() 被拒也絕不讓影片就此停下
+  function play(){
+    if(!soundBlocked){ sound(); }
+    if(v.ended){ try{ v.currentTime = 0; }catch(e){} }
     var p = v.play();
     if(p && typeof p.catch === "function"){
       p.catch(function(){
-        v.muted = true;
-        ensurePlay();
+        if(unlocked){ return; }        // 已互動過仍被擋 → 交由看門狗持續重試
+        soundBlocked = true;           // 自動播放政策擋下 → 先靜音讓畫面持續運轉
+        try{ v.muted = true; }catch(e){}
+        var p2 = v.play();
+        if(p2 && typeof p2.catch === "function"){ p2.catch(function(){}); }
       });
     }
   }
+  function resume(){ if(document.hidden){ return; } if(v.ended || v.paused){ play(); } }
 
-  var unlocked = false;
+  // 1) 任何「被暫停／卡住」的來源 → 立刻恢復（暫停、停頓、緩衝、錯誤皆涵蓋）
+  ["pause","stalled","waiting","suspend","emptied","abort"].forEach(function(ev){
+    v.addEventListener(ev, function(){ window.setTimeout(resume, 0); });
+  });
+  v.addEventListener("ended", function(){ try{ v.currentTime = 0; }catch(e){} play(); });
+  v.addEventListener("error", function(){ window.setTimeout(resume, 150); }, true);
+
+  // 2) 載入就緒即確保播放
+  ["loadedmetadata","loadeddata","canplay","canplaythrough","playing","progress"].forEach(function(ev){
+    v.addEventListener(ev, function(){ if(v.paused){ play(); } });
+  });
+
+  // 3) 點擊畫面任何一處都絕不暫停影片（capture：先於任何其他處理器）
+  ["click","pointerdown","mousedown","touchstart","touchend","dblclick"].forEach(function(t){
+    document.addEventListener(t, function(){ window.setTimeout(resume, 0); }, true);
+  });
+  document.addEventListener("keydown", function(){ window.setTimeout(resume, 0); }, true);
+
+  // 4) 分頁／視窗切換後回復時立即續播
+  document.addEventListener("visibilitychange", function(){ if(!document.hidden){ resume(); } });
+  window.addEventListener("focus", resume);
+  window.addEventListener("pageshow", resume);
+  window.addEventListener("scroll", function(){ window.setTimeout(resume, 0); }, {passive:true});
+
+  // 5) 首次任何互動即自動解除靜音（不是開關；頁面上不會有任何音效控制）
   function unlock(){
     if(unlocked) return;
     unlocked = true;
-    forceSound();
-    ensurePlay();
+    soundBlocked = false;
+    sound();
+    var p = v.play();
+    if(p && typeof p.catch === "function"){ p.catch(function(){}); }
   }
   ["pointerdown","mousedown","touchstart","keydown","wheel"].forEach(function(t){
     document.addEventListener(t, unlock, {capture:true, passive:true});
   });
   window.addEventListener("scroll", unlock, {passive:true});
 
-  // 點擊畫面任何一處都不會暫停影片：若影片被任何來源暫停，立即恢復播放。
-  v.addEventListener("pause", function(){
-    if(!v.ended){ ensurePlay(); }
-  });
+  // 6) 硬性看門狗：每 400ms 檢查一次，只要該在播放卻停了就重啟（最終保底）
+  window.setInterval(function(){
+    if(document.hidden){ return; }
+    if(v.ended){ try{ v.currentTime = 0; }catch(e){} play(); return; }
+    if(v.paused){ play(); }
+  }, 400);
 
-  v.addEventListener("loadeddata", function(){ if(v.paused){ ensurePlay(); } });
-  v.addEventListener("canplay",  function(){ if(v.paused){ ensurePlay(); } });
-
-  start();
+  play();
 })();
 </script>
 </body>

@@ -8,22 +8,23 @@ var i=kv.indexOf("=");if(i>0){o[kv.slice(0,i)]=kv.slice(i+1)}})}
 return o})());
 if(T.presentation!=="preview"){return}
 var K="tmly:media-muted:"+String(location.pathname).replace(/[^/]*$/,"");
-var muted=false;try{muted=localStorage.getItem(K)==="1"}catch(e){}
+/* v51: 不再從 localStorage 還原靜音狀態（移除舊的『關閉』值造成的預設關閉） */
+var muted=false;
 var gestured=false;
 ["pointerdown","mousedown","keydown","touchstart"].forEach(function(t){
 document.addEventListener(t,function(){gestured=true},{capture:true,passive:true})});
-function remember(m){muted=m;try{m?localStorage.setItem(K,"1"):localStorage.removeItem(K)}catch(e){}}
+function remember(){/* v51: 不再寫入／記憶關閉狀態 */}
 function announcePaused(el){try{el.dispatchEvent(new Event("pause"))}catch(e){}}
 function harden(el){
 el.autoplay=false;el.removeAttribute("autoplay");
 if(el.getAttribute("preload")==="auto"){el.setAttribute("preload","none")}
-if(muted){el.muted=true}
+el.muted=false;if(!el.volume){el.volume=1}
 if(!gestured&&!el.paused){try{el.pause()}catch(e){}}}
 var play=HTMLMediaElement.prototype.play;
 HTMLMediaElement.prototype.play=function(){
 if(!gestured){announcePaused(this);
 return Promise.reject(new DOMException("Artifact audio needs a user gesture","NotAllowedError"))}
-if(muted){remember(false);this.muted=false}
+this.muted=false;if(!this.volume){this.volume=1}
 return play.apply(this,arguments)};
 var acProtos=[];
 function guardAC(n){
@@ -32,7 +33,6 @@ if(acProtos.indexOf(N.prototype)<0){acProtos.push(N.prototype);
 var res=N.prototype.resume;
 if(typeof res==="function"){N.prototype.resume=function(){
 if(!gestured){return Promise.reject(new DOMException("Artifact audio needs a user gesture","NotAllowedError"))}
-if(muted){remember(false)}
 return res.apply(this,arguments)}}}
 var W=function(o){var c=arguments.length?new N(o):new N();
 if(!gestured){try{c.suspend()}catch(e){}}return c};
@@ -926,7 +926,7 @@ sweep(document)})();</script>
 
 <!-- 背景音樂：預設開啟（播放中），右下角漂浮按鈕可切換開／關 -->
 <div class="music" id="music">
-  <button class="music__btn" id="musicBtn" aria-label="關閉背景音樂" aria-pressed="true">
+  <button class="music__btn playing" id="musicBtn" aria-label="關閉背景音樂" aria-pressed="true">
     <span class="music__bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
     <span class="music__label" id="musicLabel">MUSIC ON</span>
   </button>
