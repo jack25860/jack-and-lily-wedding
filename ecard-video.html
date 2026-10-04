@@ -143,9 +143,6 @@ body:before{
   </p>
 
   <div class="actions">
-    <button class="btn" type="button" id="toggleBtn" aria-pressed="false">
-      <span id="toggleLabel">暫停播放</span>
-    </button>
     <a class="btn btn--solid" href="./">← 回到婚禮網站</a>
   </div>
 
@@ -160,15 +157,7 @@ body:before{
 (function(){
   "use strict";
   var v = document.getElementById("ecardVideo");
-  var btn = document.getElementById("toggleBtn");
-  var label = document.getElementById("toggleLabel");
-  if(!v || !btn || !label) return;
-
-  function syncPlay(){
-    var playing = !v.paused && !v.ended;
-    btn.setAttribute("aria-pressed", playing ? "true" : "false");
-    label.textContent = playing ? "暫停播放" : "繼續播放";
-  }
+  if(!v) return;
 
   function ensurePlay(){
     var p = v.play();
@@ -184,7 +173,7 @@ body:before{
   }
 
   // 先嘗試「有聲自動播放」；若被瀏覽器自動播放政策擋下，
-  // 先靜音播放確保畫面會動，待使用者第一次互動時立即解除靜音（不提供關閉選項）。
+  // 先靜音播放確保畫面會動，待使用者第一次任何互動時立即解除靜音並播放（不提供關閉選項）。
   function start(){
     forceSound();
     var p = v.play();
@@ -208,19 +197,15 @@ body:before{
   });
   window.addEventListener("scroll", unlock, {passive:true});
 
-  v.addEventListener("play", syncPlay);
-  v.addEventListener("pause", syncPlay);
-  v.addEventListener("ended", syncPlay);
-
-  btn.addEventListener("click", function(){
-    if(v.paused){ ensurePlay(); } else { v.pause(); }
+  // 點擊畫面任何一處都不會暫停影片：若影片被任何來源暫停，立即恢復播放。
+  v.addEventListener("pause", function(){
+    if(!v.ended){ ensurePlay(); }
   });
 
-  v.addEventListener("loadeddata", function(){ if(v.paused){ ensurePlay(); } syncPlay(); });
-  v.addEventListener("canplay",  function(){ if(v.paused){ ensurePlay(); } syncPlay(); });
+  v.addEventListener("loadeddata", function(){ if(v.paused){ ensurePlay(); } });
+  v.addEventListener("canplay",  function(){ if(v.paused){ ensurePlay(); } });
 
   start();
-  syncPlay();
 })();
 </script>
 </body>

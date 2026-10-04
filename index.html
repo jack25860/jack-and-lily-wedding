@@ -924,8 +924,14 @@ sweep(document)})();</script>
   <span class="totop__text">TOP</span>
 </button>
 
-<!-- 背景音樂：強制播放，不提供任何開關 -->
-<audio id="bgm" loop preload="auto"></audio>
+<!-- 背景音樂：預設開啟（播放中），右下角漂浮按鈕可切換開／關 -->
+<div class="music" id="music">
+  <button class="music__btn" id="musicBtn" aria-label="關閉背景音樂" aria-pressed="true">
+    <span class="music__bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    <span class="music__label" id="musicLabel">MUSIC ON</span>
+  </button>
+  <audio id="bgm" loop preload="auto"></audio>
+</div>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
      Lightbox
