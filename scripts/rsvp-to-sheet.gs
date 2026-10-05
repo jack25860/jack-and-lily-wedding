@@ -35,11 +35,12 @@ var ECARD_VIDEO_URL = 'https://jack25860.github.io/jack-and-lily-wedding/ecard-v
  * 為什麼不用影片：Gmail／Outlook 等主流信箱會封鎖 <video> 標籤與 JavaScript，
  * autoplay／loop 在信件內不會生效；且 cid: 內嵌附件在 Gmail 網頁版不會解析。
  * 動畫 GIF 透過「公開網址」引用，是唯一會被信箱自動播放的動態形式。
- * v47 規格：320×427、31 格、32 色、約 0.94 MB（< 1 MB，加速行動網路載入）。
+ * v56 規格：480×640（HD）、25 格、64 色、約 1.7 MB（提高解析度與清晰度，改善信件內嵌影片模糊問題）。
+ * v56 重點：GIF 下方新增可點擊按鈕「▶ 點擊觀看電子喜帖影片」，連到 ECARD_VIDEO_URL；GIF 本身亦可點擊。
  * v47 重點：GIF 直接顯示、點擊 GIF 才跳轉；移除下方多餘的純文字連結
  * （避免收件人誤以為「只有連結可看」）。
  */
-var ECARD_LOOP_GIF_URL = 'https://jack25860.github.io/jack-and-lily-wedding/media/ecard-loop.gif';
+var ECARD_LOOP_GIF_URL = 'https://jack25860.github.io/jack-and-lily-wedding/media/ecard-loop-hd.gif?v=56';
 /** 電子喜帖影片示意圖（影片尚未提供時顯示） */
 var ECARD_VIDEO_POSTER = 'images/tl1.jpg';
 
@@ -407,9 +408,13 @@ function sendEcard_(data) {
   // 不再輸出下方「▶ 點此觀看…」純文字連結，避免收件人只看到連結、誤以為沒有內容。
   var videoTag = '';
   if (videoUrl) {
+    // v56：HD 循環 GIF（480×640）＋ 可點擊按鈕「▶ 點擊觀看電子喜帖影片」；GIF 本身亦可點擊。
     videoTag = '<a href="' + esc_(videoUrl) + '" target="_blank" style="text-decoration:none">' +
-      '<img src="' + esc_(ECARD_LOOP_GIF_URL) + '" alt="電子喜帖（自動循環播放）" width="320" height="427" style="display:block;width:100%;max-width:320px;height:auto;border:0;border-radius:2px;margin:0 auto">' +
-      '</a>';
+      '<img src="' + esc_(ECARD_LOOP_GIF_URL) + '" alt="電子喜帖（自動循環播放）" width="480" height="640" style="display:block;width:100%;max-width:480px;height:auto;border:0;border-radius:2px;margin:0 auto">' +
+      '</a>' +
+      '<div style="margin:14px 0 0;text-align:center">' +
+        '<a href="' + esc_(videoUrl) + '" target="_blank" style="display:inline-block;padding:12px 26px;background:#6E1626;color:#EFE5D2;text-decoration:none;letter-spacing:.16em;font-size:14px;border:1px solid #C9A961;border-radius:2px">▶ 點擊觀看電子喜帖影片</a>' +
+      '</div>';
   } else if (videoPoster) {
     var vpb = fetchBlob_(videoPoster);
     if (vpb) {
