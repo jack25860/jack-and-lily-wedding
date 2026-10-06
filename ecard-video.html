@@ -129,6 +129,11 @@ body:before{
   .btn{width:100%}
   .actions{flex-direction:column}
 }
+/* ── v59：漂浮音效開關動效絲滑化（背景／邊框／位移與等化條同步，無閃動） ── */
+.sound__btn{will-change:background-color,transform}
+.sound__bars i{will-change:height}
+.sound__label{transition:color .35s var(--ease),opacity .35s var(--ease)}
+.sound__btn.playing .sound__bars i{transition:height .45s var(--ease),background .45s}
 @media(prefers-reduced-motion:reduce){
   .badge i{animation:none}
   *{transition-duration:.001ms!important}

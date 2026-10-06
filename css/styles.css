@@ -129,3 +129,64 @@ html.font-scale-lg{font-size:118.75%}
 .fontctl__opt:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 @media(max-width:640px){.fontctl__toggle{width:48px;height:48px}.fontctl__opt{min-width:38px;padding:8px 11px}}
 @media(prefers-reduced-motion:reduce){.fontctl__opts{transition:none}}
+/* ══════ v59：全站互動動效絲滑化（消除閃動／跳格）＋ 字級平滑過渡 ══════ */
+
+/* ── 1. 動效 token 統一（曲線與時長一致，展開／收合自然）── */
+:root{--dur-1:.28s;--dur-2:.45s;--dur-3:.62s;--ease-out:cubic-bezier(.22,.61,.36,1);--ease-io:cubic-bezier(.4,0,.2,1)}
+
+/* ── 2. 字級平滑過渡：僅在 JS 就緒後開啟（避免首次載入抖動）；reduced-motion 關閉 ── */
+html.font-anim{transition:font-size .30s var(--ease-io)}
+@media(prefers-reduced-motion:reduce){html.font-anim{transition:none}}
+
+/* ── 3. 「Tt」字體鈕：展開／收合皆為絲滑縮放（opacity + transform + visibility 同步，無閃動、無殘影）── */
+.fontctl__opts{will-change:opacity,transform;transition:opacity .58s var(--ease-io),transform .58s var(--ease-out),visibility .58s}
+.fontctl.is-opening .fontctl__opts,.fontctl[data-open="true"] .fontctl__opts{opacity:1;visibility:visible;pointer-events:auto;transform:translateY(0) scale(1)}
+.fontctl.is-closing .fontctl__opts{opacity:0;visibility:hidden;pointer-events:none;transform:translateY(8px) scale(.86)}
+@media(prefers-reduced-motion:reduce){.fontctl__opts,.fontctl.is-opening .fontctl__opts,.fontctl.is-closing .fontctl__opts{transition:none}}
+
+/* ── 4. 燈箱（相簿）開合：柔和淡入淡出、無殘影 ── */
+.lightbox{transition:opacity .62s var(--ease-io);will-change:opacity}
+
+/* ── 5. 相簿「展開全部」：以 opacity／transform 過渡取代 display 硬切 ── */
+.gtheme__more{animation:none;opacity:0;transform:translateY(14px);transition:opacity .55s var(--ease-io),transform .55s var(--ease-out);will-change:opacity,transform}
+.gtheme__more.is-open{opacity:1;transform:none}
+
+/* ── 6. RSVP 出席人數／兒童椅：平滑展開收合（預設展開，僅切換時動畫，避免載入時閃動）── */
+#rsvpNumWrap{max-height:1600px;overflow:hidden;transition:max-height .55s var(--ease-io),opacity .42s var(--ease-io),transform .5s var(--ease-out)}
+#rsvpNumWrap.is-collapsed{max-height:0;opacity:0;transform:translateY(-10px)}
+#rsvpChairRow{max-height:400px;overflow:hidden;transition:max-height .45s var(--ease-io),opacity .4s var(--ease-io),transform .4s var(--ease-out)}
+#rsvpChairRow.is-collapsed{max-height:0;opacity:0;transform:translateY(-8px)}
+
+/* ── 7. RSVP 備援出口：平滑展開收合 ── */
+.rsvp-fallback{opacity:0;transform:translateY(-8px);transition:opacity .45s var(--ease-io),transform .45s var(--ease-out)}
+.rsvp-fallback.is-open{opacity:1;transform:none}
+
+/* ── 8. 電子喜帖寄送面板：以 opacity／transform 取代 display 硬切 ── */
+.ecard-panel{animation:none;opacity:0;transform:translateY(-14px) scale(.985);transition:opacity .5s var(--ease-io),transform .5s var(--ease-out);will-change:opacity,transform}
+.ecard-panel.is-open{opacity:1;transform:none}
+
+/* ── 9. 漂浮開關／等化條／回到頂端：補 will-change，避免重繪跳動 ── */
+.music__btn,.sound__btn{will-change:background-color,transform}
+.music__bars i,.sound__bars i{will-change:height}
+.totop{will-change:opacity,transform}
+/* ── 9b. 補齊元素本體過渡（原僅在子元素／偽元素上，實測過渡=0）── */
+.nav__toggle{transition:background-color .35s var(--ease),transform .35s var(--ease)}
+.ecard-dot{transition:opacity .35s var(--ease),transform .35s var(--ease)}
+.trailer__play{transition:transform .5s var(--ease),border-color .5s var(--ease),box-shadow .5s var(--ease)}
+.trailer__placeholder:hover .trailer__play{transform:scale(1.06);border-color:var(--gold-light);box-shadow:0 0 0 6px rgba(201,169,97,.08)}
+.fontctl__opt{min-height:44px}
+.btn--small{min-height:44px}
+@media(prefers-reduced-motion:reduce){.nav__toggle,.ecard-dot,.trailer__play{transition:none}}
+.card,.note-card,.g-item,.chapter__media,.venue-photo,.rsvp-cta,.ecard-show__cta,.btn{backface-visibility:hidden}
+/* no-JS 退化：腳本未執行時僅顯示「Tt」圓鈕，不展開空選單 */
+html:not(.has-js) #fontctlOpts{display:none}
+
+/* ── 10. 減少動態偏好：關閉新增動畫並回到終態 ── */
+@media(prefers-reduced-motion:reduce){
+  #rsvpNumWrap,#rsvpChairRow{transition:none}
+  #rsvpNumWrap.is-collapsed{max-height:0;opacity:0}
+  #rsvpChairRow.is-collapsed{opacity:0}
+  .rsvp-fallback,.ecard-panel,.gtheme__more{transition:none}
+  .rsvp-fallback:not(.is-open),.ecard-panel:not(.is-open),.gtheme__more:not(.is-open){opacity:0}
+  .rsvp-fallback.is-open,.ecard-panel.is-open,.gtheme__more.is-open{opacity:1;transform:none}
+}
