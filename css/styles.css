@@ -111,14 +111,21 @@ body.thanks-open{overflow:hidden}
 @keyframes eq{0%{height:3px}to{height:14px}}
 .music__label{font-family:var(--en-caps);font-size:.6rem;letter-spacing:.26em;color:var(--gold-light);white-space:nowrap}
 @media(max-width:640px){.music__label{display:none}.music__btn{padding:14px}}
-/* ══ v57：字體大小調整（大／中／小）— 右下角漂浮控制，緊鄰並位於背景音樂開關正上方 ══ */
+/* ══ v58：字體大小調整（大／中／小）— 平常收合為「Tt」圓形漂浮鈕，點擊才展開三檔；選後自動收合 ══ */
 html.font-scale-sm{font-size:87.5%}
 html.font-scale-md{font-size:100%}
 html.font-scale-lg{font-size:118.75%}
 .fontctl{position:fixed;right:clamp(14px,2.4vw,30px);bottom:calc(clamp(14px,2.4vw,30px) + 58px);z-index:800}
-.fontctl__btn{display:flex;align-items:center;gap:2px;padding:3px;background:#0f0c0bd1;border:1px solid var(--line-gold);border-radius:100px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 12px 30px -16px #000000a6}
+.fontctl__toggle{position:relative;display:grid;place-items:center;width:50px;height:50px;padding:0;border-radius:50%;background:#0f0c0bd1;border:1px solid var(--line-gold);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 12px 30px -16px #000000a6;color:var(--gold-light);transition:background .5s var(--ease-soft),border-color .5s,transform .5s var(--ease),box-shadow .5s}
+.fontctl__toggle:hover{background:#6e1626e6;transform:translateY(-2px)}
+.fontctl__toggle:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.fontctl__tt{font-family:var(--en);font-size:1.06rem;line-height:1;letter-spacing:.01em;color:var(--gold-light);pointer-events:none}
+.fontctl[data-open="true"] .fontctl__toggle{background:linear-gradient(180deg,#7d1c2e,var(--wine) 60%,#5c1220);border-color:var(--gold);box-shadow:0 0 0 1px #c9a96166 inset,0 12px 30px -16px #000000a6}
+.fontctl__opts{position:absolute;right:0;bottom:calc(100% + 10px);display:flex;align-items:center;gap:2px;padding:3px;background:#0f0c0bd1;border:1px solid var(--line-gold);border-radius:100px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 12px 30px -16px #000000a6;transform-origin:100% 100%;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(8px) scale(.94);transition:opacity .32s var(--ease-soft),transform .32s var(--ease),visibility .32s}
+.fontctl[data-open="true"] .fontctl__opts{opacity:1;visibility:visible;pointer-events:auto;transform:none}
 .fontctl__opt{min-width:40px;min-height:44px;padding:8px 13px;border-radius:100px;font-family:var(--zh);font-size:13px;letter-spacing:.08em;line-height:1;color:var(--gold-light);background:transparent;transition:background .45s var(--ease-soft),color .45s,transform .45s}
 .fontctl__opt:hover{background:#6e1626b3;color:#fbf7ef}
 .fontctl__opt[aria-pressed="true"]{background:linear-gradient(180deg,#7d1c2e,var(--wine) 60%,#5c1220);color:var(--gold-light);box-shadow:0 0 0 1px #c9a96166 inset}
 .fontctl__opt:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-@media(max-width:640px){.fontctl__opt{min-width:38px;padding:8px 11px}}
+@media(max-width:640px){.fontctl__toggle{width:48px;height:48px}.fontctl__opt{min-width:38px;padding:8px 11px}}
+@media(prefers-reduced-motion:reduce){.fontctl__opts{transition:none}}

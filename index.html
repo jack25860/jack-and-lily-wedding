@@ -928,9 +928,12 @@ sweep(document)})();</script>
   <span class="totop__text">TOP</span>
 </button>
 
-<!-- v57：字體大小調整（大／中／小）— 右下角漂浮控制，緊鄰並位於背景音樂開關正上方 -->
-<div class="fontctl" id="fontctl" role="group" aria-label="字體大小調整">
-  <div class="fontctl__btn">
+<!-- v58：字體大小調整（大／中／小）— 平常收合為「Tt」圓形漂浮鈕，點擊才展開三檔；選後自動收合 -->
+<div class="fontctl" id="fontctl" data-open="false">
+  <button type="button" class="fontctl__toggle" id="fontctlToggle" aria-expanded="false" aria-controls="fontctlOpts" aria-label="字體大小調整，展開選項">
+    <span class="fontctl__tt" aria-hidden="true">Tt</span>
+  </button>
+  <div class="fontctl__opts" id="fontctlOpts" role="group" aria-label="字體大小調整" hidden>
     <button type="button" class="fontctl__opt" data-fs="sm" aria-pressed="false" aria-label="小字">小</button>
     <button type="button" class="fontctl__opt" data-fs="md" aria-pressed="true" aria-label="中字">中</button>
     <button type="button" class="fontctl__opt" data-fs="lg" aria-pressed="false" aria-label="大字">大</button>
