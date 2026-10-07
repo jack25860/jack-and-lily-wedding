@@ -1,6 +1,6 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   seating.js  ── 座位表頁面邏輯（v62）
-   ───────────────────────────────────────────────────────────────────────────
+/* ══════════════════════════════════════════════════════════════════════════════
+   seating.js ── 座位表頁面邏輯（v62）
+   ──────────────────────────────────────────────────────────────────────────────
    這個檔案「不需要」在替換座位資料時修改。
    資料來源：
      • 主來源 = 問卷回覆的 Google 線上表單（經 Apps Script Web App 取得 JSON，
@@ -39,12 +39,23 @@
      5. 桌號由試算表手動填入、頁面自動讀取分配；無效或查無對應桌次顯示「由現場人員安排」。
      6. 新增每桌人數上限檢查：某桌填寫人數超過該桌上限時，超額者改由現場人員安排，
         並於座位圖下方顯示提示（#seatCapacity）。
-   ═══════════════════════════════════════════════════════════════════════════ */
+
+   v66 變更（座位查詢介面人性化／易用性優化）：
+     1. 輸入框改為語意化 combobox：輸入即時建議清單（role=listbox / role=option）、
+        命中片段 <mark> 標示、完整鍵盤操作（↑↓ / Enter / Esc / Tab）、aria-activedescendant。
+     2. 新增「清除」鈕（一鍵重設）與「語音輸入」鈕（Web Speech API，zh-TW；不支援則隱藏）。
+     3. 新增「最近查詢」（localStorage，最多 5 筆）快速再查。
+     4. 查詢結果改為四態結果卡（找到／由現場人員安排／查無／多筆同名候選），
+        狀態以「文字標籤 + 顏色 + 說明」三重編碼，不依賴顏色辨識。
+     5. 查無時提供相似姓名建議（編輯距離 + 雙字詞重疊），一鍵改用建議姓名。
+     6. 新增「快速查詢座位」浮動鈕（捲離查詢區後出現，一鍵回到查詢並聚焦）。
+     7. 背景音樂改為預設靜音、絕不自動播放（修正 v65 以前任何手勢即自動播放的問題）。
+   ══════════════════════════════════════════════════════════════════════════════ */
 (function () {
   "use strict";
 
   var NS = "http://www.w3.org/2000/svg";
-  var VB_W = 1200, VB_H = 620;      /* SVG 內部坐標系（與裝置無關） */      /* SVG 內部座標系（與裝置無關） */
+  var VB_W = 1200, VB_H = 620;      /* SVG 內部座標系（與裝置無關） */
 
   var DATA   = window.SEATING_DATA || {};
   var CFG    = window.SEATING_CONFIG || {};
@@ -65,7 +76,7 @@
 
   var reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
-  /* ── 小工具 ───────────────────────────────────────────────────────────── */
+  /* ── 小工具 ────────────────────────────────────────────────────────────── */
   function $(s, sc) { return (sc || document).querySelector(s); }
   function $$(s, sc) { return Array.prototype.slice.call((sc || document).querySelectorAll(s)); }
   function el(tag, attrs, parent) {
@@ -431,59 +442,125 @@
 
   /* v63：bindZoom()、lastBase、zoomBound 已移除（縮放鈕不再存在）。 */
 
-  /* ══════════ 五、搜尋 UI ══════════ */
-  var resultBox, inputEl;
+  /* ══════════ 五、搜尋 UI（v66：combobox + 四態結果卡 + 語音 + 近期查詢）══════════ */
+  var resultBox, inputEl, suggestBox, clearBtn, voiceBtn, recentBox, recentList, fabBtn;
   var searchBound = false;
+  var activeIdx = -1;          /* combobox 目前反白的建議項 */
+  var suggestItems = [];       /* 目前建議清單對應的賓客物件 */
+  var LAST_QUERY = "";         /* 最近一次查詢字串 */
+  var RECENT_KEY = "ssss-seating-recent-v1";
+  var RECENT_MAX = 5;
 
-  function renderNotFound(q) {
-    clearHit();
-    resultBox.className = "seat-result seat-result--miss";
-    resultBox.innerHTML =
-      '<p class="seat-result__text">' + esc(notFoundText) + "</p>" +
-      '<p class="seat-result__pos">查詢：' + esc(q) + "</p>";
+  /* ── 共用小工具 ── */
+  function badgeText(state) {
+    if (state === "found") return "找到座位";
+    if (state === "wait") return "由現場人員安排";
+    if (state === "miss") return "查無此姓名";
+    return "多筆符合";
   }
 
-  function renderCandidates(list, q) {
-    clearHit();
-    var html = '<p class="seat-result__text">' + esc(candText) + "</p>" +
-      '<div class="seat-result__cands"><p class="seat-result__cands-title">「' + esc(q) + '」共 ' + list.length + " 筆</p>" +
-      '<div class="seat-result__cands-list">';
-    list.forEach(function (g, i) {
-      /* v64：未分配桌次者顯示「由現場人員安排」，不顯示錯誤桌號 */
-      var meta = g.unassigned
-        ? unassignedText
-        : (g.table + tableSuffix + (OPT.showSeatLabel !== false && g.seat ? " · 第" + g.seat + "位" : ""));
-      html += '<button type="button" class="seat-cand" data-cand="' + i + '">' +
-        esc(g.name) + " <i>" + esc(meta) + "</i></button>";
-    });
-    html += "</div></div>";
-    resultBox.className = "seat-result";
-    resultBox.innerHTML = html;
-    $$(".seat-cand", resultBox).forEach(function (b) {
-      b.addEventListener("click", function () {
-        var g = list[parseInt(b.getAttribute("data-cand"), 10)];
-        if (g) renderFound(g, q);
-      });
-    });
+  /* 把姓名中命中的片段以 <mark> 標示，讓使用者理解「為什麼是這一筆」 */
+  function hiName(name, q) {
+    var s = String(name == null ? "" : name);
+    var nq = norm(q);
+    if (!nq) return esc(s);
+    var at = norm(s).indexOf(nq);
+    if (at < 0) return esc(s);
+    return esc(s.slice(0, at)) + "<mark>" + esc(s.slice(at, at + nq.length)) + "</mark>" + esc(s.slice(at + nq.length));
   }
 
+  function posText(g) {
+    return g.table + tableSuffix + (OPT.showSeatLabel !== false && g.seat ? " · 第" + g.seat + "位" : "");
+  }
+
+  /* ── 結果卡：找到座位（含桌次、座位號、說明與行動按鈕）── */
   function renderFound(g, q) {
     var r = showHit(g);
     resultBox.className = "seat-result";
     /* v64：桌號無效／查無對應桌次 → 顯示「由現場人員安排」，不顯示錯誤桌號 */
     if (g.unassigned) {
       resultBox.innerHTML =
-        '<p class="seat-result__text">' + esc(g.name) + "</p>" +
-        '<p class="seat-result__pos">' + esc(unassignedText) +
-        (g.note ? "　·　" + esc(g.note) : "") + "</p>";
+        '<div class="seat-rc seat-rc--wait">' +
+          '<span class="seat-rc__badge">' + esc(badgeText("wait")) + '</span>' +
+          '<p class="seat-rc__name">' + esc(g.name) + '</p>' +
+          '<p class="seat-rc__where">' + esc(unassignedText) + '</p>' +
+          (g.note ? '<p class="seat-rc__note">備註：' + esc(g.note) + '</p>' : '') +
+          '<p class="seat-rc__hint">您的桌次尚未安排，請於現場洽詢<b>接待人員</b>，由現場人員為您帶位。</p>' +
+        '</div>';
       return;
     }
-    var posTxt = r.tableNo + tableSuffix + (OPT.showSeatLabel !== false && g.seat ? " · 第 " + g.seat + " 位" : "");
     resultBox.innerHTML =
-      '<p class="seat-result__text">' + esc(g.name + "-" + r.tableNo + tableSuffix) + "</p>" +
-      '<p class="seat-result__pos">' + esc(posTxt) +
-      (g.note ? "　·　" + esc(g.note) : "") + "</p>" +
-      (r.found ? "" : '<p class="seat-result__note">（此桌次不在目前座位圖中，請洽現場招待）</p>');
+      '<div class="seat-rc seat-rc--found">' +
+        '<span class="seat-rc__badge">' + esc(badgeText("found")) + '</span>' +
+        '<p class="seat-rc__name">' + esc(g.name + "　" + r.tableNo + tableSuffix) + '</p>' +
+        '<p class="seat-rc__where">您的桌次：<b>' + esc(String(r.tableNo)) + '</b>' + esc(tableSuffix) + '</p>' +
+        (OPT.showSeatLabel !== false && g.seat ? '<p class="seat-rc__seat">座位號碼：第 ' + esc(String(g.seat)) + ' 位</p>' : '') +
+        (g.note ? '<p class="seat-rc__note">備註：' + esc(g.note) + '</p>' : '') +
+        (r.found
+          ? '<p class="seat-rc__hint">下方座位圖已為您標示並聚焦到 <b>' + esc(String(r.tableNo)) + esc(tableSuffix) + '</b>，該桌將以金色閃爍。</p>'
+          : '<p class="seat-rc__hint">（此桌次不在目前座位圖中，請於現場洽詢接待人員。）</p>') +
+        '<div class="seat-rc__acts">' +
+          '<button type="button" class="seat-rc__btn" id="seatRcGo">在座位圖查看我的桌次</button>' +
+          '<button type="button" class="seat-rc__btn seat-rc__btn--ghost" id="seatRcAgain">查詢其他姓名</button>' +
+        '</div>' +
+      '</div>';
+    var goBtn = $("#seatRcGo", resultBox), againBtn = $("#seatRcAgain", resultBox);
+    if (goBtn) goBtn.addEventListener("click", function () { focusTable(tableNodes[r.tableNo]); });
+    if (againBtn) againBtn.addEventListener("click", function () { resetQuery(true); });
+  }
+
+  /* ── 結果卡：查無（含相似姓名建議，降低打錯字的挫折）── */
+  function renderNotFound(q) {
+    clearHit();
+    if (inputEl) inputEl.setAttribute("aria-invalid", "true");
+    var sim = similarNames(q);
+    var html =
+      '<div class="seat-rc seat-rc--miss">' +
+        '<span class="seat-rc__badge">' + esc(badgeText("miss")) + '</span>' +
+        '<p class="seat-rc__name">查無「' + esc(q) + '」</p>' +
+        '<p class="seat-rc__hint">請確認姓名是否輸入正確，或只輸入名字的一部分（例如只打「小明」）。' +
+          '也可以直接在現場洽詢接待人員協助找位。</p>';
+    if (sim.length) {
+      html += '<p class="seat-rc__similar-title">您是不是要找：</p><div class="seat-rc__chips">';
+      sim.forEach(function (nm, i) {
+        html += '<button type="button" class="seat-rc__chip" data-sim="' + i + '"><span>' + esc(nm) + "</span></button>";
+      });
+      html += "</div>";
+    }
+    html += "</div>";
+    resultBox.className = "seat-result";
+    resultBox.innerHTML = html;
+    $$(".seat-rc__chip[data-sim]", resultBox).forEach(function (b) {
+      b.addEventListener("click", function () {
+        var nm = sim[parseInt(b.getAttribute("data-sim"), 10)];
+        if (nm) { if (inputEl) inputEl.value = nm; doSearch(); }
+      });
+    });
+  }
+
+  /* ── 結果卡：多筆候選（同名／相似，以桌次作為辨識參考）── */
+  function renderCandidates(list, q) {
+    clearHit();
+    if (inputEl) inputEl.removeAttribute("aria-invalid");
+    var html = '<div class="seat-rc seat-rc--cands">' +
+      '<span class="seat-rc__badge">' + esc(badgeText("cands")) + '</span>' +
+      '<p class="seat-rc__name">「' + esc(q) + '」共 ' + list.length + ' 筆</p>' +
+      '<p class="seat-rc__hint">' + esc(candText) + '請點選正確的那一位，右側資訊可協助辨識。</p>' +
+      '<div class="seat-rc__chips">';
+    list.forEach(function (g, i) {
+      var meta = g.unassigned ? unassignedText : posText(g);
+      html += '<button type="button" class="seat-rc__chip" data-cand="' + i + '">' +
+        '<span>' + hiName(g.name, q) + "</span><i>" + esc(meta) + "</i></button>";
+    });
+    html += "</div></div>";
+    resultBox.className = "seat-result";
+    resultBox.innerHTML = html;
+    $$(".seat-rc__chip[data-cand]", resultBox).forEach(function (b) {
+      b.addEventListener("click", function () {
+        var g = list[parseInt(b.getAttribute("data-cand"), 10)];
+        if (g) renderFound(g, q);
+      });
+    });
   }
 
   function esc(s) {
@@ -492,38 +569,309 @@
     });
   }
 
-  function doSearch() {
-    var q = (inputEl.value || "").trim();
-    if (!q) {
-      clearHit();
-      resultBox.className = "seat-result";
-      resultBox.innerHTML = "";
-      inputEl.focus();
-      return { state: "empty" };
+  /* ════════ v66：即時建議清單（combobox listbox）════════ */
+  function closeSuggest() {
+    activeIdx = -1; suggestItems = [];
+    if (suggestBox) { suggestBox.hidden = true; suggestBox.innerHTML = ""; }
+    if (inputEl) { inputEl.setAttribute("aria-expanded", "false"); inputEl.removeAttribute("aria-activedescendant"); }
+  }
+
+  function suggestLabel(g) {
+    if (g.unassigned) return unassignedText;
+    return g.table + tableSuffix + (OPT.showSeatLabel !== false && g.seat ? " · 第" + g.seat + "位" : "");
+  }
+
+  function openSuggest(q) {
+    if (!suggestBox || !inputEl) return;
+    if (!norm(q)) { closeSuggest(); return; }
+    var list = findMatches(q).slice(0, 6);
+    suggestItems = list;
+    activeIdx = -1;
+    if (!list.length) {
+      suggestBox.innerHTML = '<li class="seat-suggest__empty">尚無符合的姓名，可直接按「查詢座位」，或只輸入名字的一部分。</li>';
+      suggestBox.hidden = false;
+      inputEl.setAttribute("aria-expanded", "true");
+      return;
     }
+    var html = "";
+    list.forEach(function (g, i) {
+      html += '<li class="seat-suggest__item" role="option" id="seatOpt-' + i + '" data-i="' + i + '" aria-selected="false">' +
+        '<span class="seat-suggest__name">' + hiName(g.name, q) + "</span>" +
+        '<span class="seat-suggest__meta">' + esc(suggestLabel(g)) + "</span></li>";
+    });
+    suggestBox.innerHTML = html;
+    suggestBox.hidden = false;
+    inputEl.setAttribute("aria-expanded", "true");
+    $$(".seat-suggest__item", suggestBox).forEach(function (li) {
+      /* 以 mousedown 攔截，避免 blur 先關閉清單 */
+      li.addEventListener("mousedown", function (e) { e.preventDefault(); });
+      li.addEventListener("click", function () { chooseSuggest(parseInt(li.getAttribute("data-i"), 10)); });
+    });
+  }
+
+  function setActive(i) {
+    if (!suggestBox) return;
+    var items = $$(".seat-suggest__item", suggestBox);
+    if (!items.length) return;
+    if (i < 0) i = items.length - 1;
+    if (i >= items.length) i = 0;
+    activeIdx = i;
+    items.forEach(function (li, k) {
+      var on = (k === i);
+      li.classList.toggle("is-active", on);
+      li.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    if (inputEl) inputEl.setAttribute("aria-activedescendant", items[i].id);
+    if (items[i].scrollIntoView) items[i].scrollIntoView({ block: "nearest" });
+  }
+
+  /* 選取建議項：帶入完整姓名並直接顯示結果（一次點擊即得答案） */
+  function chooseSuggest(i) {
+    var g = suggestItems[i];
+    if (!g) return;
+    closeSuggest();
+    if (inputEl) inputEl.value = g.name;
+    renderFound(g, g.name);
+    pushRecent(g.name);
+    LAST_QUERY = g.name;
+  }
+
+  /* ════════ v66：最近查詢（同一次瀏覽內快速再查）════════ */
+  function readRecent() {
+    try {
+      var arr = JSON.parse(window.localStorage.getItem(RECENT_KEY) || "[]");
+      if (!Array.isArray(arr)) return [];
+      return arr.filter(function (x) { return typeof x === "string" && x; }).slice(0, RECENT_MAX);
+    } catch (e) { return []; }
+  }
+  function writeRecent(arr) {
+    try { window.localStorage.setItem(RECENT_KEY, JSON.stringify(arr.slice(0, RECENT_MAX))); } catch (e) {}
+  }
+  function pushRecent(name) {
+    name = String(name == null ? "" : name).trim();
+    if (!name) return;
+    var arr = readRecent().filter(function (x) { return norm(x) !== norm(name); });
+    arr.unshift(name);
+    writeRecent(arr);
+    renderRecent();
+  }
+  function renderRecent() {
+    if (!recentBox || !recentList) return;
+    var arr = readRecent();
+    if (!arr.length) { recentBox.hidden = true; recentList.innerHTML = ""; return; }
+    recentList.innerHTML = arr.map(function (nm, i) {
+      return '<button type="button" class="seat-recent__item" data-recent="' + i + '"><span>' + esc(nm) + "</span></button>";
+    }).join("");
+    recentBox.hidden = false;
+    $$(".seat-recent__item[data-recent]", recentList).forEach(function (b) {
+      b.addEventListener("click", function () {
+        var nm = arr[parseInt(b.getAttribute("data-recent"), 10)];
+        if (!nm) return;
+        if (inputEl) inputEl.value = nm;
+        doSearch();
+      });
+    });
+  }
+
+  /* ════════ v66：相似姓名建議（模糊比對姓名，用於查無時）════════ */
+  function bigrams(s) {
+    var out = [], i;
+    for (i = 0; i < s.length - 1; i++) out.push(s.slice(i, i + 2));
+    if (!out.length) out.push(s);
+    return out;
+  }
+  function editDist(a, b) {
+    if (a === b) return 0;
+    if (!a.length) return b.length;
+    if (!b.length) return a.length;
+    var prev = [], cur = [], i, j;
+    for (j = 0; j <= b.length; j++) prev[j] = j;
+    for (i = 1; i <= a.length; i++) {
+      cur = [i];
+      for (j = 1; j <= b.length; j++) {
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1));
+      }
+      prev = cur;
+    }
+    return prev[b.length];
+  }
+  function similarNames(q) {
+    var nq = norm(q);
+    if (!nq || !GUESTS.length) return [];
+    var seen = {}, scored = [], i, k;
+    for (i = 0; i < GUESTS.length; i++) {
+      var g = GUESTS[i];
+      var n = norm(g.name);
+      if (!n || n === nq || seen[n]) continue;
+      var d = editDist(nq, n);
+      var bg = bigrams(nq), shared = 0;
+      for (k = 0; k < bg.length; k++) if (n.indexOf(bg[k]) >= 0) shared++;
+      var charHit = 0;
+      for (k = 0; k < nq.length; k++) if (n.indexOf(nq.charAt(k)) >= 0) charHit++;
+      /* 相關性門檻：字元重疊足夠、或有共同雙字詞，才列入建議，避免噪音 */
+      if (!(charHit >= Math.max(1, nq.length - 1) || shared > 0)) continue;
+      seen[n] = true;
+      scored.push({ name: String(g.name), d: d, shared: shared, len: Math.abs(n.length - nq.length), unassigned: !!g.unassigned });
+    }
+    scored.sort(function (a, b) {
+      if (a.unassigned !== b.unassigned) return a.unassigned ? 1 : -1;
+      return a.d - b.d || b.shared - a.shared || a.len - b.len;
+    });
+    return scored.slice(0, 6).map(function (x) { return x.name; });
+  }
+
+  /* ════════ v66：查詢動作 ════════ */
+  function resetQuery(focus) {
+    if (inputEl) { inputEl.value = ""; inputEl.removeAttribute("aria-invalid"); }
+    clearHit();
+    closeSuggest();
+    if (resultBox) { resultBox.className = "seat-result"; resultBox.innerHTML = ""; }
+    if (clearBtn) clearBtn.hidden = true;
+    if (focus && inputEl) inputEl.focus();
+  }
+
+  function doSearch() {
+    var q = (inputEl && inputEl.value ? inputEl.value : "").trim();
+    if (!q) { resetQuery(true); return { state: "empty" }; }
+    closeSuggest();
+    LAST_QUERY = q;
     var list = findMatches(q);
     if (!list.length) { renderNotFound(q); return { state: "notfound", q: q }; }
-    if (list.length === 1) { renderFound(list[0], q); return { state: "found", guest: list[0] }; }
+    /* 完全同名只有一筆、或僅一筆符合 → 直接給答案；否則列候選讓使用者選 */
+    var exact = list.filter(function (g) { return norm(g.name) === norm(q); });
+    var target = (exact.length === 1) ? exact[0] : ((list.length === 1) ? list[0] : null);
+    if (target) { renderFound(target, q); pushRecent(target.name); return { state: "found", guest: target }; }
     renderCandidates(list, q);
     return { state: "candidates", count: list.length, guests: list };
+  }
+
+  /* ════════ v66：語音輸入（Web Speech API；不支援的瀏覽器自動隱藏）════════ */
+  function initVoice() {
+    if (!voiceBtn || !inputEl) return;
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { voiceBtn.hidden = true; return; }
+    voiceBtn.hidden = false;
+    var rec = null, listening = false;
+    function stopUI() {
+      listening = false;
+      voiceBtn.classList.remove("is-listening");
+      voiceBtn.setAttribute("aria-pressed", "false");
+      voiceBtn.setAttribute("aria-label", "用語音輸入姓名");
+    }
+    voiceBtn.addEventListener("click", function () {
+      if (listening) { try { rec.stop(); } catch (e) {} return; }
+      try {
+        rec = new SR();
+        rec.lang = "zh-TW";
+        rec.interimResults = false;
+        rec.maxAlternatives = 1;
+        rec.onstart = function () {
+          listening = true;
+          voiceBtn.classList.add("is-listening");
+          voiceBtn.setAttribute("aria-pressed", "true");
+          voiceBtn.setAttribute("aria-label", "停止語音輸入");
+        };
+        rec.onresult = function (ev) {
+          var t = "";
+          try { t = (ev.results[0][0].transcript || ""); } catch (e) {}
+          t = t.replace(/[\s，。、,.]/g, "");
+          if (t) {
+            inputEl.value = t;
+            if (clearBtn) clearBtn.hidden = false;
+            closeSuggest();
+            doSearch();
+          }
+        };
+        rec.onerror = function () { stopUI(); };
+        rec.onend = function () { stopUI(); };
+        rec.start();
+      } catch (e) { stopUI(); }
+    });
+  }
+
+  /* ════════ v66：快速查詢浮動鈕（捲離查詢區後出現，一鍵回到查詢）════════ */
+  function initFab() {
+    if (!fabBtn) return;
+    fabBtn.hidden = false;
+    var hero = $("#seatHero");
+    function update() {
+      var past = hero ? (hero.getBoundingClientRect().bottom < window.innerHeight * 0.35) : (window.scrollY > 520);
+      fabBtn.classList.toggle("show", past);
+    }
+    fabBtn.addEventListener("click", function () {
+      var target = $("#seatSearch") || hero;
+      if (target) {
+        try { target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" }); }
+        catch (e) { target.scrollIntoView(); }
+      }
+      window.setTimeout(function () {
+        if (inputEl) { try { inputEl.focus({ preventScroll: true }); } catch (e) { inputEl.focus(); } }
+      }, reduceMotion ? 0 : 420);
+    });
+    var raf = window.requestAnimationFrame || function (f) { return window.setTimeout(f, 16); };
+    var ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      raf(function () { ticking = false; update(); });
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    update();
   }
 
   function initSearch() {
     resultBox = $("#seatResult");
     inputEl = $("#seatInput");
+    suggestBox = $("#seatSuggest");
+    clearBtn = $("#seatClear");
+    voiceBtn = $("#seatVoice");
+    recentBox = $("#seatRecent");
+    recentList = $("#seatRecentList");
+    fabBtn = $("#seatFab");
     if (!resultBox || !inputEl) return;
     if (searchBound) return;      /* v62：重繪時不重複綁定事件 */
     searchBound = true;
+
     var form = $("#seatForm");
     if (form) form.addEventListener("submit", function (e) { e.preventDefault(); doSearch(); });
     var btn = $("#seatBtn");
     if (btn) btn.addEventListener("click", function (e) { e.preventDefault(); doSearch(); });
-    inputEl.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); doSearch(); } });
+
+    /* 輸入：即時建議清單 */
     inputEl.addEventListener("input", function () {
-      if (!(inputEl.value || "").trim()) {
-        clearHit(); resultBox.className = "seat-result"; resultBox.innerHTML = "";
-      }
+      var v = (inputEl.value || "").trim();
+      if (clearBtn) clearBtn.hidden = !(inputEl.value || "").length;
+      if (!v) { closeSuggest(); clearHit(); resultBox.className = "seat-result"; resultBox.innerHTML = ""; return; }
+      openSuggest(v);
     });
+
+    inputEl.addEventListener("focus", function () {
+      var v = (inputEl.value || "").trim();
+      if (v) openSuggest(v);
+      else if (readRecent().length) renderRecent();
+    });
+
+    /* 鍵盤操作：↑↓ 移動、Enter 選取、Esc 關閉、Tab 離開 */
+    inputEl.addEventListener("keydown", function (e) {
+      var open = suggestBox && !suggestBox.hidden;
+      if (e.key === "ArrowDown") { e.preventDefault(); if (!open) openSuggest((inputEl.value || "").trim()); else setActive(activeIdx + 1); return; }
+      if (e.key === "ArrowUp") { e.preventDefault(); if (open) setActive(activeIdx - 1); return; }
+      if (e.key === "Escape") { if (open) { e.preventDefault(); closeSuggest(); } else { resetQuery(false); } return; }
+      if (e.key === "Enter") { e.preventDefault(); if (open && activeIdx >= 0) chooseSuggest(activeIdx); else doSearch(); return; }
+      if (e.key === "Tab" && open) closeSuggest();
+    });
+
+    inputEl.addEventListener("blur", function () { window.setTimeout(closeSuggest, 120); });
+
+    /* 行動裝置的搜尋鍵清除（type=text 時不會觸發，僅為保險） */
+    inputEl.addEventListener("search", function () { if (!(inputEl.value || "").trim()) resetQuery(false); });
+
+    if (clearBtn) clearBtn.addEventListener("click", function () { resetQuery(true); });
+
+    initVoice();
+    initFab();
+    renderRecent();
   }
 
   /* ══════════ 六、字級浮動鈕（Tt，三檔）══════════ */
@@ -584,11 +932,17 @@
     root.classList.add("font-anim");    /* 就緒後才啟用字級過渡，避免首次載入抖動 */
   }
 
-  /* ══════════ 七、背景音樂浮動開關（簡化版）══════════ */
+  /* ══════════ 七、背景音樂浮動開關（v66：預設靜音，絕不自動播放）══════════ */
   function initMusic() {
     var audio = $("#bgm"), btn = $("#musicBtn"), label = $("#musicLabel");
     if (!audio || !btn) { var mm = $("#music"); if (mm) mm.style.display = "none"; return; }
-    var userOff = false;
+    /* v66：預設靜音（絕不自動播放）。只有使用者「自己按了音樂鈕」才出聲，
+       並把選擇記在 localStorage，下次造訪沿用；未記錄 = 靜音。
+       （v65 以前會在頁面任何手勢後自動播音樂，賓客點座位圖就會突然出聲，已修正。） */
+    var BGM_KEY = "ssss-wedding-bgm";
+    var wantOn = false;
+    try { wantOn = (window.localStorage.getItem(BGM_KEY) === "on"); } catch (e) {}
+
     function sync() {
       var playing = !audio.paused && !audio.ended;
       btn.classList.toggle("playing", playing);
@@ -596,18 +950,22 @@
       btn.setAttribute("aria-label", playing ? "關閉背景音樂" : "播放背景音樂");
       if (label) label.textContent = playing ? "MUSIC ON" : "MUSIC OFF";
     }
-    function ensure() {
-      if (userOff) return;
+    function tryPlay() {
       try { audio.muted = false; if (!audio.volume) audio.volume = 1; var p = audio.play(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
     }
-    ensure();
-    ["pointerdown", "mousedown", "touchstart", "keydown"].forEach(function (t) { document.addEventListener(t, ensure, { capture: true, passive: true }); });
-    ["loadedmetadata", "canplay", "playing"].forEach(function (ev) { audio.addEventListener(ev, function () { if (!userOff) ensure(); }); });
-    audio.addEventListener("play", sync); audio.addEventListener("pause", sync); audio.addEventListener("ended", sync);
+    function save(on) { try { window.localStorage.setItem(BGM_KEY, on ? "on" : "off"); } catch (e) {} }
+
+    /* 以媒體事件（真的開始／停止播放）驅動鈕的狀態，不憑自己的旗標猜測 */
+    audio.addEventListener("play", sync);
+    audio.addEventListener("pause", sync);
+    audio.addEventListener("ended", sync);
     btn.addEventListener("click", function () {
-      if (audio.paused) { userOff = false; ensure(); } else { userOff = true; audio.pause(); }
+      if (audio.paused) { save(true); tryPlay(); } else { save(false); audio.pause(); }
       sync();
     });
+
+    /* 只有「上次造訪已明確開啟」才嘗試續播；被瀏覽器阻擋就維持靜音。 */
+    if (wantOn) tryPlay();
     sync();
   }
 

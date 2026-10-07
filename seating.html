@@ -4,16 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
-<!-- ══════════════════════════════════════════════════════════════════════
-     座位表獨立頁（v64）
+<!-- ══════════════════════════════════════════════════════════════════════════════
+     座位表獨立頁（v66）
      • 這是一頁「獨立存在」的頁面，主網站 index.html 沒有任何連結或入口指向它。
-       （index.html 的座位置預留區維持原樣、未啟用。）
+       （index.html 的座位區預留區維持原樣、未啟用。）
      • 可直接以網址開啟，例如：
          https://jack25860.github.io/jack-and-lily-wedding/seating.html
-     • 已被搜尋引擎忽略（noindex, nofollow）。
-     • 名單來源（v64）：
+     • 已被搜索引擎忽略（noindex, nofollow）。
+     • 名單來源（v64 起）：
          主來源 = 問卷回覆的 Google 線上表單（經 Google Apps Script Web App 向
-                   scripts/seating-from-sheet.gs 取得 JSON），設定於 js/seating-config.js 的 API_URL。
+                  scripts/seating-from-sheet.gs 取得 JSON），設定於 js/seating-config.js 的 API_URL。
          備援   = js/seating-data.js（API 未設定、逾時或失敗時自動回退）。
      • v64：桌數固定 16 桌（1 主桌 + 15 側桌），不受 API 回傳的桌次數量影響；
        桌號由試算表手動填入後自動讀取分配，無效桌號顯示「由現場人員安排」。
@@ -21,14 +21,22 @@
        固定 16 桌（畫面桌數不得大於 16）；移除頁面下方「已連線 X 位賓客」提示；
        桌號由試算表手動填入、頁面自動讀取分配，無效或查無對應桌次顯示「由現場人員安排」；
        若某桌填寫人數超過該桌人數上限，超額者改由現場人員安排並於頁面提示。
-     ══════════════════════════════════════════════════════════════════════ -->
+     • v66：座位查詢介面人性化／易用性優化 ——
+       (1) 輸入框改為語意化 combobox：輸入即時顯示建議名單，可用鍵盤上下鍵＋Enter 選取；
+       (2) 新增「清除」與「語音輸入」按鈕，並提供「最近查詢」快速再查；
+       (3) 查詢結果改為四態結果卡（找到／現場安排／查無／多筆同名候選），
+           狀態以「文字標籤 + 顏色 + 說明」三重編碼，不依賴顏色辨識；
+       (4) 查無時主動提供相似姓名建議，降低打錯字而查不到的挫折；
+       (5) 新增「快速查詢座位」浮動鈕，捲到座位圖時也能一鍵回到查詢；
+       (6) 全體文字對比 ≥ 4.5:1（WCAG AA）、互動元件最小觸控 44px、完整鍵盤操作。
+     ══════════════════════════════════════════════════════════════════════════════ -->
 
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
 <meta name="googlebot" content="noindex, nofollow">
 <meta name="theme-color" content="#6E1626">
-<meta name="site-version" content="v65">
+<meta name="site-version" content="v66">
 <meta name="motion" content="silky-no-flash">
-<title>全場座位表｜三生三世・緣定今生 Jack ＆ Lily</title>
+<title>全場座位表｜三生三世·緣定今生 Jack ＆ Lily</title>
 
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%236E1626'/%3E%3Ctext x='32' y='44' font-size='36' text-anchor='middle' fill='%23E8D9B5' font-family='serif'%3E%E7%B7%A3%3C/text%3E%3C/svg%3E">
 
@@ -45,30 +53,71 @@
 
 <main class="seat-main">
 
-  <!-- ══════════════ 頁首 + 座位查詢 ══════════════ -->
-  <header class="seat-hero">
+  <!-- ══════════════ 頁首 + 座位查詢（v66 combobox）══════════════ -->
+  <header class="seat-hero" id="seatHero">
     <div class="seat-hero__inner">
       <p class="seat-hero__eyebrow">Seating Chart</p>
       <h1 class="seat-hero__title">全場座位表</h1>
-      <p class="seat-hero__sub">三生三世・緣定今生</p>
+      <p class="seat-hero__sub">三生三世·緣定今生</p>
       <p class="seat-hero__meta">JACK ＆ LILY · WEDDING SEATING</p>
       <div class="seat-hero__rule"><span></span></div>
 
-      <!-- 座位查詢 -->
-      <form class="seat-search" id="seatForm" autocomplete="off" novalidate>
-        <label class="seat-search__label" for="seatInput">查詢我的座位</label>
-        <div class="seat-search__row">
-          <input class="seat-search__input" id="seatInput" name="guest" type="search"
-                 inputmode="search" autocomplete="off" enterkeyhint="search"
-                 placeholder="請輸入姓名，例如：王小明" aria-describedby="seatHint">
-          <button class="seat-search__btn" id="seatBtn" type="submit">查詢座位</button>
-        </div>
-        <p class="seat-search__hint" id="seatHint">
-          輸入姓名即可查詢桌次與座位，支援部分字詞（例如輸入「小明」也能查到「王小明」）。
-          若查不到，請確認輸入或洽現場招待。
+      <!-- ── 座位查詢 ── -->
+      <section class="seat-search" id="seatSearch" aria-labelledby="seatSearchTitle">
+        <h2 class="seat-search__title" id="seatSearchTitle">查詢我的座位</h2>
+        <p class="seat-search__lead">
+          輸入您的姓名，系統會立即顯示座位；查詢後座位圖會自動標示並聚焦到您的桌次。
         </p>
-        <div class="seat-result" id="seatResult" role="status" aria-live="polite"></div>
-      </form>
+
+        <form id="seatForm" role="search" autocomplete="off" novalidate>
+          <!-- 輸入列：搜尋圖示 + 輸入框 + 清除 + 語音 -->
+          <div class="seat-search__field">
+            <span class="seat-search__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M15.5 15.5 21 21"></path>
+              </svg>
+            </span>
+            <input class="seat-search__input" id="seatInput" name="guest" type="text"
+                   inputmode="search" autocomplete="off" autocapitalize="off" spellcheck="false"
+                   enterkeyhint="search" role="combobox"
+                   aria-autocomplete="list" aria-expanded="false"
+                   aria-controls="seatSuggest" aria-describedby="seatHint"
+                   placeholder="請輸入姓名，例如：王小明">
+            <button class="seat-search__clear" id="seatClear" type="button" hidden aria-label="清除查詢內容">
+              <span aria-hidden="true">✕</span>
+            </button>
+            <button class="seat-search__voice" id="seatVoice" type="button" hidden
+                    aria-label="用語音輸入姓名" aria-pressed="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="3" width="6" height="11" rx="3"></rect>
+                <path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v3"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- 即時建議清單（combobox listbox，由 js/seating.js 填入） -->
+          <ul class="seat-suggest" id="seatSuggest" role="listbox" aria-label="姓名建議" hidden></ul>
+
+          <div class="seat-search__actions">
+            <button class="seat-search__btn" id="seatBtn" type="submit">查詢座位</button>
+          </div>
+
+          <!-- 最近查詢（同一次瀏覽內快速再查；無紀錄時隱藏） -->
+          <div class="seat-recent" id="seatRecent" hidden>
+            <p class="seat-recent__title">最近查詢</p>
+            <div class="seat-recent__list" id="seatRecentList"></div>
+          </div>
+
+          <p class="seat-search__hint" id="seatHint">
+            可只輸入姓名的一部分（例如輸入「<b>小明</b>」也能找到「王小明」）；
+            若有同名賓客，會列出候選讓您選擇正確的那一位。
+            查不到時可在現場洽詢接待人員，或請現場人員協助安排。
+          </p>
+        </form>
+
+        <!-- 查詢結果（四態結果卡由 js/seating.js 繪製） -->
+        <div class="seat-result" id="seatResult" role="status" aria-live="polite" aria-atomic="true"></div>
+      </section>
     </div>
   </header>
 
@@ -83,7 +132,7 @@
       </p>
     </div>
 
-    <!-- v63：已移除縮放工具列（＋／－ 與「重設視圖」按鈕，以及相關縮放百分比顯示）。
+    <!-- v63：已移除縮放工具列（＋／－ 與「重設視圖」按鈕）。
          座位圖改為固定寬度、隨裝置自適應；超出畫面的部分可用手指／軌道滑動瀏覽。 -->
     <div class="seat-map-frame">
       <div class="seat-map-scroll" id="seatMapScroll">
@@ -97,11 +146,10 @@
       手機版可用手指左右／上下滑動座位圖瀏覽全部桌次；查詢後會自動捲動聚焦到您的桌次。
     </p>
 
-    <!-- v64：名單來源狀態（僅在 API 失敗／逾時／未設定時顯示；
-         成功取得名單時不顯示任何文字） -->
+    <!-- 名單來源狀態（僅在 API 失敗／逾時／未設定時顯示；成功取得名單時不顯示任何文字） -->
     <p class="seat-data-status" id="seatDataStatus" role="status" aria-live="polite"></p>
 
-    <!-- v65：每桌人數上限提示（僅在偵測到超額時顯示；超額者改由現場人員安排） -->
+    <!-- 每桌人數上限提示（僅在偵測到超額時顯示；超額者改由現場人員安排） -->
     <p class="seat-capacity" id="seatCapacity" role="status" aria-live="polite" hidden></p>
 
     <div class="seat-legend">
@@ -118,9 +166,9 @@
     <div class="seat-notes__card">
       <h2 class="seat-notes__title">貼心提醒</h2>
       <ul class="seat-notes__list">
-        <li>輸入姓名即可查詢；可只輸入名字的一部分（例如「小明」）。</li>
+        <li>輸入姓名即可查詢；可只輸入名字的一部分（例如「小明」），輸入時下方會即時顯示建議名單。</li>
         <li>若有同名賓客，會列出候選讓您選擇正確的那一位。</li>
-        <li>查到的座位會以金色標示並以呼吸燈閃爍，同時顯示「姓名-幾桌」。</li>
+        <li>查到座位會以金色標示並以呼吸燈閃爍，同時顯示「姓名-幾桌」。</li>
         <li>若尚未安排桌次，查詢結果會顯示「由現場人員安排」。</li>
         <li>座位圖以現場實際安排為準；如有疑問請洽現場招待人員。</li>
         <li>名單自動同步問卷回覆；若暫時無法連線，會先顯示備援名單並自動重試。</li>
@@ -132,10 +180,16 @@
   <!-- ══════════════ 頁尾 ══════════════ -->
   <footer class="seat-foot">
     <p class="seat-foot__names">Jack ＆ Lily</p>
-    <p class="seat-foot__note">三生三世・緣定今生 — 期待與您相見</p>
+    <p class="seat-foot__note">三生三世·緣定今生 — 期待與您相見</p>
   </footer>
 
 </main>
+
+<!-- ══════════════ v66：快速查詢座位浮動鈕（捲離查詢區後出現）══════════════ -->
+<button class="seat-fab" id="seatFab" type="button" hidden>
+  <span class="seat-fab__icon" aria-hidden="true">⌕</span>
+  <span class="seat-fab__text">快速查詢座位</span>
+</button>
 
 <!-- ══════════════ 右下角：字級浮動鈕（Tt）══════════════ -->
 <div class="fontctl" id="fontctl" data-open="false">
@@ -151,11 +205,11 @@
 
 <!-- ══════════════ 右下角：背景音樂浮動開關 ══════════════ -->
 <div class="music" id="music">
-  <button class="music__btn playing" id="musicBtn" aria-label="關閉背景音樂" aria-pressed="true">
+  <button class="music__btn" id="musicBtn" aria-label="播放背景音樂" aria-pressed="false">
     <span class="music__bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-    <span class="music__label" id="musicLabel">MUSIC ON</span>
+    <span class="music__label" id="musicLabel">MUSIC OFF</span>
   </button>
-  <audio id="bgm" src="audio/wedding-theme.mp3" loop preload="auto"></audio>
+  <audio id="bgm" src="audio/wedding-theme.mp3" loop preload="none"></audio>
 </div>
 
 <!-- 名單來源設定（v64：問卷回覆 API / 逾時 / 快取 / 提示文字） -->
