@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   seating.js  ── 座位表頁面邏輯（v60）
+   seating.js  ── 座位表頁面邏輯（v61）
    ───────────────────────────────────────────────────────────────────────────
    這個檔案「不需要」在替換座位資料時修改。
    資料一律來自 js/seating-data.js（window.SEATING_DATA）。
@@ -19,18 +19,10 @@
   var VB_W = 1200, VB_H = 620;      /* SVG 內部坐標系（與裝置無關） */      /* SVG 內部座標系（與裝置無關） */
 
   var DATA   = window.SEATING_DATA || {};
-  var VENUE  = DATA.VENUE  || {};
-  var TABLES = Array.isArray(DATA.TABLES) ? DATA.TABLES : [];
-  var GUESTS = Array.isArray(DATA.GUESTS) ? DATA.GUESTS : [];
-  var OPT    = DATA.OPTIONS || {};
-
-  var tablesPerSide  = Math.max(1, parseInt(VENUE.tablesPerSide, 10) || 8);
-  var seatsPerTable  = Math.max(1, parseInt(VENUE.seatsPerTable, 10) || 10);
-  var aisleWidthPct  = Math.min(40, Math.max(6, parseFloat(VENUE.aisleWidthPct) || 13));
-  var LABELS         = VENUE.labels || {};
-  var tableSuffix    = OPT.tableSuffix || "桌";
-  var notFoundText   = OPT.notFoundText || "查無此姓名，請確認輸入或洽現場招待";
-  var candText       = OPT.candidatesText || "找到多位同名或相似的賓客，請選擇：";
+  var CFG    = window.SEATING_CONFIG || {};
+  var VENUE, TABLES, GUESTS, OPT;
+  var tablesPerSide, seatsPerTable, aisleWidthPct, LABELS, tableSuffix, notFoundText, candText;
+  var statusEl = null;
 
   var reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
@@ -48,27 +40,49 @@
   /* ══════════ 一、計算場地幾何 ══════════ */
   var STAGE = { x: 0, y: 14, w: 0, h: 66 };
   var AISLE = { x: 0, y: 0, w: 0, h: 0 };
-  var boardY   = STAGE.y + STAGE.h + 14;          /* 座位區上緣 */
-  var boardH   = VB_H - boardY - 14;              /* 座位區高度 */
-  var aisleW   = VB_W * aisleWidthPct / 100;
-  var aisleX   = (VB_W - aisleW) / 2;
-  var sideW    = aisleX;                          /* 單側寬度 */
-  var nCols    = Math.max(1, Math.ceil(tablesPerSide / 2));
-  var nRows    = Math.min(2, tablesPerSide);
-  var pad      = 12;
-  var colW     = (sideW - pad * 2) / nCols;
-  var rowH     = boardH / nRows;
-  var tableR   = Math.max(20, Math.min(colW * 0.30, rowH * 0.20, 40));
-  var ringR    = tableR + 11;
-  var seatR    = Math.max(4.2, Math.min(6, ringR * 0.115));
+  var boardY, boardH, aisleW, aisleX, sideW, nCols, nRows, pad, colW, rowH, tableR, ringR, seatR;
 
-  STAGE.w = VB_W * 0.5;
-  STAGE.x = VB_W / 2 - STAGE.w / 2;
+  /* 依目前的 DATA 重新計算所有衍生變數與場地幾何。
+     遠端名單載入後會再呼叫一次，因此不需要重新載入頁面。 */
+  function deriveAll() {
+    VENUE  = DATA.VENUE  || {};
+    TABLES = Array.isArray(DATA.TABLES) ? DATA.TABLES : [];
+    GUESTS = Array.isArray(DATA.GUESTS) ? DATA.GUESTS : [];
+    OPT    = DATA.OPTIONS || {};
 
-  AISLE.x = aisleX;
-  AISLE.y = STAGE.y + STAGE.h;
-  AISLE.w = aisleW;
-  AISLE.h = VB_H - AISLE.y - 14;
+    tablesPerSide  = Math.max(1, parseInt(VENUE.tablesPerSide, 10) || 8);
+    seatsPerTable  = Math.max(1, parseInt(VENUE.seatsPerTable, 10) || 10);
+    aisleWidthPct  = Math.min(40, Math.max(6, parseFloat(VENUE.aisleWidthPct) || 13));
+    LABELS         = VENUE.labels || {};
+    tableSuffix    = OPT.tableSuffix || "桌";
+    notFoundText   = OPT.notFoundText || "查無此姓名，請確認輸入或洽現場招待";
+    candText       = OPT.candidatesText || "找到多位同名或相似的賓客，請選擇：";
+
+    boardY   = STAGE.y + STAGE.h + 14;          /* 座位區上緣 */
+    boardH   = VB_H - boardY - 14;              /* 座位區高度 */
+    aisleW   = VB_W * aisleWidthPct / 100;
+    aisleX   = (VB_W - aisleW) / 2;
+    sideW    = aisleX;                          /* 單側寬度 */
+    nCols    = Math.max(1, Math.ceil(tablesPerSide / 2));
+    nRows    = Math.min(2, tablesPerSide);
+    pad      = 12;
+    colW     = (sideW - pad * 2) / nCols;
+    rowH     = boardH / nRows;
+    tableR   = Math.max(20, Math.min(colW * 0.30, rowH * 0.20, 40));
+    ringR    = tableR + 11;
+    seatR    = Math.max(4.2, Math.min(6, ringR * 0.115));
+
+    STAGE.w = VB_W * 0.5;
+    STAGE.x = VB_W / 2 - STAGE.w / 2;
+
+    AISLE.x = aisleX;
+    AISLE.y = STAGE.y + STAGE.h;
+    AISLE.w = aisleW;
+    AISLE.h = VB_H - AISLE.y - 14;
+
+    posLeft  = sidePositions(false);
+    posRight = sidePositions(true);
+  }
 
   /* 產生每一側的座標：col 0 為最靠近紅毯的內側欄，由內往外編號 */
   function sidePositions(mirror) {
@@ -82,8 +96,7 @@
     }
     return out;
   }
-  var posLeft  = sidePositions(false);
-  var posRight = sidePositions(true);
+  var posLeft, posRight;
 
   /* ══════════ 二、繪製全場座位圖 ══════════ */
   var svg, canvas, scrollBox, dimmer = null;
@@ -93,6 +106,13 @@
     canvas = $("#seatMapCanvas");
     scrollBox = $("#seatMapScroll");
     if (!canvas) return;
+
+    /* v61：buildMap 必須是「可重複呼叫」的（遠端名單載入後會再畫一次）。
+       原本只 append 新的 <svg>，會讓畫布疊上第二張圖、tableNodes 也殘留舊桌次，
+       造成桌數倍增（16 → 32）與 is-hit 找不到節點。這裡先清空畫布與節點索引。 */
+    if (svg && svg.parentNode) { svg.parentNode.removeChild(svg); }
+    while (canvas.firstChild) { canvas.removeChild(canvas.firstChild); }
+    tableNodes = {};
 
     svg = el("svg", {
       viewBox: "0 0 " + VB_W + " " + VB_H,
@@ -334,6 +354,8 @@
   }
 
   function bindZoom() {
+    if (zoomBound) { applyZoom(); return; }   /* v61：重繪時不重複綁定 */
+    zoomBound = true;
     var zin = $("#seatZoomIn"), zout = $("#seatZoomOut"), zrst = $("#seatZoomReset");
     if (zin) zin.addEventListener("click", function () { zoom = Math.min(ZOOM_MAX, zoom + 0.25); applyZoom(); centerHit(); });
     if (zout) zout.addEventListener("click", function () { zoom = Math.max(ZOOM_MIN, zoom - 0.25); applyZoom(); centerHit(); });
@@ -349,9 +371,11 @@
   }
 
   var lastBase = 0;
+  var zoomBound = false;
 
   /* ══════════ 五、搜尋 UI ══════════ */
   var resultBox, inputEl;
+  var searchBound = false;
 
   function renderNotFound(q) {
     clearHit();
@@ -421,6 +445,8 @@
     resultBox = $("#seatResult");
     inputEl = $("#seatInput");
     if (!resultBox || !inputEl) return;
+    if (searchBound) return;      /* v61：重繪時不重複綁定事件 */
+    searchBound = true;
     var form = $("#seatForm");
     if (form) form.addEventListener("submit", function (e) { e.preventDefault(); doSearch(); });
     var btn = $("#seatBtn");
@@ -519,8 +545,178 @@
     sync();
   }
 
+  /* ══════════ 七之二、名單來源：問卷回覆（Google Apps Script）══════════
+     目標：不需手動替換 js/seating-data.js，即可自動使用問卷回覆的名單。
+
+     流程：
+       1) 若 localStorage 有未過期的快取名單 → 先立即用快取繪製（秒開）。
+       2) 同時向 API 取得最新名單；成功 → 重繪並更新快取。
+       3) 失敗／逾時 → 維持目前名單（快取或 js/seating-data.js 備援），
+          在座位圖下方以不打擾的方式提示，並依 RETRY_MS 自動重試。
+     任何環節發生錯誤都不會讓頁面空白或停止運作。 */
+
+  function setStatus(text, kind) {
+    if (!statusEl || !text) return;
+    statusEl.textContent = text;
+    statusEl.setAttribute("data-kind", kind || "");
+  }
+
+  function fmtN(text, n) { return String(text == null ? "" : text).replace(/\{n\}/g, String(n)); }
+
+  function readCache() {
+    try {
+      var raw = window.localStorage.getItem(CFG.CACHE_KEY || "ssss-seating-remote-v1");
+      if (!raw) return null;
+      var o = JSON.parse(raw);
+      if (!o || !o.ts || !o.data) return null;
+      if ((Date.now() - o.ts) > (parseInt(CFG.CACHE_TTL_MS, 10) || 300000)) return null;
+      return o.data;
+    } catch (e) { return null; }
+  }
+
+  function writeCache(data) {
+    try {
+      window.localStorage.setItem(CFG.CACHE_KEY || "ssss-seating-remote-v1",
+        JSON.stringify({ ts: Date.now(), data: data }));
+    } catch (e) {}
+  }
+
+  /* 將 API 回傳的 JSON 轉成本檔使用的 DATA 格式；格式不符回傳 null（→ 回退備援）。 */
+  function normalizeRemote(json) {
+    if (!json || typeof json !== "object") return null;
+    var K = CFG.KEYS || {};
+    var guests = json[K.guests || "guests"];
+    if (!Array.isArray(guests)) return null;
+
+    var list = [], i;
+    for (i = 0; i < guests.length; i++) {
+      var g = guests[i] || {};
+      var name = g.name == null ? "" : String(g.name).trim();
+      var table = parseInt(g.table, 10);
+      if (!name || !table || isNaN(table)) continue;
+      var seat = parseInt(g.seat, 10);
+      var item = { name: name, table: table, seat: (!seat || isNaN(seat)) ? 1 : seat };
+      if (g.note) item.note = String(g.note);
+      list.push(item);
+    }
+    if (!list.length) return null;
+
+    var next = { VENUE: DATA.VENUE, TABLES: null, GUESTS: list, OPTIONS: DATA.OPTIONS || {} };
+
+    /* 場地覆寫（可省略）：只覆蓋有提供的欄位，其餘沿用前端設定 */
+    var venue = json[K.venue || "venue"];
+    if (venue && typeof venue === "object") {
+      var merged = {}, base = DATA.VENUE || {}, k;
+      for (k in base) { if (Object.prototype.hasOwnProperty.call(base, k)) merged[k] = base[k]; }
+      for (k in venue) { if (Object.prototype.hasOwnProperty.call(venue, k)) merged[k] = venue[k]; }
+      next.VENUE = merged;
+    }
+
+    var tables = json[K.tables || "tables"];
+    if (Array.isArray(tables) && tables.length) {
+      var tl = [];
+      for (i = 0; i < tables.length; i++) {
+        var tb = tables[i] || {};
+        var no = parseInt(tb.no, 10);
+        if (!no || isNaN(no)) continue;
+        var rec = { no: no, name: tb.name ? String(tb.name) : "" };
+        var s = parseInt(tb.seats, 10);
+        if (s && !isNaN(s)) rec.seats = s;
+        if (tb.side === "left" || tb.side === "right") rec.side = tb.side;
+        tl.push(rec);
+      }
+      if (tl.length) next.TABLES = tl;
+    }
+    if (!next.TABLES) {
+      /* API 未提供桌次清單 → 依實際有人坐的桌號產生，並至少保留 VENUE 的桌數 */
+      var maxNo = 0, m;
+      for (m = 0; m < list.length; m++) { if (list[m].table > maxNo) maxNo = list[m].table; }
+      var minNo = Math.max(1, tablesPerSide ? tablesPerSide * 2 : 16);
+      var out = [];
+      for (m = 1; m <= Math.max(maxNo, minNo); m++) out.push({ no: m, name: "" });
+      next.TABLES = out;
+    }
+    return next;
+  }
+
+  /* 套用新名單並重繪（搜尋與縮放事件不會重複綁定）。 */
+  function applyData(next, statusText, kind) {
+    DATA = next;
+    deriveAll();
+    if (resultBox) { resultBox.className = "seat-result"; resultBox.innerHTML = ""; }
+    buildMap();
+    if (window.seatingPage) {
+      window.seatingPage.tables = Object.keys(tableNodes).map(Number);
+      window.seatingPage.guests = GUESTS.length;
+    }
+    setStatus(fmtN(statusText, GUESTS.length), kind);
+  }
+
+  var retryTimer = null;
+
+  function fetchRemote() {
+    var url = String(CFG.API_URL);
+    var timeout = parseInt(CFG.API_TIMEOUT_MS, 10) || 8000;
+    return new Promise(function (resolve, reject) {
+      var ctrl = (typeof AbortController !== "undefined") ? new AbortController() : null;
+      var timer = window.setTimeout(function () {
+        if (ctrl) { try { ctrl.abort(); } catch (e) {} }
+        reject(new Error("timeout"));
+      }, timeout);
+      fetch(url, { method: "GET", cache: "no-store", signal: ctrl ? ctrl.signal : undefined })
+        .then(function (r) {
+          if (!r.ok) { throw new Error("HTTP " + r.status); }
+          return r.json();
+        })
+        .then(function (json) {
+          window.clearTimeout(timer);
+          if (json && json.ok === false) { throw new Error(json.error || "api error"); }
+          resolve(json);
+        })
+        .catch(function (err) { window.clearTimeout(timer); reject(err); });
+    });
+  }
+
+  function requestRemote(onFail) {
+    fetchRemote().then(function (json) {
+      var next = normalizeRemote(json);
+      if (!next) { throw new Error("empty list"); }
+      writeCache(next);
+      applyData(next, CFG.TEXT_LIVE, "live");
+      if (retryTimer) { window.clearInterval(retryTimer); retryTimer = null; }
+    }).catch(function () {
+      if (typeof onFail === "function") onFail();
+    });
+  }
+
+  function startRetry() {
+    var ms = parseInt(CFG.RETRY_MS, 10) || 0;
+    if (ms <= 0 || retryTimer) return;
+    retryTimer = window.setInterval(function () {
+      requestRemote(function () {});   /* 靜默重試，成功後自動停掉 */
+    }, ms);
+  }
+
+  function loadRemote() {
+    var cached = readCache();
+    if (cached) {
+      applyData(cached, CFG.TEXT_CACHED, "cached");     /* 先秒開，再更新 */
+      requestRemote(function () {
+        setStatus(fmtN(CFG.TEXT_FALLBACK, GUESTS.length), "fallback");
+        startRetry();
+      });
+      return;
+    }
+    requestRemote(function () {
+      setStatus(fmtN(CFG.TEXT_FALLBACK, GUESTS.length), "fallback");   /* 維持備援名單，畫面不變 */
+      startRetry();
+    });
+  }
+
   /* ══════════ 八、啟動 ══════════ */
   function boot() {
+    statusEl = document.getElementById((CFG.STATUS_ID || "seatDataStatus"));
+    deriveAll();
     buildMap();
     initSearch();
     initFontScale();
@@ -534,6 +730,13 @@
       guests: GUESTS.length,
       find: findMatches
     };
+
+    /* v61：已設定 API_URL → 載入問卷回覆名單；未設定 → 明確提示目前使用備援名單。 */
+    if (CFG.API_URL && /^https?:\/\//i.test(String(CFG.API_URL))) {
+      loadRemote();
+    } else {
+      setStatus(CFG.TEXT_LOCAL, "local");
+    }
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);

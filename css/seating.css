@@ -76,6 +76,18 @@
 .seat-map-canvas svg{display:block;width:100%;height:auto;margin:0 auto;font-family:var(--zh)}
 .seat-map-hint{margin:14px auto 0;text-align:center;font-size:.78rem;letter-spacing:.12em;color:var(--grey-2)}
 
+/* ── v61：名單來源狀態（問卷回覆連線狀態）────────────────────────────
+   刻意做成「不干擾」的一行小字：置中、無底色、不遮擋座位圖，也不佔用
+   互動空間。狀態以顏色區分（即時／快取／備援），但不使用強烈色彩，避免
+   影響婚禮頁面的質感。 */
+.seat-data-status{margin:10px auto 0;text-align:center;font-size:.72rem;letter-spacing:.08em;
+  line-height:1.6;color:var(--grey-2);max-width:min(var(--maxw),92vw)}
+.seat-data-status:empty{display:none}
+.seat-data-status[data-kind="live"]{color:#5c7a52}
+.seat-data-status[data-kind="cached"]{color:var(--grey-1)}
+.seat-data-status[data-kind="fallback"]{color:#9a6a2f}
+.seat-data-status[data-kind="local"]{color:var(--grey-2)}
+
 /* ── SVG：場地 ── */
 .venue-bg{fill:#fffdf8;stroke:rgba(110,22,38,.18);stroke-width:1.5}
 .venue-gridline{stroke:rgba(110,22,38,.06);stroke-width:1}

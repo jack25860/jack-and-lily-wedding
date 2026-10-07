@@ -7,6 +7,7 @@
 <meta name="description" content="Jack &amp; Lily 的電子喜帖影片，自動循環播放。三生三世，緣定今生。">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#4A0E19">
+<meta name="site-version" content="v61">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=Cormorant+Garamond:ital,wght@0,400;1,400&family=Noto+Serif+TC:wght@300;400;500&display=swap" rel="stylesheet">
@@ -81,15 +82,10 @@ body:before{
 .frame__inner:before,.frame__inner:after{content:"";position:absolute;width:26px;height:26px;border:1px solid rgba(201,169,97,.6)}
 .frame__inner:before{top:-1px;left:-1px;border-right:0;border-bottom:0}
 .frame__inner:after{bottom:-1px;right:-1px;border-left:0;border-top:0}
-.badge{
-  position:absolute;left:50%;bottom:clamp(12px,2.6vw,20px);transform:translateX(-50%);z-index:3;
-  display:inline-flex;align-items:center;gap:9px;white-space:nowrap;
-  padding:7px 16px;border:1px solid var(--line-gold);border-radius:100px;
-  background:rgba(15,12,11,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  font-family:var(--en-caps);font-size:.58rem;letter-spacing:.28em;text-indent:.28em;color:var(--gold-light)
-}
-.badge i{width:6px;height:6px;border-radius:50%;background:var(--gold);flex:none;animation:pulse 2.4s var(--ease) infinite}
-@keyframes pulse{0%,to{opacity:.45;transform:scale(.86)}50%{opacity:1;transform:scale(1.16)}}
+/* v61：移除「LOOP · 循環播放」浮動文字標籤（.badge）的樣式。
+   該標籤原本絕對定位在影片框內底部（left:50%;bottom:20px;z-index:3），
+   會蓋住影片本身的畫面內容（影片底部原有的英文標語被遮住）。
+   移除後影片區域內不再有任何文字浮層。影片播放／漂浮音效開關／其他既有功能不變。 */
 
 /* ── 說明與操作 ── */
 .note{text-align:center;max-width:44ch;font-size:clamp(.84rem,2vw,.96rem);letter-spacing:.12em;line-height:2.1;color:#f5f0e7c7}
@@ -135,7 +131,6 @@ body:before{
 .sound__label{transition:color .35s var(--ease),opacity .35s var(--ease)}
 .sound__btn.playing .sound__bars i{transition:height .45s var(--ease),background .45s}
 @media(prefers-reduced-motion:reduce){
-  .badge i{animation:none}
   *{transition-duration:.001ms!important}
 }
 </style>
@@ -165,7 +160,10 @@ body:before{
     <!-- v54：透明防護層，攔截所有點擊／觸控，避免任何 tap 傳到 <video> 觸發 Android 原生暫停。 -->
     <div class="frame__shield" aria-hidden="true"></div>
     <div class="frame__inner" aria-hidden="true"></div>
-    <span class="badge"><i aria-hidden="true"></i><span>LOOP · 循環播放</span></span>
+    <!-- v61：刪除原本壓在影片內容上的「LOOP · 循環播放」文字標籤（.badge）。
+         該行文字浮在影片框內底部，遮擋影片畫面；移除後影片區域不再有任何文字遮蓋。
+         影片播放（autoplay/loop/muted 與各項續播修正）、右下角漂浮音效開關、
+         點擊防護層 .frame__shield 與裝飾框 .frame__inner 全部保持不變。 -->
   </div>
 
   <p class="note">
