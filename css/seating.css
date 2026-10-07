@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   seating.css  ── 座位表頁面專用樣式（v60）
+   seating.css  ── 座位表頁面專用樣式（v62）
    僅新增 .seat-* / .venue-* / .tbl* 等命名的樣式，
    不動也不依賴 index.html 的既有規則；色彩與動效 token 沿用 css/styles.css：
      --wine #6E1626 / --gold #C9A961 / --paper #F5F0E7 / 毛玻璃 / --ease / --dur-*
@@ -106,6 +106,11 @@
 .tbl__num{fill:var(--ink-2);font-family:var(--en);font-size:21px;font-weight:500;letter-spacing:.02em}
 .tbl__name{fill:var(--wine);font-size:8px;letter-spacing:.02em}
 .tbl__island{fill:rgba(110,22,38,.05);stroke:rgba(110,22,38,.16);stroke-width:1;stroke-dasharray:5 5}
+/* v62：主桌（舞台正前方、紅毯末端）— 以金色描邊強調 */
+.tbl--main .tbl__ring{stroke:var(--gold);stroke-width:2.4;fill:#fffaf0}
+.tbl--main .tbl__num{fill:var(--wine);font-size:24px}
+.tbl--main .tbl__name{fill:var(--wine);font-size:9px;letter-spacing:.06em}
+.tbl--main .tbl-seat{fill:#fdf6e6;stroke:rgba(201,169,97,.7)}
 .tbl-seat{fill:var(--paper-2);stroke:rgba(110,22,38,.34);stroke-width:1;transition:fill .5s var(--ease-out),stroke .5s var(--ease-out)}
 .tbl:hover .tbl__ring{stroke:var(--wine);stroke-width:2.2}
 .tbl:hover .tbl__num{fill:var(--wine)}

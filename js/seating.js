@@ -1,12 +1,16 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   seating.js  ── 座位表頁面邏輯（v61）
+   seating.js  ── 座位表頁面邏輯（v62）
    ───────────────────────────────────────────────────────────────────────────
    這個檔案「不需要」在替換座位資料時修改。
-   資料一律來自 js/seating-data.js（window.SEATING_DATA）。
+   資料來源：
+     • 主來源 = 問卷回覆的 Google 線上表單（經 Apps Script Web App 取得 JSON，
+                設定於 js/seating-config.js 的 API_URL）
+     • 備援   = js/seating-data.js（window.SEATING_DATA；API 未設定／逾時／失敗時回退）
 
    功能：
-     1. 依 VENUE 參數繪製「全場座位圖」：
-        前方大舞台 + 中間紅毯步道 + 左右兩側桌次（目前 16 桌＝左右各 8 桌）
+     1. 依 VENUE 參數繪製「全場座位圖」（v62）：
+        前方大舞台 + 中間紅毯步道 + 紅毯末端（舞台正前方）12 人主桌
+        + 紅毯左右兩側共 15 桌（左 8、右 7）
      2. 姓名查詢（模糊／部分比對、同名候選、查無資料三種情境）
      3. 查到時：座位變色 + 呼吸燈、顯示「姓名-幾桌」、自動捲動聚焦到該桌
      4. 右下角「Tt」字級浮動鈕（三檔 sm/md/lg，沿用主站 localStorage 記憶）
@@ -41,6 +45,9 @@
   var STAGE = { x: 0, y: 14, w: 0, h: 66 };
   var AISLE = { x: 0, y: 0, w: 0, h: 0 };
   var boardY, boardH, aisleW, aisleX, sideW, nCols, nRows, pad, colW, rowH, tableR, ringR, seatR;
+  /* v62：主桌（舞台正前方、紅毯末端）幾何 */
+  var mainTableNo = 0, mainTableSeats = 12, mainTableName = "主桌";
+  var mainTableR = 0, mainTableRing = 0, mainTableY = 0, mainTableH = 0, mainTablePos = { x: 0, y: 0 };
 
   /* 依目前的 DATA 重新計算所有衍生變數與場地幾何。
      遠端名單載入後會再呼叫一次，因此不需要重新載入頁面。 */
@@ -57,6 +64,13 @@
     tableSuffix    = OPT.tableSuffix || "桌";
     notFoundText   = OPT.notFoundText || "查無此姓名，請確認輸入或洽現場招待";
     candText       = OPT.candidatesText || "找到多位同名或相似的賓客，請選擇：";
+
+    /* v62：主桌（舞台正前方、紅毯末端）。VENUE.mainTable 為 null 時不畫主桌。 */
+    var mt = VENUE.mainTable;
+    mainTableNo    = (mt && mt.no != null) ? parseInt(mt.no, 10) : 0;
+    if (isNaN(mainTableNo)) mainTableNo = 0;
+    mainTableSeats = (mt && mt.seats) ? Math.max(1, parseInt(mt.seats, 10) || 12) : 12;
+    mainTableName  = (mt && mt.name) ? String(mt.name) : (LABELS.mainTable || "主桌");
 
     boardY   = STAGE.y + STAGE.h + 14;          /* 座位區上緣 */
     boardH   = VB_H - boardY - 14;              /* 座位區高度 */
@@ -80,6 +94,13 @@
     AISLE.w = aisleW;
     AISLE.h = VB_H - AISLE.y - 14;
 
+    /* v62：主桌佔用紅毯最前段（舞台正前方），側桌格位因此往下讓開主桌高度。 */
+    mainTableR    = mainTableNo ? Math.max(24, Math.min(aisleW * 0.30, 40)) : 0;
+    mainTableRing = mainTableR + 12;
+    mainTableY    = AISLE.y + mainTableRing + 16;
+    mainTableH    = mainTableNo ? (mainTableRing * 2 + 26) : 0;
+    mainTablePos  = { x: VB_W / 2, y: mainTableY };
+
     posLeft  = sidePositions(false);
     posRight = sidePositions(true);
   }
@@ -87,11 +108,15 @@
   /* 產生每一側的座標：col 0 為最靠近紅毯的內側欄，由內往外編號 */
   function sidePositions(mirror) {
     var out = [];
+    /* v62：主桌佔用的高度往下讓開，側桌格位改由主桌下方起算 */
+    var top = boardY + (mainTableNo ? mainTableH : 0);
+    var h   = boardH - (mainTableNo ? mainTableH : 0);
+    var rh  = h / nRows;
     for (var c = 0; c < nCols; c++) {
       for (var r = 0; r < nRows; r++) {
         var cx = pad + colW * (c + 0.5);
         if (mirror) cx = VB_W - cx;
-        out.push({ x: cx, y: boardY + rowH * (r + 0.5) });
+        out.push({ x: cx, y: top + rh * (r + 0.5) });
       }
     }
     return out;
@@ -107,7 +132,7 @@
     scrollBox = $("#seatMapScroll");
     if (!canvas) return;
 
-    /* v61：buildMap 必須是「可重複呼叫」的（遠端名單載入後會再畫一次）。
+    /* v62：buildMap 必須是「可重複呼叫」的（遠端名單載入後會再畫一次）。
        原本只 append 新的 <svg>，會讓畫布疊上第二張圖、tableNodes 也殘留舊桌次，
        造成桌數倍增（16 → 32）與 is-hit 找不到節點。這裡先清空畫布與節點索引。 */
     if (svg && svg.parentNode) { svg.parentNode.removeChild(svg); }
@@ -133,10 +158,11 @@
     /* 場地底板 */
     el("rect", { class: "venue-bg", x: 6, y: 6, width: VB_W - 12, height: VB_H - 12, rx: 14 }, svg);
 
-    /* 左右兩側區塊 */
-    var sideBlockH = AISLE.h;
-    el("rect", { class: "tbl__island", x: 16, y: AISLE.y + 8, width: aisleX - 32, height: sideBlockH - 16, rx: 18 }, svg);
-    el("rect", { class: "tbl__island", x: VB_W - aisleX + 16, y: AISLE.y + 8, width: aisleX - 32, height: sideBlockH - 16, rx: 18 }, svg);
+    /* 左右兩側區塊（v62：上緣讓開主桌高度） */
+    var islandTop  = AISLE.y + 8 + (mainTableNo ? mainTableH : 0);
+    var sideBlockH = AISLE.h - (mainTableNo ? mainTableH : 0);
+    el("rect", { class: "tbl__island", x: 16, y: islandTop, width: aisleX - 32, height: sideBlockH - 16, rx: 18 }, svg);
+    el("rect", { class: "tbl__island", x: VB_W - aisleX + 16, y: islandTop, width: aisleX - 32, height: sideBlockH - 16, rx: 18 }, svg);
 
     /* 舞台 */
     el("rect", { class: "stage", x: STAGE.x, y: STAGE.y, width: STAGE.w, height: STAGE.h, rx: 6 }, svg);
@@ -157,25 +183,37 @@
       x1: VB_W / 2, y1: AISLE.y + 6, x2: VB_W / 2, y2: AISLE.y + AISLE.h - 6,
       stroke: "rgba(201,169,97,.45)", "stroke-width": 1, "stroke-dasharray": "8 10"
     }, svg);
+    var aisleLabelY = AISLE.y + (mainTableNo ? mainTableH + 30 : 34);
     var aisleTx = el("text", {
-      class: "aisle__text", x: VB_W / 2, y: AISLE.y + 34, "text-anchor": "middle",
-      transform: "rotate(90 " + (VB_W / 2) + " " + (AISLE.y + 34) + ")"
+      class: "aisle__text", x: VB_W / 2, y: aisleLabelY, "text-anchor": "middle",
+      transform: "rotate(90 " + (VB_W / 2) + " " + aisleLabelY + ")"
     }, svg);
     aisleTx.textContent = LABELS.aisle || "紅毯步道";
 
     /* 左右側標示 */
-    var lft = el("text", { class: "side-label", x: aisleX / 2, y: AISLE.y + 22, "text-anchor": "middle" }, svg);
+    var sideLabelY = islandTop + 14;
+    var lft = el("text", { class: "side-label", x: aisleX / 2, y: sideLabelY, "text-anchor": "middle" }, svg);
     lft.textContent = LABELS.leftSide || "左側";
-    var rgt = el("text", { class: "side-label", x: VB_W - aisleX / 2, y: AISLE.y + 22, "text-anchor": "middle" }, svg);
+    var rgt = el("text", { class: "side-label", x: VB_W - aisleX / 2, y: sideLabelY, "text-anchor": "middle" }, svg);
     rgt.textContent = LABELS.rightSide || "右側";
 
-    /* 桌次 */
-    TABLES.forEach(function (t, i) {
-      var side = (t.side === "right" || t.side === "left")
-        ? t.side
-        : (i < tablesPerSide ? "left" : "right");
+    /* 主桌（v62：舞台正前方、紅毯末端） */
+    if (mainTableNo) {
+      var mtRec = null;
+      for (var mi = 0; mi < TABLES.length; mi++) {
+        if (Number(TABLES[mi].no) === mainTableNo) { mtRec = TABLES[mi]; break; }
+      }
+      if (!mtRec) mtRec = { no: mainTableNo, name: mainTableName, seats: mainTableSeats, main: true };
+      buildTable(mtRec, mainTablePos.x, mainTablePos.y, "main");
+    }
+
+    /* 側桌（v62：依實際側桌順序取格位，主桌不佔側桌格位） */
+    var li = 0, ri = 0;
+    TABLES.forEach(function (t) {
+      if (Number(t.no) === mainTableNo) return;
+      var side = (t.side === "right" || t.side === "left") ? t.side : (li <= ri ? "left" : "right");
       var list = side === "left" ? posLeft : posRight;
-      var idx = side === "left" ? i : i - tablesPerSide;
+      var idx = side === "left" ? li++ : ri++;
       if (!list[idx]) idx = idx % list.length;
       var p = list[idx];
       buildTable(t, p.x, p.y, side);
@@ -191,27 +229,31 @@
   }
 
   function buildTable(t, cx, cy, side) {
-    var g = el("g", { class: "tbl", "data-table": String(t.no), "data-side": side }, svg);
-    var seats = Math.max(1, parseInt(t.seats, 10) || seatsPerTable);
+    var isMain = (side === "main") || (Number(t.no) === mainTableNo);
+    var g = el("g", { class: "tbl" + (isMain ? " tbl--main" : ""), "data-table": String(t.no), "data-side": side }, svg);
+    var seats = Math.max(1, parseInt(t.seats, 10) || (isMain ? mainTableSeats : seatsPerTable));
+    var tR = isMain ? mainTableR : tableR;
+    var rR = isMain ? mainTableRing : ringR;
+    var sR = isMain ? Math.max(4.6, Math.min(6.4, rR * 0.115)) : seatR;
 
     /* 座位點 */
     var seatNodes = [];
     var step = 360 / seats;
     for (var s = 0; s < seats; s++) {
       var a = (-90 + s * step) * Math.PI / 180;
-      var sx = cx + Math.cos(a) * ringR;
-      var sy = cy + Math.sin(a) * ringR;
-      var sc = el("circle", { class: "tbl-seat", cx: sx.toFixed(2), cy: sy.toFixed(2), r: seatR, "data-seat": s + 1 }, g);
+      var sx = cx + Math.cos(a) * rR;
+      var sy = cy + Math.sin(a) * rR;
+      var sc = el("circle", { class: "tbl-seat", cx: sx.toFixed(2), cy: sy.toFixed(2), r: sR, "data-seat": s + 1 }, g);
       var owner = guestAt(t.no, s + 1);
       if (owner) { var ti = el("title", null, sc); ti.textContent = owner.name + " · " + (s + 1) + "號"; }
       seatNodes.push(sc);
     }
 
-    el("circle", { class: "tbl__ring", cx: cx, cy: cy, r: tableR }, g);
-    var num = el("text", { class: "tbl__num", x: cx, y: cy + tableR * 0.20, "text-anchor": "middle" }, g);
+    el("circle", { class: "tbl__ring", cx: cx, cy: cy, r: tR }, g);
+    var num = el("text", { class: "tbl__num", x: cx, y: cy + tR * 0.20, "text-anchor": "middle" }, g);
     num.textContent = String(t.no);
     if (t.name) {
-      var nm = el("text", { class: "tbl__name", x: cx, y: cy + tableR * 0.66, "text-anchor": "middle" }, g);
+      var nm = el("text", { class: "tbl__name", x: cx, y: cy + tR * 0.66, "text-anchor": "middle" }, g);
       nm.textContent = t.name;
     }
 
@@ -222,7 +264,7 @@
 
     tableNodes[t.no] = {
       gEl: g, ring: g.querySelector(".tbl__ring"), hitLabel: lg, hitLabelBg: bg, hitLabelText: lt,
-      cx: cx, cy: cy, seats: seatNodes, data: t
+      cx: cx, cy: cy, ringR: rR, isMain: isMain, seats: seatNodes, data: t
     };
   }
 
@@ -282,8 +324,8 @@
       tn.hitLabelBg.setAttribute("width", w);
       tn.hitLabelBg.setAttribute("x", tn.cx - w / 2);
       tn.hitLabelText.setAttribute("x", tn.cx);
-      var ty = tn.cy - ringR - 34;
-      if (ty < 8) ty = tn.cy + ringR + 12;
+      var ty = tn.cy - (tn.ringR || ringR) - 34;
+      if (ty < 8) ty = tn.cy + (tn.ringR || ringR) + 12;
       tn.hitLabelBg.setAttribute("y", ty);
       tn.hitLabelText.setAttribute("y", ty + 18);
       tn.hitLabel.classList.add("is-on");
@@ -354,7 +396,7 @@
   }
 
   function bindZoom() {
-    if (zoomBound) { applyZoom(); return; }   /* v61：重繪時不重複綁定 */
+    if (zoomBound) { applyZoom(); return; }   /* v62：重繪時不重複綁定 */
     zoomBound = true;
     var zin = $("#seatZoomIn"), zout = $("#seatZoomOut"), zrst = $("#seatZoomReset");
     if (zin) zin.addEventListener("click", function () { zoom = Math.min(ZOOM_MAX, zoom + 0.25); applyZoom(); centerHit(); });
@@ -445,7 +487,7 @@
     resultBox = $("#seatResult");
     inputEl = $("#seatInput");
     if (!resultBox || !inputEl) return;
-    if (searchBound) return;      /* v61：重繪時不重複綁定事件 */
+    if (searchBound) return;      /* v62：重繪時不重複綁定事件 */
     searchBound = true;
     var form = $("#seatForm");
     if (form) form.addEventListener("submit", function (e) { e.preventDefault(); doSearch(); });
@@ -588,6 +630,11 @@
     var guests = json[K.guests || "guests"];
     if (!Array.isArray(guests)) return null;
 
+    /* v62：已回覆但尚未分配桌次的姓名（座位圖上不會出現，但會提示） */
+    var unplaced = json[K.unplaced || "unplaced"];
+    if (!Array.isArray(unplaced)) unplaced = [];
+    unplaced = unplaced.map(function (x) { return String(x == null ? "" : x).trim(); }).filter(Boolean);
+
     var list = [], i;
     for (i = 0; i < guests.length; i++) {
       var g = guests[i] || {};
@@ -599,7 +646,9 @@
       if (g.note) item.note = String(g.note);
       list.push(item);
     }
-    if (!list.length) return null;
+    /* v62：API 正常但尚無「已分配桌次」的賓客（例如試算表還沒填桌次欄）
+       → 回報 empty，由呼叫端保留備援名單並提示，不視為失敗。 */
+    if (!list.length) return { empty: true, unplaced: unplaced };
 
     var next = { VENUE: DATA.VENUE, TABLES: null, GUESTS: list, OPTIONS: DATA.OPTIONS || {} };
 
@@ -636,7 +685,7 @@
       for (m = 1; m <= Math.max(maxNo, minNo); m++) out.push({ no: m, name: "" });
       next.TABLES = out;
     }
-    return next;
+    return { data: next, unplaced: unplaced };
   }
 
   /* 套用新名單並重繪（搜尋與縮放事件不會重複綁定）。 */
@@ -679,14 +728,34 @@
 
   function requestRemote(onFail) {
     fetchRemote().then(function (json) {
-      var next = normalizeRemote(json);
-      if (!next) { throw new Error("empty list"); }
-      writeCache(next);
-      applyData(next, CFG.TEXT_LIVE, "live");
+      var res = normalizeRemote(json);
+      if (!res) { throw new Error("bad format"); }
+      if (res.empty) {
+        /* v62：API 正常但尚無已分配桌次的賓客 → 保留備援名單，僅提示未排桌者 */
+        setStatus(unplacedText(res.unplaced), "fallback");
+        return;
+      }
+      writeCache(res.data);
+      applyData(res.data, CFG.TEXT_LIVE, "live");
+      if (res.unplaced && res.unplaced.length) appendUnplaced(res.unplaced);
       if (retryTimer) { window.clearInterval(retryTimer); retryTimer = null; }
     }).catch(function () {
       if (typeof onFail === "function") onFail();
     });
+  }
+
+  /* v62：未分配桌次的提示文字（不干擾、不遮擋座位圖） */
+  function unplacedText(list) {
+    list = list || [];
+    var t = CFG.TEXT_UNPLACED || "另有 {n} 位已回覆、尚未分配桌次：{names}";
+    var names = list.slice(0, 12).join("、");
+    if (list.length > 12) names += " 等";
+    return String(t).replace(/\{n\}/g, String(list.length)).replace(/\{names\}/g, names);
+  }
+
+  function appendUnplaced(list) {
+    if (!statusEl || !list || !list.length) return;
+    statusEl.textContent = statusEl.textContent + "　" + unplacedText(list);
   }
 
   function startRetry() {
@@ -731,7 +800,7 @@
       find: findMatches
     };
 
-    /* v61：已設定 API_URL → 載入問卷回覆名單；未設定 → 明確提示目前使用備援名單。 */
+    /* v62：已設定 API_URL → 載入問卷回覆名單；未設定 → 明確提示目前使用備援名單。 */
     if (CFG.API_URL && /^https?:\/\//i.test(String(CFG.API_URL))) {
       loadRemote();
     } else {
