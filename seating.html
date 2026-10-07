@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
 <!-- ══════════════════════════════════════════════════════════════════════
-     座位表獨立頁（v62）
+     座位表獨立頁（v63）
      • 這是一頁「獨立存在」的頁面，主網站 index.html 沒有任何連結或入口指向它。
        （index.html 的座位置預留區維持原樣、未啟用。）
      • 可直接以網址開啟，例如：
          https://jack25860.github.io/jack-and-lily-wedding/seating.html
      • 已被搜尋引擎忽略（noindex, nofollow）。
-     • 名單來源（v62）：
+     • 名單來源（v63）：
          主來源 = 問卷回覆的 Google 線上表單（經 Google Apps Script Web App 向
                    scripts/seating-from-sheet.gs 取得 JSON），設定於 js/seating-config.js 的 API_URL。
          備援   = js/seating-data.js（API 未設定、逾時或失敗時自動回退）。
@@ -20,7 +20,7 @@
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
 <meta name="googlebot" content="noindex, nofollow">
 <meta name="theme-color" content="#6E1626">
-<meta name="site-version" content="v62">
+<meta name="site-version" content="v63">
 <meta name="motion" content="silky-no-flash">
 <title>全場座位表｜三生三世・緣定今生 Jack ＆ Lily</title>
 
@@ -77,14 +77,8 @@
       </p>
     </div>
 
-    <!-- 縮放工具列 -->
-    <div class="seat-tools" role="group" aria-label="座位圖縮放">
-      <button class="seat-tool" id="seatZoomOut" type="button" aria-label="縮小座位圖">－</button>
-      <span class="seat-tools__zoomval" id="seatZoomVal">100%</span>
-      <button class="seat-tool" id="seatZoomIn" type="button" aria-label="放大座位圖">＋</button>
-      <button class="seat-tool" id="seatZoomReset" type="button">重設視圖</button>
-    </div>
-
+    <!-- v63：已移除縮放工具列（＋／－ 與「重設視圖」按鈕，以及相關縮放百分比顯示）。
+         座位圖改為固定寬度、隨裝置自適應；超出畫面的部分可用手指／軌道滑動瀏覽。 -->
     <div class="seat-map-frame">
       <div class="seat-map-scroll" id="seatMapScroll">
         <!-- 座位圖由 js/seating.js 依 js/seating-config.js 的 API_URL（問卷回覆）
@@ -94,10 +88,10 @@
     </div>
 
     <p class="seat-map-hint">
-      手機版可用手指左右／上下滑動座位圖，或用上方「＋／－」縮放；查詢後會自動聚焦到您的桌次。
+      手機版可用手指左右／上下滑動座位圖瀏覽全部桌次；查詢後會自動捲動聚焦到您的桌次。
     </p>
 
-    <!-- v62：名單來源狀態（不干擾、不遮擋座位圖，僅在下方以一行小字提示） -->
+    <!-- v63：名單來源狀態（不干擾、不遮擋座位圖，僅在下方以一行小字提示） -->
     <p class="seat-data-status" id="seatDataStatus" role="status" aria-live="polite"></p>
 
     <div class="seat-legend">
@@ -152,7 +146,7 @@
   <audio id="bgm" src="audio/wedding-theme.mp3" loop preload="auto"></audio>
 </div>
 
-<!-- 名單來源設定（v62：問卷回覆 API / 逾時 / 快取 / 提示文字） -->
+<!-- 名單來源設定（v63：問卷回覆 API / 逾時 / 快取 / 提示文字） -->
 <script src="js/seating-config.js"></script>
 <!-- 座位資料檔（備援名單；API 失敗時自動回退到本檔）→ 再載入繪製邏輯 -->
 <script src="js/seating-data.js"></script>

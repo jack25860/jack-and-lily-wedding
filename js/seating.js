@@ -15,6 +15,10 @@
      3. 查到時：座位變色 + 呼吸燈、顯示「姓名-幾桌」、自動捲動聚焦到該桌
      4. 右下角「Tt」字級浮動鈕（三檔 sm/md/lg，沿用主站 localStorage 記憶）
      5. 支援 prefers-reduced-motion
+
+   v63 變更：移除「＋／－」縮放功能（#seatZoomIn / #seatZoomOut / #seatZoomVal /
+     #seatZoomReset 按鈕，以及 zoom、baseWidth、applyZoom、bindZoom 等相關邏輯）。
+     座位圖改為固定寬度、隨裝置自適應；查詢後仍會自動捲動聚焦，超出畫面可用滑動瀏覽。
    ═══════════════════════════════════════════════════════════════════════════ */
 (function () {
   "use strict";
@@ -224,8 +228,6 @@
     /* 圖例 / 資料來源註記（SVG 內） */
     var srcTx = el("text", { class: "venue-caption", x: 24, y: VB_H - 14 }, svg);
     srcTx.textContent = "SEATING CHART · JACK & LILY";
-
-    bindZoom();
   }
 
   function buildTable(t, cx, cy, side) {
@@ -343,26 +345,9 @@
     return Math.max(56, w + 24);
   }
 
-  /* ══════════ 四、聚焦 / 縮放 ══════════ */
-  var zoom = 1, ZOOM_MIN = 1, ZOOM_MAX = 2.6;
-
-  /* 以「改變畫布寬度」實現縮放（而非 transform），
-     這樣溢出的部分才能真的用捲動／手指拖曳看到，且不會被裁切。 */
-  function baseWidth() {
-    if (!scrollBox) return 700;
-    var cs = window.getComputedStyle(scrollBox);
-    var pl = parseFloat(cs.paddingLeft) || 0, pr = parseFloat(cs.paddingRight) || 0;
-    var w = scrollBox.clientWidth - pl - pr;
-    return Math.max(w || 0, 700);
-  }
-
-  function applyZoom() {
-    if (!canvas) return;
-    canvas.style.width = Math.round(baseWidth() * zoom) + "px";
-    var zv = $("#seatZoomVal");
-    if (zv) zv.textContent = Math.round(zoom * 100) + "%";
-  }
-
+  /* ══════════ 四、聚焦 ══════════ */
+  /* v63：縮放變數（zoom / ZOOM_MIN / ZOOM_MAX）與 applyZoom() 已移除。
+     只保留「查詢後自動捲動聚焦」；座位圖固定寬度，隨裝置自適應。 */
   function centerOn(tn) {
     if (!scrollBox || !tn) return;
     var tr = tn.gEl.getBoundingClientRect();
@@ -378,10 +363,6 @@
 
   function focusTable(tn) {
     if (!tn) return;
-    var target = window.innerWidth <= 640 ? 1.75 : 1.5;
-    zoom = Math.max(zoom, target);
-    if (zoom > ZOOM_MAX) zoom = ZOOM_MAX;
-    applyZoom();
     var raf = window.requestAnimationFrame || function (f) { return window.setTimeout(f, 16); };
     raf(function () {
       window.setTimeout(function () { centerOn(tn); }, reduceMotion ? 0 : 420);
@@ -395,25 +376,7 @@
     raf(function () { window.setTimeout(function () { centerOn(tableNodes[k]); }, reduceMotion ? 0 : 420); });
   }
 
-  function bindZoom() {
-    if (zoomBound) { applyZoom(); return; }   /* v62：重繪時不重複綁定 */
-    zoomBound = true;
-    var zin = $("#seatZoomIn"), zout = $("#seatZoomOut"), zrst = $("#seatZoomReset");
-    if (zin) zin.addEventListener("click", function () { zoom = Math.min(ZOOM_MAX, zoom + 0.25); applyZoom(); centerHit(); });
-    if (zout) zout.addEventListener("click", function () { zoom = Math.max(ZOOM_MIN, zoom - 0.25); applyZoom(); centerHit(); });
-    if (zrst) zrst.addEventListener("click", function () {
-      zoom = 1; applyZoom();
-      if (scrollBox && scrollBox.scrollTo) scrollBox.scrollTo({ left: 0, top: 0, behavior: reduceMotion ? "auto" : "smooth" });
-    });
-    applyZoom();
-    window.addEventListener("resize", function () {
-      var w = baseWidth();
-      if (w !== lastBase) { lastBase = w; applyZoom(); }
-    }, { passive: true });
-  }
-
-  var lastBase = 0;
-  var zoomBound = false;
+  /* v63：bindZoom()、lastBase、zoomBound 已移除（縮放鈕不再存在）。 */
 
   /* ══════════ 五、搜尋 UI ══════════ */
   var resultBox, inputEl;
@@ -421,7 +384,6 @@
 
   function renderNotFound(q) {
     clearHit();
-    zoom = 1; applyZoom();
     resultBox.className = "seat-result seat-result--miss";
     resultBox.innerHTML =
       '<p class="seat-result__text">' + esc(notFoundText) + "</p>" +
@@ -430,7 +392,6 @@
 
   function renderCandidates(list, q) {
     clearHit();
-    zoom = 1; applyZoom();
     var html = '<p class="seat-result__text">' + esc(candText) + "</p>" +
       '<div class="seat-result__cands"><p class="seat-result__cands-title">「' + esc(q) + '」共 ' + list.length + " 筆</p>" +
       '<div class="seat-result__cands-list">';
@@ -472,7 +433,6 @@
       clearHit();
       resultBox.className = "seat-result";
       resultBox.innerHTML = "";
-      zoom = 1; applyZoom();
       inputEl.focus();
       return { state: "empty" };
     }
@@ -497,7 +457,6 @@
     inputEl.addEventListener("input", function () {
       if (!(inputEl.value || "").trim()) {
         clearHit(); resultBox.className = "seat-result"; resultBox.innerHTML = "";
-        zoom = 1; applyZoom();
       }
     });
   }
@@ -793,7 +752,7 @@
     /* 供測試／除錯使用（不影響一般瀏覽） */
     window.seatingPage = {
       search: doSearch,
-      clear: function () { clearHit(); if (resultBox) { resultBox.innerHTML = ""; } zoom = 1; applyZoom(); },
+      clear: function () { clearHit(); if (resultBox) { resultBox.innerHTML = ""; } },
       focusNo: function (no) { var tn = tableNodes[Number(no)]; if (tn) { showHit({ name: "測試", table: Number(no), seat: 1 }); } return !!tn; },
       tables: Object.keys(tableNodes).map(Number),
       guests: GUESTS.length,

@@ -59,20 +59,15 @@
 .seat-map-head__title{margin-top:14px;font-size:clamp(1.35rem,3.4vw,2.05rem);font-weight:400;letter-spacing:.2em;color:var(--ink-2)}
 .seat-map-head__sub{margin-top:12px;font-size:.88rem;letter-spacing:.14em;color:var(--grey-2)}
 
-/* 工具列（縮放 / 重設） */
-.seat-tools{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;margin:0 auto clamp(14px,2vw,20px)}
-.seat-tool{min-height:44px;min-width:44px;padding:10px 18px;background:#fbf7ef;border:1px solid rgba(110,22,38,.28);border-radius:100px;color:var(--wine);font-size:.8rem;letter-spacing:.16em;transition:background .45s var(--ease-soft),color .45s,border-color .45s,transform .45s var(--ease)}
-.seat-tool:hover{background:var(--wine);border-color:var(--wine);color:var(--gold-light);transform:translateY(-1px)}
-.seat-tool:focus-visible{outline:2px solid var(--wine);outline-offset:2px}
-.seat-tools__zoomval{font-family:var(--en-caps);font-size:.72rem;letter-spacing:.2em;color:var(--grey-2);min-width:64px;text-align:center}
+/* v63：已移除工具列（縮放 / 重設）。座位圖改為固定寬度、隨裝置自適應。 */
 
-/* 可捲動 / 可縮放的畫布框 */
+/* 可捲動的畫布框 */
 .seat-map-frame{position:relative;width:min(var(--maxw),92vw);margin:0 auto;border:1px solid rgba(110,22,38,.28);background:linear-gradient(180deg,#fffdf8,#f7f1e6);box-shadow:0 30px 70px -42px #13101073,0 0 0 1px #c9a9612e inset;overflow:hidden}
 .seat-map-frame:before,.seat-map-frame:after{content:"";position:absolute;width:22px;height:22px;border:1px solid rgba(110,22,38,.34);pointer-events:none;z-index:4}
 .seat-map-frame:before{top:8px;left:8px;border-right:0;border-bottom:0}
 .seat-map-frame:after{bottom:8px;right:8px;border-left:0;border-top:0}
 .seat-map-scroll{width:100%;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:clamp(12px,2vw,22px)}
-.seat-map-canvas{width:100%;transition:width .38s var(--ease-out)}
+.seat-map-canvas{width:100%}
 .seat-map-canvas svg{display:block;width:100%;height:auto;margin:0 auto;font-family:var(--zh)}
 .seat-map-hint{margin:14px auto 0;text-align:center;font-size:.78rem;letter-spacing:.12em;color:var(--grey-2)}
 
@@ -168,16 +163,15 @@
 
 /* ══════════ 尊重 prefers-reduced-motion ══════════ */
 @media(prefers-reduced-motion:reduce){
-  .seat-map-canvas{transition:none}
   .tbl.is-hit .tbl__ring,.seat-hit{animation:none}
   .tbl.is-hit .tbl__ring{opacity:1}
   .seat-hit{opacity:1}
-  .seat-tool,.seat-cand,.seat-search__btn,.tbl__ring,.tbl-seat{transition:none}
+  .seat-cand,.seat-search__btn,.tbl__ring,.tbl-seat{transition:none}
 }
 
 /* 列印：只留座位圖 */
 @media print{
-  .seat-search,.seat-tools,.music,.fontctl,.seat-foot{display:none!important}
+  .seat-search,.music,.fontctl,.seat-foot{display:none!important}
   .seat-map-frame{box-shadow:none;border-color:#999}
   body{background:#fff;color:#000}
 }
