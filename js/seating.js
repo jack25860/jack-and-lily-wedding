@@ -605,9 +605,12 @@
       '</div>';
   }
 
-  /* v68：兒童椅區塊（圖示＋標籤＋顏色三重編碼；無兒童椅時不顯示） */
+  /* v68：兒童椅區塊（圖示＋標籤＋顏色三重編碼；無兒童椅時不顯示）
+     數量與座位圖一致：優先取 childSeats，若為 0 則取 children（座位圖的 _childMark 同此邏輯），
+     確保「結果卡顯示的兒童椅張數」與「座位圖標示的兒童椅座位數」完全對應。 */
   function childBlock(g) {
     var n = Math.max(0, parseInt(g.childSeats, 10) || 0);
+    if (n <= 0) n = Math.max(0, parseInt(g.children, 10) || 0);
     if (n <= 0) return "";
     return '<div class="seat-rc__child">' + childSeatIcon("seat-rc__child-ico") +
         '<span class="seat-rc__child-text">' + esc(childSeatText) + ' <b>' + n + '</b> 張</span>' +
