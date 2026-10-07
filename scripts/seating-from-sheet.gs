@@ -15,6 +15,12 @@
  *   若你的問卷標題不同，只要改下方 COL_*.header / COL_*.aliases 即可，不需改程式邏輯。
  *   若連欄名都不確定，可只設 COL_*.index（第幾欄，從 1 起算）強制以欄位位置取值。
  *
+ * ★ v67 重點：
+ *     1. 新增輸出欄位：partySize（出席人數）、adults（大人）、children（兒童）、
+ *        childSeats（需要兒童椅數量），直接讀取問卷回覆試算表對應欄位，
+ *        修正「表單填寫人數與查詢結果不匹配」。
+ *     2. 前端 js/seating.js 依 partySize 連續配位，並在座位圖與查詢結果標示兒童椅。
+ *
  * ★ v65 重點：
  *     1. 桌數固定 16 桌（1 主桌 + 15 側桌），由 TABLE_COUNT / MAIN_TABLE_NO 控制；
  *        不再依試算表實際出現的桌號產生桌次（避免出現 17~20 桌）。
@@ -82,6 +88,31 @@ var COL_ATTEND = {
   aliases: ['是否能出席本次盛宴', '是否出席', '出席', 'attend'],
   index: 0
 };
+
+/* ── v67：同行團體人數與兒童椅欄位 ──
+   這四欄是修正「表單填寫人數與查詢結果不匹配」的關鍵：
+   直接讀取問卷回覆的「出席人數／出席大人人數／出席兒童人數／需要兒童椅數量」，
+   前端即可顯示與表單一致的人數，並標示兒童椅。 */
+var COL_PARTY = {
+  header: '出席人數',
+  aliases: ['出席人數', '出席總人數', '人數', 'partySize'],
+  index: 0
+};
+var COL_ADULTS = {
+  header: '出席大人人數',
+  aliases: ['出席大人人數', '大人人數', '成人人數', 'adults'],
+  index: 0
+};
+var COL_CHILDREN = {
+  header: '出席兒童人數',
+  aliases: ['出席兒童人數', '兒童人數', '小孩人數', 'children'],
+  index: 0
+};
+var COL_CHILDSEATS = {
+  header: '需要兒童椅數量',
+  aliases: ['需要兒童椅數量', '兒童椅數量', '兒童椅', 'childSeats'],
+  index: 0
+};
 /** true = 只列入會出席的賓客；false = 全部列入 */
 var ONLY_ATTENDING = true;
 /** 視為「不克出席」的字串（會從名單剔除） */
@@ -107,7 +138,7 @@ var VENUE_OVERRIDE = {
 
 /* ── 4. 輸出設定 ───────────────────────────────────────────────── */
 
-var ENDPOINT_VERSION = 'seating-v65';
+var ENDPOINT_VERSION = 'seating-v67';
 /** 伺服器端快取秒數（同一次瀏覽期間內重複請求不會一直讀試算表） */
 var CACHE_SECONDS = 60;
 /** 輸出時是否同時附上統計資訊（方便診斷） */
@@ -181,6 +212,11 @@ function buildPayload_() {
   var iSeat = resolveCol_(headerRow, COL_SEAT);
   var iNote = resolveCol_(headerRow, COL_NOTE);
   var iAttend = resolveCol_(headerRow, COL_ATTEND);
+  /* v67：同行團體人數與兒童椅 */
+  var iParty = resolveCol_(headerRow, COL_PARTY);
+  var iAdults = resolveCol_(headerRow, COL_ADULTS);
+  var iChildren = resolveCol_(headerRow, COL_CHILDREN);
+  var iChildSeats = resolveCol_(headerRow, COL_CHILDSEATS);
 
   if (iName < 0) {
     throw new Error('找不到「姓名」欄位，請檢查 COL_NAME.header 或 COL_NAME.index（目前標題列：' + headerRow.join(' / ') + '）');
@@ -211,10 +247,26 @@ function buildPayload_() {
       var seatNo = toSeatNo_(cell_(row, iSeat));
       var note0 = iNote >= 0 ? cell_(row, iNote) : '';
 
+      /* v67：同行團體人數（大人＋兒童）與兒童椅數量 */
+      var partySize = iParty >= 0 ? firstInt_(cell_(row, iParty)) : 0;
+      var adults = iAdults >= 0 ? firstInt_(cell_(row, iAdults)) : 0;
+      var children = iChildren >= 0 ? firstInt_(cell_(row, iChildren)) : 0;
+      var childSeats = iChildSeats >= 0 ? firstInt_(cell_(row, iChildSeats)) : 0;
+      if (partySize < 1) { partySize = (adults + children) || 1; }
+      if (!adults && !children) { adults = partySize; }
+
       /* v64：桌號必須落在 1~TABLE_COUNT 且不是主桌以外的無效值才算有效；
          無效／未填者仍列入 guests（table: null），前端會顯示「由現場人員安排」。 */
       var valid = (tableNo >= 1 && tableNo <= TABLE_COUNT);
-      var g = { name: name, table: valid ? tableNo : null, seat: valid ? (seatNo || 1) : null };
+      var g = {
+        name: name,
+        table: valid ? tableNo : null,
+        seat: valid ? (seatNo || 1) : null,
+        partySize: partySize,
+        adults: adults,
+        children: children,
+        childSeats: childSeats
+      };
       if (note0) { g.note = note0; }
       guests.push(g);
       if (!valid) { unplaced.push(name + (note0 ? '（' + note0 + '）' : '')); }
@@ -243,7 +295,11 @@ function buildPayload_() {
       table: iTable >= 0 ? headerRow[iTable] : null,
       seat: iSeat >= 0 ? headerRow[iSeat] : null,
       note: iNote >= 0 ? headerRow[iNote] : null,
-      attend: iAttend >= 0 ? headerRow[iAttend] : null
+      attend: iAttend >= 0 ? headerRow[iAttend] : null,
+      partySize: iParty >= 0 ? headerRow[iParty] : null,
+      adults: iAdults >= 0 ? headerRow[iAdults] : null,
+      children: iChildren >= 0 ? headerRow[iChildren] : null,
+      childSeats: iChildSeats >= 0 ? headerRow[iChildSeats] : null
     },
     tables: tables,
     guests: guests

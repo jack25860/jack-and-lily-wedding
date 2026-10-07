@@ -354,3 +354,36 @@
   .seat-map-frame{box-shadow:none;border-color:#999}
   body{background:#fff;color:#000}
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   v67：兒童椅標示 + 同行團體人數（資料模型與人數一致性）
+   ──────────────────────────────────────────────────────────────────────────────
+   1. 座位圖上「兒童椅」座位以專屬顏色（青瓷藍）標示，與一般座位（米色）區隔；
+      該桌另顯示「椅N」徽章，一眼可辨識。
+   2. 查詢結果卡新增「同行人數（大人／兒童）」與「兒童椅 N 張」兩行。
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── 兒童椅座位（專屬顏色；不依賴顏色者另有 title 文字與圖例）── */
+.tbl-seat.seat-child{fill:#cfe6ea;stroke:#2f6b7a;stroke-width:1.4}
+.tbl--main .tbl-seat.seat-child{fill:#cfe6ea;stroke:#2f6b7a}
+/* 命中（您的座位）時仍以金色為主，但保留較粗的青色外框以維持兒童椅辨識 */
+.tbl-seat.seat-child.seat-hit{fill:var(--gold)!important;stroke:#2f6b7a!important;stroke-width:2.4!important}
+
+/* ── 該桌兒童椅數量徽章 ── */
+.tbl-childbadge__bg{fill:#2f6b7a;stroke:#ffffff;stroke-width:1}
+.tbl-childbadge__text{fill:#ffffff;font-family:var(--zh);font-size:10px;letter-spacing:.02em}
+.venue-dim .tbl:not(.is-hit) .tbl-childbadge{opacity:.35}
+
+/* ── 圖例：兒童椅色票 ── */
+.seat-legend__swatch--child{background:#cfe6ea;border:1.4px solid #2f6b7a}
+
+/* ── 查詢結果卡：同行人數 / 兒童椅 ── */
+.seat-rc__party{margin-top:var(--q-2);font-size:var(--q-fs-result);letter-spacing:.08em;color:var(--q-ink-2)}
+.seat-rc__child{margin-top:var(--q-2);display:inline-flex;align-items:center;gap:6px;padding:var(--q-1) var(--q-3);border-radius:100px;background:#2f6b7a1f;color:#245a66;font-size:var(--q-fs-meta);letter-spacing:.1em;font-weight:500}
+.seat-rc--wait .seat-rc__child{background:#8a5a121f;color:var(--q-wait)}
+
+/* ── 高對比模式：兒童椅徽章與座位需有邊框可辨 ── */
+@media(forced-colors:active){
+  .tbl-childbadge__bg{fill:Highlight;stroke:CanvasText}
+  .tbl-seat.seat-child{stroke:CanvasText}
+}

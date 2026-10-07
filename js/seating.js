@@ -1,14 +1,15 @@
 /* ══════════════════════════════════════════════════════════════════════════════
-   seating.js ── 座位表頁面邏輯（v62）
+   seating.js ── 座位表頁面邏輯（v67）
    ──────────────────────────────────────────────────────────────────────────────
    這個檔案「不需要」在替換座位資料時修改。
-   資料來源：
-     • 主來源 = 問卷回覆的 Google 線上表單（經 Apps Script Web App 取得 JSON，
-                設定於 js/seating-config.js 的 API_URL）
-     • 備援   = js/seating-data.js（window.SEATING_DATA；API 未設定／逾時／失敗時回退）
+   資料來源（依序嘗試）：
+     • 主來源 1 = 問卷回覆的 Google 試算表 gviz JSON（js/seating-config.js 的 SHEET_GVIZ_URL）
+     • 主來源 2 = 問卷回覆的 Google 試算表 CSV（SHEET_CSV_URL）
+     • 主來源 3 = Apps Script Web App JSON（API_URL）
+     • 備援     = js/seating-data.js（window.SEATING_DATA；前三者皆失敗時回退）
 
    功能：
-     1. 依 VENUE 參數繪製「全場座位圖」（v62）：
+     1. 依 VENUE 參數繪製「全場座位圖」：
         前方大舞台 + 中間紅毯步道 + 紅毯末端（舞台正前方）12 人主桌
         + 紅毯左右兩側共 15 桌（左 8、右 7）
      2. 姓名查詢（模糊／部分比對、同名候選、查無資料三種情境）
@@ -16,40 +17,20 @@
      4. 右下角「Tt」字級浮動鈕（三檔 sm/md/lg，沿用主站 localStorage 記憶）
      5. 支援 prefers-reduced-motion
 
-   v63 變更：移除「＋／－」縮放功能（#seatZoomIn / #seatZoomOut / #seatZoomVal /
-     #seatZoomReset 按鈕，以及 zoom、baseWidth、applyZoom、bindZoom 等相關邏輯）。
-     座位圖改為固定寬度、隨裝置自適應；查詢後仍會自動捲動聚焦，超出畫面可用滑動瀏覽。
-
-   v64 變更（三項）：
-     1. 桌數固定 16 桌（1 張主桌 + 15 張側桌）。
-        根因：API 的 tables 陣列（依試算表實際出現的桌號產生，例如含 TEST 的 20 桌）
-        原本會「覆寫」前端桌次，導致畫面畫出 20 桌。
-        修正：桌次一律以前端 js/seating-data.js 的 VENUE/TABLES 為準（固定 16 桌），
-        API 只提供「賓客名單」，不再決定桌數。
-     2. 移除頁面下方「已連線 X 位賓客」狀態文字（僅保留 API 失敗時的容錯提示）。
-     3. 桌號自動分配：桌號有效（1~16）→ 正常分配；
-        桌號無效／查無對應桌次／未填 → 該筆標記為「未分配」，
-        查詢結果顯示「由現場人員安排」，不顯示錯誤桌號。
-
-   v65 變更（架構重建）：
-     1. 移除所有放大／縮小功能（v63 已移除縮放鈕，v65 再確認全站無 zoom 控制）。
-     2. 強化響應式：手機／電腦皆可瀏覽、無水平溢位（見 css/seating.css v65 區塊）。
-     3. 固定 16 桌（1 主桌 + 15 側桌），新增硬性上限 MAX_TABLES，畫面桌數不得大於 16。
-     4. 移除頁面下方「已連線 X 位賓客」提示（成功時不顯示任何狀態文字）。
-     5. 桌號由試算表手動填入、頁面自動讀取分配；無效或查無對應桌次顯示「由現場人員安排」。
-     6. 新增每桌人數上限檢查：某桌填寫人數超過該桌上限時，超額者改由現場人員安排，
-        並於座位圖下方顯示提示（#seatCapacity）。
-
-   v66 變更（座位查詢介面人性化／易用性優化）：
-     1. 輸入框改為語意化 combobox：輸入即時建議清單（role=listbox / role=option）、
-        命中片段 <mark> 標示、完整鍵盤操作（↑↓ / Enter / Esc / Tab）、aria-activedescendant。
-     2. 新增「清除」鈕（一鍵重設）與「語音輸入」鈕（Web Speech API，zh-TW；不支援則隱藏）。
-     3. 新增「最近查詢」（localStorage，最多 5 筆）快速再查。
-     4. 查詢結果改為四態結果卡（找到／由現場人員安排／查無／多筆同名候選），
-        狀態以「文字標籤 + 顏色 + 說明」三重編碼，不依賴顏色辨識。
-     5. 查無時提供相似姓名建議（編輯距離 + 雙字詞重疊），一鍵改用建議姓名。
-     6. 新增「快速查詢座位」浮動鈕（捲離查詢區後出現，一鍵回到查詢並聚焦）。
-     7. 背景音樂改為預設靜音、絕不自動播放（修正 v65 以前任何手勢即自動播放的問題）。
+   v67 變更（資料模型與人數一致性）：
+     1. 每一筆問卷回覆視為一個「同行團體（party）」，新增欄位：
+          partySize  出席人數（大人＋兒童）
+          adults     出席大人人數
+          children   出席兒童人數
+          childSeats 需要兒童椅數量
+        修正「表單填寫人數與查詢結果不匹配」：查詢結果卡會顯示該團體的
+        大人／兒童人數，且座位圖會依 partySize 連續配位（不再一人一格）。
+     2. 資料讀取改為多層（gviz → CSV → Apps Script → 本機備援），
+        直接讀取問卷回覆試算表的「出席人數／大人／兒童／兒童椅」欄位。
+     3. 兒童椅標示：座位圖上以專屬顏色 + 兒童椅圖示標示，並新增圖例；
+        查詢結果卡顯示兒童椅數量。
+     4. 桌數固定 16 桌（1 主桌 + 15 側桌），畫面桌數不得大於 16。
+     5. 每桌人數上限檢查：某桌填寫人數超過該桌上限時，超額者改由現場人員安排。
    ══════════════════════════════════════════════════════════════════════════════ */
 (function () {
   "use strict";
@@ -67,6 +48,8 @@
   var VENUE, TABLES, GUESTS, OPT;
   var validTableNos = {};   /* v64：有效桌號集合（由 BASE_TABLES 產生） */
   var unassignedText = "由現場人員安排";   /* v64：桌號無效時的顯示文字 */
+  var childSeatText = "兒童椅";            /* v67：兒童椅標示文字 */
+  var partyText = "同行人數";              /* v67：人數標示文字 */
   var tablesPerSide, seatsPerTable, aisleWidthPct, LABELS, tableSuffix, notFoundText, candText;
   var defaultSeatsPerTable = 10, capacityText = "";   /* v65：每桌人數上限與超額提示 */
   var statusEl = null, capacityEl = null;
@@ -86,6 +69,7 @@
     return n;
   }
   function norm(s) { return String(s == null ? "" : s).replace(/\s+/g, "").toLowerCase(); }
+  function intOr(v, d) { var n = parseInt(String(v == null ? "" : v).replace(/[^\d-]/g, ""), 10); return isNaN(n) ? d : n; }
 
   /* ══════════ 一、計算場地幾何 ══════════ */
   var STAGE = { x: 0, y: 14, w: 0, h: 66 };
@@ -111,6 +95,8 @@
     notFoundText   = OPT.notFoundText || "查無此姓名，請確認輸入或洽現場招待";
     candText       = OPT.candidatesText || "找到多位同名或相似的賓客，請選擇：";
     unassignedText = OPT.unassignedText || "由現場人員安排";
+    childSeatText  = OPT.childSeatText || "兒童椅";
+    partyText      = OPT.partyText || "同行人數";
     /* v65：每桌人數上限（預設沿用 VENUE.seatsPerTable；單桌可用 TABLES[].seats 覆寫） */
     defaultSeatsPerTable = Math.max(1, parseInt(VENUE.seatsPerTable, 10) || 10);
     capacityText = OPT.capacityText || "部分桌次人數已達上限，超額賓客將由現場人員安排。";
@@ -131,6 +117,10 @@
     if (isNaN(mainTableNo)) mainTableNo = 0;
     mainTableSeats = (mt && mt.seats) ? Math.max(1, parseInt(mt.seats, 10) || 12) : 12;
     mainTableName  = (mt && mt.name) ? String(mt.name) : (LABELS.mainTable || "主桌");
+
+    /* v67：正規化同行團體欄位，並依 partySize 連續配位 */
+    normalizeParties();
+    assignSeats();
 
     boardY   = STAGE.y + STAGE.h + 14;          /* 座位區上緣 */
     boardH   = VB_H - boardY - 14;              /* 座位區高度 */
@@ -163,6 +153,76 @@
 
     posLeft  = sidePositions(false);
     posRight = sidePositions(true);
+  }
+
+  /* v67：把每一筆賓客正規化為「同行團體」。
+     partySize = 出席人數（大人＋兒童）；adults / children / childSeats 為明細。
+     _childMark = 該團體中需要標示為兒童椅的座位數（取 childSeats，若為 0 則取 children）。 */
+  function normalizeParties() {
+    for (var i = 0; i < GUESTS.length; i++) {
+      var g = GUESTS[i];
+      var size     = intOr(g.partySize, 0);
+      var adults   = intOr(g.adults, 0);
+      var children = intOr(g.children, 0);
+      var childSeats = intOr(g.childSeats, 0);
+      if (adults < 0) adults = 0;
+      if (children < 0) children = 0;
+      if (childSeats < 0) childSeats = 0;
+      if (size < 1) size = (adults + children) || 1;
+      if (!adults && !children) adults = size;
+      if (adults + children > size) size = adults + children;
+      g.partySize  = size;
+      g.adults     = adults;
+      g.children   = children;
+      g.childSeats = childSeats;
+      g._childMark = childSeats > 0 ? Math.min(childSeats, size) : Math.min(children, size);
+    }
+  }
+
+  /* v67：依 partySize 連續配位。
+     同一桌的團體依「原座位號 → 姓名」排序後，從第 1 位起連續佔位；
+     若某團體放不進該桌剩餘座位（超過該桌人數上限），該團體改標記為
+     「未分配（overflow）」，查詢時顯示「由現場人員安排」。 */
+  function assignSeats() {
+    var byTable = {};
+    for (var i = 0; i < GUESTS.length; i++) {
+      var g = GUESTS[i];
+      if (g.unassigned || !g.table) continue;
+      var tno = Number(g.table);
+      if (!validTableNos[tno]) { g.unassigned = true; g.table = null; g.seat = null; continue; }
+      (byTable[tno] = byTable[tno] || []).push(g);
+    }
+    Object.keys(byTable).forEach(function (k) {
+      var tno = Number(k);
+      var cap = capOfTable(tno);
+      var arr = byTable[k];
+      arr.sort(function (a, b) {
+        return (Number(a.seat) || 0) - (Number(b.seat) || 0) ||
+               String(a.name).localeCompare(String(b.name));
+      });
+      var cursor = 1;
+      for (var j = 0; j < arr.length; j++) {
+        var p = arr[j];
+        var size = Math.max(1, parseInt(p.partySize, 10) || 1);
+        if (cursor + size - 1 > cap) {
+          p.unassigned = true; p.overflow = true; p.table = null; p.seat = null;
+          continue;
+        }
+        p.seat = cursor;
+        p.seatEnd = cursor + size - 1;
+        p.childSeatFrom = p._childMark > 0 ? (p.seatEnd - p._childMark + 1) : 0;
+        cursor += size;
+      }
+    });
+  }
+
+  function capOfTable(no) {
+    for (var i = 0; i < TABLES.length; i++) {
+      if (Number(TABLES[i].no) === Number(no)) {
+        return Math.max(1, parseInt(TABLES[i].seats, 10) || defaultSeatsPerTable);
+      }
+    }
+    return defaultSeatsPerTable;
   }
 
   /* 產生每一側的座標：col 0 為最靠近紅毯的內側欄，由內往外編號 */
@@ -303,7 +363,12 @@
       var sy = cy + Math.sin(a) * rR;
       var sc = el("circle", { class: "tbl-seat", cx: sx.toFixed(2), cy: sy.toFixed(2), r: sR, "data-seat": s + 1 }, g);
       var owner = guestAt(t.no, s + 1);
-      if (owner) { var ti = el("title", null, sc); ti.textContent = owner.name + " · " + (s + 1) + "號"; }
+      if (owner) {
+        var isChild = owner.childSeatFrom && (s + 1) >= owner.childSeatFrom;
+        if (isChild) sc.classList.add("seat-child");
+        var ti = el("title", null, sc);
+        ti.textContent = owner.name + " · " + (s + 1) + "號" + (isChild ? "（" + childSeatText + "）" : "");
+      }
       seatNodes.push(sc);
     }
 
@@ -313,6 +378,17 @@
     if (t.name) {
       var nm = el("text", { class: "tbl__name", x: cx, y: cy + tR * 0.66, "text-anchor": "middle" }, g);
       nm.textContent = t.name;
+    }
+
+    /* v67：該桌兒童椅數量徽章（僅在該桌有兒童椅時顯示） */
+    var childCount = childSeatsAtTable(t.no);
+    if (childCount > 0) {
+      var cg = el("g", { class: "tbl-childbadge" }, g);
+      el("rect", { class: "tbl-childbadge__bg", rx: 8, x: cx + tR * 0.52, y: cy - tR * 0.98, width: 30, height: 17 }, cg);
+      var cbt = el("text", { class: "tbl-childbadge__text", x: cx + tR * 0.52 + 15, y: cy - tR * 0.98 + 12.5, "text-anchor": "middle" }, cg);
+      cbt.textContent = "椅" + childCount;
+      var cti = el("title", null, cg);
+      cti.textContent = "本桌有 " + childCount + " 張" + childSeatText;
     }
 
     /* 命中標籤（預設隱藏，查到時顯示「姓名-幾桌」） */
@@ -328,10 +404,23 @@
 
   function guestAt(tableNo, seatNo) {
     for (var i = 0; i < GUESTS.length; i++) {
-      if (GUESTS[i].unassigned) continue;   /* v64：未分配桌次者不佔座位點 */
-      if (Number(GUESTS[i].table) === Number(tableNo) && Number(GUESTS[i].seat) === Number(seatNo)) return GUESTS[i];
+      var g = GUESTS[i];
+      if (g.unassigned) continue;   /* v64：未分配桌次者不佔座位點 */
+      if (Number(g.table) !== Number(tableNo)) continue;
+      var from = Number(g.seat), to = Number(g.seatEnd || g.seat);
+      if (Number(seatNo) >= from && Number(seatNo) <= to) return g;
     }
     return null;
+  }
+
+  function childSeatsAtTable(tableNo) {
+    var n = 0;
+    for (var i = 0; i < GUESTS.length; i++) {
+      var g = GUESTS[i];
+      if (g.unassigned || Number(g.table) !== Number(tableNo)) continue;
+      n += (g._childMark || 0);
+    }
+    return n;
   }
 
   /* ══════════ 三、查詢 ══════════ */
@@ -433,15 +522,6 @@
     });
   }
 
-  function centerHit() {
-    var k = Object.keys(tableNodes).filter(function (n) { return tableNodes[n].gEl.classList.contains("is-hit"); })[0];
-    if (!k) return;
-    var raf = window.requestAnimationFrame || function (f) { return window.setTimeout(f, 16); };
-    raf(function () { window.setTimeout(function () { centerOn(tableNodes[k]); }, reduceMotion ? 0 : 420); });
-  }
-
-  /* v63：bindZoom()、lastBase、zoomBound 已移除（縮放鈕不再存在）。 */
-
   /* ══════════ 五、搜尋 UI（v66：combobox + 四態結果卡 + 語音 + 近期查詢）══════════ */
   var resultBox, inputEl, suggestBox, clearBtn, voiceBtn, recentBox, recentList, fabBtn;
   var searchBound = false;
@@ -473,7 +553,24 @@
     return g.table + tableSuffix + (OPT.showSeatLabel !== false && g.seat ? " · 第" + g.seat + "位" : "");
   }
 
-  /* ── 結果卡：找到座位（含桌次、座位號、說明與行動按鈕）── */
+  /* v67：同行團體人數文字，例如「同行 4 人（大人 3・兒童 1）」 */
+  function partyTextOf(g) {
+    if (!g.partySize || g.partySize <= 1) return "";
+    var s = partyText + " " + g.partySize + " 人";
+    var parts = [];
+    if (g.adults) parts.push("大人 " + g.adults);
+    if (g.children) parts.push("兒童 " + g.children);
+    if (parts.length) s += "（" + parts.join("・") + "）";
+    return s;
+  }
+
+  /* v67：兒童椅文字，例如「兒童椅 2 張」 */
+  function childSeatTextOf(g) {
+    if (!g.childSeats || g.childSeats <= 0) return "";
+    return childSeatText + " " + g.childSeats + " 張";
+  }
+
+  /* ── 結果卡：找到座位（含桌次、座位號、人數、兒童椅、說明與行動按鈕）── */
   function renderFound(g, q) {
     var r = showHit(g);
     resultBox.className = "seat-result";
@@ -484,6 +581,8 @@
           '<span class="seat-rc__badge">' + esc(badgeText("wait")) + '</span>' +
           '<p class="seat-rc__name">' + esc(g.name) + '</p>' +
           '<p class="seat-rc__where">' + esc(unassignedText) + '</p>' +
+          (partyTextOf(g) ? '<p class="seat-rc__party">' + esc(partyTextOf(g)) + '</p>' : '') +
+          (childSeatTextOf(g) ? '<p class="seat-rc__child">' + esc(childSeatTextOf(g)) + '</p>' : '') +
           (g.note ? '<p class="seat-rc__note">備註：' + esc(g.note) + '</p>' : '') +
           '<p class="seat-rc__hint">您的桌次尚未安排，請於現場洽詢<b>接待人員</b>，由現場人員為您帶位。</p>' +
         '</div>';
@@ -494,7 +593,9 @@
         '<span class="seat-rc__badge">' + esc(badgeText("found")) + '</span>' +
         '<p class="seat-rc__name">' + esc(g.name + "　" + r.tableNo + tableSuffix) + '</p>' +
         '<p class="seat-rc__where">您的桌次：<b>' + esc(String(r.tableNo)) + '</b>' + esc(tableSuffix) + '</p>' +
-        (OPT.showSeatLabel !== false && g.seat ? '<p class="seat-rc__seat">座位號碼：第 ' + esc(String(g.seat)) + ' 位</p>' : '') +
+        (OPT.showSeatLabel !== false && g.seat ? '<p class="seat-rc__seat">座位號碼：第 ' + esc(String(g.seat)) + ' 位' + (g.seatEnd && g.seatEnd > g.seat ? '（本團體共 ' + esc(String(g.partySize)) + ' 位，' + esc(String(g.seat)) + '～' + esc(String(g.seatEnd)) + ' 號）' : '') + '</p>' : '') +
+        (partyTextOf(g) ? '<p class="seat-rc__party">' + esc(partyTextOf(g)) + '</p>' : '') +
+        (childSeatTextOf(g) ? '<p class="seat-rc__child">🪑 ' + esc(childSeatTextOf(g)) + '（座位圖已以專屬顏色標示）</p>' : '') +
         (g.note ? '<p class="seat-rc__note">備註：' + esc(g.note) + '</p>' : '') +
         (r.found
           ? '<p class="seat-rc__hint">下方座位圖已為您標示並聚焦到 <b>' + esc(String(r.tableNo)) + esc(tableSuffix) + '</b>，該桌將以金色閃爍。</p>'
@@ -937,8 +1038,7 @@
     var audio = $("#bgm"), btn = $("#musicBtn"), label = $("#musicLabel");
     if (!audio || !btn) { var mm = $("#music"); if (mm) mm.style.display = "none"; return; }
     /* v66：預設靜音（絕不自動播放）。只有使用者「自己按了音樂鈕」才出聲，
-       並把選擇記在 localStorage，下次造訪沿用；未記錄 = 靜音。
-       （v65 以前會在頁面任何手勢後自動播音樂，賓客點座位圖就會突然出聲，已修正。） */
+       並把選擇記在 localStorage，下次造訪沿用；未記錄 = 靜音。 */
     var BGM_KEY = "ssss-wedding-bgm";
     var wantOn = false;
     try { wantOn = (window.localStorage.getItem(BGM_KEY) === "on"); } catch (e) {}
@@ -969,13 +1069,14 @@
     sync();
   }
 
-  /* ══════════ 七之二、名單來源：問卷回覆（Google Apps Script）══════════
+  /* ══════════ 七之二、名單來源：問卷回覆（v67 多層讀取）══════════
      目標：不需手動替換 js/seating-data.js，即可自動使用問卷回覆的名單。
 
      流程：
        1) 若 localStorage 有未過期的快取名單 → 先立即用快取繪製（秒開）。
-       2) 同時向 API 取得最新名單；成功 → 重繪並更新快取。
-       3) 失敗／逾時 → 維持目前名單（快取或 js/seating-data.js 備援），
+       2) 依序嘗試：試算表 gviz → 試算表 CSV → Apps Script JSON；
+          成功 → 重繪並更新快取。
+       3) 全部失敗／逾時 → 維持目前名單（快取或 js/seating-data.js 備援），
           在座位圖下方以不打擾的方式提示，並依 RETRY_MS 自動重試。
      任何環節發生錯誤都不會讓頁面空白或停止運作。 */
 
@@ -1005,16 +1106,139 @@
     } catch (e) {}
   }
 
-  /* 將 API 回傳的 JSON 轉成本檔使用的 DATA 格式；格式不符回傳 null（→ 回退備援）。
-     v64：桌次一律沿用前端固定配置（BASE_TABLES，16 桌），API 只提供「賓客名單」。
-     API 若提供桌名（tables[].name），僅「併入」對應桌號的名稱，不改變桌數。 */
+  /* ── CSV 解析（支援引號、逗號、換行）── */
+  function parseCSV(text) {
+    var rows = [], row = [], cur = "", inQ = false, i, c;
+    for (i = 0; i < text.length; i++) {
+      c = text.charAt(i);
+      if (inQ) {
+        if (c === '"') {
+          if (text.charAt(i + 1) === '"') { cur += '"'; i++; }
+          else inQ = false;
+        } else cur += c;
+      } else {
+        if (c === '"') inQ = true;
+        else if (c === ",") { row.push(cur); cur = ""; }
+        else if (c === "\n") { row.push(cur); rows.push(row); row = []; cur = ""; }
+        else if (c === "\r") { /* 略過 */ }
+        else cur += c;
+      }
+    }
+    if (cur.length || row.length) { row.push(cur); rows.push(row); }
+    return rows;
+  }
+
+  /* ── gviz JSON → 二維陣列（含欄名標題列）── */
+  function parseGviz(text) {
+    var s = String(text || "");
+    var i = s.indexOf("{");
+    if (i < 0) return null;
+    var json;
+    try { json = JSON.parse(s.slice(i)); } catch (e) { return null; }
+    if (!json || !json.table || !Array.isArray(json.table.cols)) return null;
+    var cols = json.table.cols;
+    var header = cols.map(function (c) { return String((c && c.label) || "").trim(); });
+    var rows = [header];
+    var raw = json.table.rows || [];
+    for (var r = 0; r < raw.length; r++) {
+      var cells = (raw[r] && raw[r].c) || [];
+      var row = [];
+      for (var c2 = 0; c2 < cols.length; c2++) {
+        var cell = cells[c2];
+        var v = (cell && cell.v != null) ? cell.v : "";
+        row.push(v == null ? "" : String(v));
+      }
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  /* ── 欄位解析（與 Apps Script 端同邏輯）── */
+  function resolveCol(headerRow, spec) {
+    if (!spec) return -1;
+    var i, a, c;
+    if (spec.header) { i = headerRow.indexOf(spec.header); if (i >= 0) return i; }
+    var aliases = spec.aliases || [];
+    for (a = 0; a < aliases.length; a++) { i = headerRow.indexOf(aliases[a]); if (i >= 0) return i; }
+    for (a = 0; a < aliases.length; a++) {
+      for (c = 0; c < headerRow.length; c++) {
+        if (headerRow[c] && headerRow[c].indexOf(aliases[a]) >= 0) return c;
+      }
+    }
+    var idx = parseInt(spec.index, 10);
+    if (!isNaN(idx) && idx > 0) return idx - 1;
+    return -1;
+  }
+
+  function cellOf(row, i) {
+    if (i < 0 || i >= row.length) return "";
+    var v = row[i];
+    return v == null ? "" : String(v).trim();
+  }
+
+  function isAttendNo(v) {
+    var s = String(v == null ? "" : v).trim();
+    var list = CFG.ATTEND_NO_VALUES || ["不克出席", "不出席", "否", "No", "no", "N", "n", "無法出席"];
+    for (var i = 0; i < list.length; i++) { if (s === list[i]) return true; }
+    return false;
+  }
+
+  /* ── 由試算表列（CSV 或 gviz 轉出的二維陣列）建立賓客名單 ── */
+  function guestsFromSheet(rows) {
+    if (!rows || rows.length < 2) return null;
+    var header = rows[0].map(function (h) { return String(h == null ? "" : h).trim(); });
+    var C = CFG.SHEET_COLS || {};
+    var iName = resolveCol(header, C.name);
+    if (iName < 0) return null;
+    var iAttend    = resolveCol(header, C.attend);
+    var iParty     = resolveCol(header, C.partySize);
+    var iAdults    = resolveCol(header, C.adults);
+    var iChildren  = resolveCol(header, C.children);
+    var iChildSeat = resolveCol(header, C.childSeats);
+    var iTable     = resolveCol(header, C.table);
+    var iSeat      = resolveCol(header, C.seat);
+    var iNote      = resolveCol(header, C.note);
+
+    var list = [], unplaced = [];
+    for (var r = 1; r < rows.length; r++) {
+      var row = rows[r] || [];
+      var name = cellOf(row, iName);
+      if (!name) continue;
+      if (iAttend >= 0) {
+        var at = cellOf(row, iAttend);
+        if (at && isAttendNo(at)) continue;
+      }
+      var partySize  = intOr(cellOf(row, iParty), 0);
+      var adults     = intOr(cellOf(row, iAdults), 0);
+      var children   = intOr(cellOf(row, iChildren), 0);
+      var childSeats = intOr(cellOf(row, iChildSeat), 0);
+      if (partySize < 1) partySize = (adults + children) || 1;
+      if (!adults && !children) adults = partySize;
+      var tableNo = intOr(cellOf(row, iTable), 0);
+      var seatNo  = intOr(cellOf(row, iSeat), 0);
+      var note    = iNote >= 0 ? cellOf(row, iNote) : "";
+      var valid   = (tableNo >= 1 && tableNo <= MAX_TABLES);
+      var g = {
+        name: name,
+        table: valid ? tableNo : null,
+        seat: valid ? (seatNo || 0) : null,
+        partySize: partySize, adults: adults, children: children, childSeats: childSeats
+      };
+      if (note) g.note = note;
+      if (!valid) { g.unassigned = true; unplaced.push(name); }
+      list.push(g);
+    }
+    if (!list.length) return null;
+    return { guests: list, unplaced: unplaced };
+  }
+
+  /* ── 由 Apps Script JSON 建立賓客名單（v67：含人數／兒童椅欄位）── */
   function normalizeRemote(json) {
     if (!json || typeof json !== "object") return null;
     var K = CFG.KEYS || {};
     var guests = json[K.guests || "guests"];
     if (!Array.isArray(guests)) return null;
 
-    /* 已回覆但尚未分配桌次的姓名（API 的 unplaced） */
     var unplaced = json[K.unplaced || "unplaced"];
     if (!Array.isArray(unplaced)) unplaced = [];
     unplaced = unplaced.map(function (x) { return String(x == null ? "" : x).trim(); }).filter(Boolean);
@@ -1026,14 +1250,21 @@
       if (!name) continue;
       var table = parseInt(g.table, 10);
       var seat = parseInt(g.seat, 10);
+      var partySize  = intOr(g.partySize, 0);
+      var adults     = intOr(g.adults, 0);
+      var children   = intOr(g.children, 0);
+      var childSeats = intOr(g.childSeats, 0);
+      if (partySize < 1) partySize = (adults + children) || 1;
+      if (!adults && !children) adults = partySize;
       var item;
       /* v64：桌號必須是「目前座位圖上存在的桌次」才算有效；
          無效／查無對應桌次／未填 → 標記為未分配（顯示「由現場人員安排」）。 */
       if (!table || isNaN(table) || !validTableNos[table]) {
         item = { name: name, table: null, seat: null, unassigned: true };
       } else {
-        item = { name: name, table: table, seat: (!seat || isNaN(seat)) ? 1 : seat };
+        item = { name: name, table: table, seat: (!seat || isNaN(seat)) ? 0 : seat };
       }
+      item.partySize = partySize; item.adults = adults; item.children = children; item.childSeats = childSeats;
       if (g.note) item.note = String(g.note);
       list.push(item);
     }
@@ -1042,7 +1273,7 @@
     for (i = 0; i < unplaced.length; i++) {
       var nm = String(unplaced[i]).replace(/（[^）]*）\s*$/, "").trim();
       if (!nm) continue;
-      list.push({ name: nm, table: null, seat: null, unassigned: true });
+      list.push({ name: nm, table: null, seat: null, unassigned: true, partySize: 1, adults: 1, children: 0, childSeats: 0 });
     }
 
     /* API 正常但試算表完全沒有可用名單 → 回報 empty，由呼叫端保留備援名單（頁面不空白） */
@@ -1050,50 +1281,105 @@
 
     /* v64：桌次固定沿用前端配置；API 的桌名僅併入，不改變桌數 */
     var tables = json[K.tables || "tables"];
+    return { guests: list, unplaced: unplaced, tables: tables };
+  }
+
+  /* ── 固定桌次（沿用前端 BASE_TABLES，16 桌）── */
+  function fixedTables(remoteTables) {
     var names = {};
-    if (Array.isArray(tables)) {
-      for (i = 0; i < tables.length; i++) {
-        var tb = tables[i] || {};
+    if (Array.isArray(remoteTables)) {
+      for (var i = 0; i < remoteTables.length; i++) {
+        var tb = remoteTables[i] || {};
         var no = parseInt(tb.no, 10);
         if (no && !isNaN(no) && tb.name) names[no] = String(tb.name);
       }
     }
-    var fixed = [];
-    for (i = 0; i < BASE_TABLES.length; i++) {
-      var bt = BASE_TABLES[i] || {};
+    var out = [];
+    for (var j = 0; j < BASE_TABLES.length; j++) {
+      var bt = BASE_TABLES[j] || {};
       var bno = parseInt(bt.no, 10);
       var rec = { no: bno, name: names[bno] || bt.name || "" };
       if (bt.seats) rec.seats = bt.seats;
       if (bt.side) rec.side = bt.side;
       if (bt.main) rec.main = true;
-      fixed.push(rec);
+      out.push(rec);
+    }
+    return out;
+  }
+
+  function buildData(res) {
+    return {
+      VENUE: BASE_VENUE,
+      TABLES: fixedTables(res.tables),
+      GUESTS: res.guests,
+      OPTIONS: BASE_OPTIONS
+    };
+  }
+
+  /* ── 網路取文字（含逾時）── */
+  function fetchText(url, timeout) {
+    return new Promise(function (resolve, reject) {
+      var ctrl = (typeof AbortController !== "undefined") ? new AbortController() : null;
+      var timer = window.setTimeout(function () {
+        if (ctrl) { try { ctrl.abort(); } catch (e) {} }
+        reject(new Error("timeout"));
+      }, timeout);
+      fetch(url, { method: "GET", cache: "no-store", signal: ctrl ? ctrl.signal : undefined })
+        .then(function (r) {
+          if (!r.ok) { throw new Error("HTTP " + r.status); }
+          return r.text();
+        })
+        .then(function (t) { window.clearTimeout(timer); resolve(t); })
+        .catch(function (e) { window.clearTimeout(timer); reject(e); });
+    });
+  }
+
+  /* ── 依序嘗試各來源：gviz → CSV → Apps Script ── */
+  function trySources(done) {
+    var gvizUrl = String(CFG.SHEET_GVIZ_URL || "");
+    var csvUrl  = String(CFG.SHEET_CSV_URL || "");
+    var apiUrl  = String(CFG.API_URL || "");
+    var timeout = parseInt(CFG.API_TIMEOUT_MS, 10) || 20000;
+
+    function fromGviz() {
+      if (!/^https?:\/\//i.test(gvizUrl)) return Promise.reject(new Error("no gviz url"));
+      return fetchText(gvizUrl, timeout).then(function (text) {
+        var res = guestsFromSheet(parseGviz(text));
+        if (!res) throw new Error("bad gviz");
+        return res;
+      });
+    }
+    function fromCsv() {
+      if (!/^https?:\/\//i.test(csvUrl)) return Promise.reject(new Error("no csv url"));
+      return fetchText(csvUrl, timeout).then(function (text) {
+        var res = guestsFromSheet(parseCSV(text));
+        if (!res) throw new Error("bad csv");
+        return res;
+      });
+    }
+    function fromApi() {
+      if (!/^https?:\/\//i.test(apiUrl)) return Promise.reject(new Error("no api url"));
+      return fetchText(apiUrl, timeout).then(function (text) {
+        var json = JSON.parse(text);
+        if (json && json.ok === false) throw new Error(json.error || "api error");
+        var res = normalizeRemote(json);
+        if (!res) throw new Error("bad format");
+        return res;
+      });
     }
 
-    /* v65：每桌人數上限檢查。超過該桌上限（或座位號超出上限）者，
-       改標記為未分配（unassigned），查詢時顯示「由現場人員安排」。 */
-    var capOf = {};
-    for (i = 0; i < fixed.length; i++) {
-      var fno = parseInt(fixed[i].no, 10);
-      if (fno && !isNaN(fno)) capOf[fno] = Math.max(1, parseInt(fixed[i].seats, 10) || defaultSeatsPerTable);
-    }
-    var seen = {};
-    for (i = 0; i < list.length; i++) {
-      var it = list[i];
-      if (it.unassigned || !it.table) continue;
-      var tno = Number(it.table);
-      var cap = capOf[tno] || defaultSeatsPerTable;
-      if (Number(it.seat) > cap) {
-        it.unassigned = true; it.overflow = true; it.table = null; it.seat = null;
-        continue;
-      }
-      seen[tno] = (seen[tno] || 0) + 1;
-      if (seen[tno] > cap) {
-        it.unassigned = true; it.overflow = true; it.table = null; it.seat = null;
-      }
-    }
-
-    var next = { VENUE: BASE_VENUE, TABLES: fixed, GUESTS: list, OPTIONS: BASE_OPTIONS };
-    return { data: next, unplaced: unplaced };
+    fromGviz()
+      .catch(function () { return fromCsv(); })
+      .catch(function () { return fromApi(); })
+      .then(function (res) {
+        if (!res || res.empty) { done(false); return; }
+        var data = buildData(res);
+        writeCache(data);
+        applyData(data, null, "live");   /* v64：成功時不顯示狀態文字 */
+        if (retryTimer) { window.clearInterval(retryTimer); retryTimer = null; }
+        done(true);
+      })
+      .catch(function () { done(false); });
   }
 
   /* 套用新名單並重繪（搜尋事件不會重複綁定）。
@@ -1120,54 +1406,11 @@
 
   var retryTimer = null;
 
-  function fetchRemote() {
-    var url = String(CFG.API_URL);
-    var timeout = parseInt(CFG.API_TIMEOUT_MS, 10) || 8000;
-    return new Promise(function (resolve, reject) {
-      var ctrl = (typeof AbortController !== "undefined") ? new AbortController() : null;
-      var timer = window.setTimeout(function () {
-        if (ctrl) { try { ctrl.abort(); } catch (e) {} }
-        reject(new Error("timeout"));
-      }, timeout);
-      fetch(url, { method: "GET", cache: "no-store", signal: ctrl ? ctrl.signal : undefined })
-        .then(function (r) {
-          if (!r.ok) { throw new Error("HTTP " + r.status); }
-          return r.json();
-        })
-        .then(function (json) {
-          window.clearTimeout(timer);
-          if (json && json.ok === false) { throw new Error(json.error || "api error"); }
-          resolve(json);
-        })
-        .catch(function (err) { window.clearTimeout(timer); reject(err); });
-    });
-  }
-
-  function requestRemote(onFail) {
-    fetchRemote().then(function (json) {
-      var res = normalizeRemote(json);
-      if (!res) { throw new Error("bad format"); }
-      if (res.empty) {
-        /* API 正常但試算表完全沒有可用名單 → 保留備援名單，頁面不空白 */
-        setStatus(fmtN(CFG.TEXT_FALLBACK, GUESTS.length), "fallback");
-        return;
-      }
-      writeCache(res.data);
-      applyData(res.data, null, "live");   /* v64：成功時不顯示狀態文字 */
-      if (retryTimer) { window.clearInterval(retryTimer); retryTimer = null; }
-    }).catch(function () {
-      if (typeof onFail === "function") onFail();
-    });
-  }
-
-  /* v64：已移除「未分配桌次」的狀態列提示（unplacedText / appendUnplaced）。
-     未分配桌次的賓客現在直接以「由現場人員安排」顯示於查詢結果中。 */
-
   function startRetry() {
     var ms = parseInt(CFG.RETRY_MS, 10) || 0;
     if (ms <= 0 || retryTimer) return;
     retryTimer = window.setInterval(function () {
-      requestRemote(function () {});   /* 靜默重試，成功後自動停掉 */
+      trySources(function () {});   /* 靜默重試，成功後自動停掉 */
     }, ms);
   }
 
@@ -1175,15 +1418,12 @@
     var cached = readCache();
     if (cached) {
       applyData(cached, null, "cached");     /* 先秒開，再更新（不顯示狀態文字） */
-      requestRemote(function () {
+    }
+    trySources(function (ok) {
+      if (!ok) {
         setStatus(fmtN(CFG.TEXT_FALLBACK, GUESTS.length), "fallback");
         startRetry();
-      });
-      return;
-    }
-    requestRemote(function () {
-      setStatus(fmtN(CFG.TEXT_FALLBACK, GUESTS.length), "fallback");   /* 維持備援名單，畫面不變 */
-      startRetry();
+      }
     });
   }
 
@@ -1203,11 +1443,16 @@
       focusNo: function (no) { var tn = tableNodes[Number(no)]; if (tn) { showHit({ name: "測試", table: Number(no), seat: 1 }); } return !!tn; },
       tables: Object.keys(tableNodes).map(Number),
       guests: GUESTS.length,
-      find: findMatches
+      find: findMatches,
+      data: function () { return { VENUE: VENUE, TABLES: TABLES, GUESTS: GUESTS, OPTIONS: OPT }; },
+      childSeatsAt: childSeatsAtTable
     };
 
-    /* v62：已設定 API_URL → 載入問卷回覆名單；未設定 → 明確提示目前使用備援名單。 */
-    if (CFG.API_URL && /^https?:\/\//i.test(String(CFG.API_URL))) {
+    /* v62：已設定來源 → 載入問卷回覆名單；未設定 → 明確提示目前使用備援名單。 */
+    var hasGviz = /^https?:\/\//i.test(String(CFG.SHEET_GVIZ_URL || ""));
+    var hasCsv  = /^https?:\/\//i.test(String(CFG.SHEET_CSV_URL || ""));
+    var hasApi  = /^https?:\/\//i.test(String(CFG.API_URL || ""));
+    if (hasGviz || hasCsv || hasApi) {
       loadRemote();
     } else {
       setStatus(CFG.TEXT_LOCAL, "local");

@@ -5,16 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
 <!-- ══════════════════════════════════════════════════════════════════════════════
-     座位表獨立頁（v66）
+     座位表獨立頁（v67）
      • 這是一頁「獨立存在」的頁面，主網站 index.html 沒有任何連結或入口指向它。
        （index.html 的座位區預留區維持原樣、未啟用。）
      • 可直接以網址開啟，例如：
          https://jack25860.github.io/jack-and-lily-wedding/seating.html
      • 已被搜索引擎忽略（noindex, nofollow）。
-     • 名單來源（v64 起）：
-         主來源 = 問卷回覆的 Google 線上表單（經 Google Apps Script Web App 向
-                  scripts/seating-from-sheet.gs 取得 JSON），設定於 js/seating-config.js 的 API_URL。
-         備援   = js/seating-data.js（API 未設定、逾時或失敗時自動回退）。
+     • 名單來源（v67 起，依序嘗試）：
+         主來源 1 = 問卷回覆的 Google 試算表 gviz JSON（SHEET_GVIZ_URL）
+         主來源 2 = 問卷回覆的 Google 試算表 CSV（SHEET_CSV_URL）
+         主來源 3 = Google Apps Script Web App JSON（API_URL）
+         備援     = js/seating-data.js（以上皆未設定、逾時或失敗時自動回退）。
+         以上皆設定於 js/seating-config.js。
      • v64：桌數固定 16 桌（1 主桌 + 15 側桌），不受 API 回傳的桌次數量影響；
        桌號由試算表手動填入後自動讀取分配，無效桌號顯示「由現場人員安排」。
      • v65：架構重建 —— 移除所有放大／縮小功能；強化響應式（手機／電腦皆可瀏覽、無水平溢位）；
@@ -29,12 +31,21 @@
        (4) 查無時主動提供相似姓名建議，降低打錯字而查不到的挫折；
        (5) 新增「快速查詢座位」浮動鈕，捲到座位圖時也能一鍵回到查詢；
        (6) 全體文字對比 ≥ 4.5:1（WCAG AA）、互動元件最小觸控 44px、完整鍵盤操作。
+     • v67：資料模型與人數一致性修正 ——
+       (1) 每一筆問卷回覆視為一個「同行團體」，新增欄位：出席人數（partySize）、
+           出席大人人數（adults）、出席兒童人數（children）、需要兒童椅數量（childSeats）；
+           修正「表單填寫人數與查詢結果不匹配」：查詢結果卡顯示該團體人數，
+           座位圖依 partySize 連續配位（不再一人一格）。
+       (2) 資料讀取改為多層（gviz → CSV → Apps Script → 本機備援），
+           直接讀取問卷回覆試算表的「出席人數／大人／兒童／兒童椅」欄位。
+       (3) 兒童椅標示：座位圖上以專屬顏色 + 兒童椅圖示標示，並新增圖例；
+           查詢結果卡顯示兒童椅數量。
      ══════════════════════════════════════════════════════════════════════════════ -->
 
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
 <meta name="googlebot" content="noindex, nofollow">
 <meta name="theme-color" content="#6E1626">
-<meta name="site-version" content="v66">
+<meta name="site-version" content="v67">
 <meta name="motion" content="silky-no-flash">
 <title>全場座位表｜三生三世·緣定今生 Jack ＆ Lily</title>
 
@@ -136,8 +147,8 @@
          座位圖改為固定寬度、隨裝置自適應；超出畫面的部分可用手指／軌道滑動瀏覽。 -->
     <div class="seat-map-frame">
       <div class="seat-map-scroll" id="seatMapScroll">
-        <!-- 座位圖由 js/seating.js 依 js/seating-config.js 的 API_URL（問卷回覆）
-             自動繪製；API 失敗時回退 js/seating-data.js 的備援名單 -->
+        <!-- 座位圖由 js/seating.js 依 js/seating-config.js 的資料來源（問卷回覆）
+             自動繪製；來源失敗時回退 js/seating-data.js 的備援名單 -->
         <div class="seat-map-canvas" id="seatMapCanvas"></div>
       </div>
     </div>
@@ -156,6 +167,7 @@
       <span class="seat-legend__item"><i class="seat-legend__swatch seat-legend__swatch--table"></i>桌次</span>
       <span class="seat-legend__item"><i class="seat-legend__swatch seat-legend__swatch--normal"></i>座位</span>
       <span class="seat-legend__item"><i class="seat-legend__swatch seat-legend__swatch--hit"></i>您的座位</span>
+      <span class="seat-legend__item"><i class="seat-legend__swatch seat-legend__swatch--child"></i>兒童椅</span>
       <span class="seat-legend__item"><i class="seat-legend__swatch seat-legend__swatch--stage"></i>舞台</span>
       <span class="seat-legend__item"><i class="seat-legend__swatch seat-legend__swatch--aisle"></i>紅毯步道</span>
     </div>
@@ -173,6 +185,8 @@
         <li>座位圖以現場實際安排為準；如有疑問請洽現場招待人員。</li>
         <li>名單自動同步問卷回覆；若暫時無法連線，會先顯示備援名單並自動重試。</li>
         <li>每桌人數以該桌上限為準；若某桌填寫人數超過上限，超額賓客將由現場人員安排。</li>
+        <li>查詢結果會顯示您這一組的<b>同行人數</b>（大人／兒童），與問卷填寫的人數一致。</li>
+        <li>需要<b>兒童椅</b>的座位，在座位圖上以專屬顏色標示，該桌也會顯示兒童椅數量。</li>
       </ul>
     </div>
   </section>
@@ -212,7 +226,7 @@
   <audio id="bgm" src="audio/wedding-theme.mp3" loop preload="none"></audio>
 </div>
 
-<!-- 名單來源設定（v64：問卷回覆 API / 逾時 / 快取 / 提示文字） -->
+<!-- 名單來源設定（v67：問卷回覆 gviz / CSV / API / 逾時 / 快取 / 提示文字） -->
 <script src="js/seating-config.js"></script>
 <!-- 座位資料檔（備援名單；API 失敗時自動回退到本檔）→ 再載入繪製邏輯 -->
 <script src="js/seating-data.js"></script>
