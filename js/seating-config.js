@@ -19,6 +19,7 @@
     /* ── 1. 名單來源（Apps Script Web App /exec 網址）─────────────────────────
        部署 scripts/seating-from-sheet.gs 為「網頁應用程式」後，把結尾為 /exec
        的網址貼在這裡。留空 "" = 一律使用 js/seating-data.js 的備援名單。
+       v64：API 只提供「賓客名單」；桌數固定以前端 js/seating-data.js 為準（16 桌）。
        範例：
          API_URL: "https://script.google.com/macros/s/AKfycb..../exec"                */
     API_URL: "https://script.google.com/macros/s/AKfycbw67DFeox7j77KVSzfMTazfOQiCeIyoUyiJo96s7yPxUVP92e9EBX3sBEVVsFUSbOBu/exec",
@@ -32,22 +33,20 @@
     },
 
     /* ── 2. 逾時與快取 ──────────────────────────────────────────────────────── */
-    API_TIMEOUT_MS: 15000,    /* 連線／回應逾時（毫秒）；逾時即回退備援名單。
-                                 Apps Script 冷啟動偶爾需 10~16 秒，故放寬至 15 秒；
+    API_TIMEOUT_MS: 20000,    /* 連線／回應逾時（毫秒）；逾時即回退備援名單。
+                                 Apps Script 冷啟動偶爾需 10~28 秒，故放寬至 20 秒；
                                  逾時期間頁面已先顯示備援名單，不會空白。 */
     CACHE_TTL_MS: 300000,     /* 瀏覽器端快取存活時間（毫秒，預設 5 分鐘） */
-    CACHE_KEY: "ssss-seating-remote-v2",
+    CACHE_KEY: "ssss-seating-remote-v3",
 
     /* ── 3. 之後自動重試 ────────────────────────────────────────────────────── */
     RETRY_MS: 60000,          /* 首次失敗後每隔多久自動重試一次（0 = 不重試） */
 
-    /* ── 4. 狀態提示文字（不干擾、不遮擋座位圖）────────────────────────────── */
+    /* ── 4. 狀態提示文字（不干擾、不遮擋座位圖）──────────────────────────────
+       v64：成功取得名單時「不」顯示任何狀態文字（已移除「已連線 X 位賓客」）。
+       以下文字僅在「API 失敗／逾時／未設定」時顯示，作為容錯提示。 */
     STATUS_ID: "seatDataStatus",
-    TEXT_LIVE: "名單已連線：即時讀取問卷回覆（共 {n} 位賓客）",
-    TEXT_CACHED: "名單已連線：使用快取的名單（共 {n} 位賓客）",
     TEXT_FALLBACK: "目前顯示備援名單：暫時無法讀取問卷回覆，將自動重試。",
-    TEXT_LOCAL: "目前顯示備援名單（尚未設定問卷回覆連線）。",
-    /* 問卷已回覆、但尚未分配桌次時（座位圖上不會出現，但會在此列出） */
-    TEXT_UNPLACED: "另有 {n} 位已回覆、尚未分配桌次：{names}"
+    TEXT_LOCAL: "目前顯示備援名單（尚未設定問卷回覆連線）。"
   };
 })();

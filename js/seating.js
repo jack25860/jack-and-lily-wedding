@@ -19,6 +19,17 @@
    v63 變更：移除「＋／－」縮放功能（#seatZoomIn / #seatZoomOut / #seatZoomVal /
      #seatZoomReset 按鈕，以及 zoom、baseWidth、applyZoom、bindZoom 等相關邏輯）。
      座位圖改為固定寬度、隨裝置自適應；查詢後仍會自動捲動聚焦，超出畫面可用滑動瀏覽。
+
+   v64 變更（三項）：
+     1. 桌數固定 16 桌（1 張主桌 + 15 張側桌）。
+        根因：API 的 tables 陣列（依試算表實際出現的桌號產生，例如含 TEST 的 20 桌）
+        原本會「覆寫」前端桌次，導致畫面畫出 20 桌。
+        修正：桌次一律以前端 js/seating-data.js 的 VENUE/TABLES 為準（固定 16 桌），
+        API 只提供「賓客名單」，不再決定桌數。
+     2. 移除頁面下方「已連線 X 位賓客」狀態文字（僅保留 API 失敗時的容錯提示）。
+     3. 桌號自動分配：桌號有效（1~16）→ 正常分配；
+        桌號無效／查無對應桌次／未填 → 該筆標記為「未分配」，
+        查詢結果顯示「由現場人員安排」，不顯示錯誤桌號。
    ═══════════════════════════════════════════════════════════════════════════ */
 (function () {
   "use strict";
@@ -28,7 +39,14 @@
 
   var DATA   = window.SEATING_DATA || {};
   var CFG    = window.SEATING_CONFIG || {};
+  /* v64：桌次一律以「前端備援資料」為準（固定 16 桌），API 不得覆寫桌數。
+     這裡在載入時先記住基準 VENUE / TABLES，之後任何遠端名單都沿用它們。 */
+  var BASE_VENUE  = DATA.VENUE || {};
+  var BASE_TABLES = Array.isArray(DATA.TABLES) ? DATA.TABLES.slice() : [];
+  var BASE_OPTIONS = DATA.OPTIONS || {};
   var VENUE, TABLES, GUESTS, OPT;
+  var validTableNos = {};   /* v64：有效桌號集合（由 BASE_TABLES 產生） */
+  var unassignedText = "由現場人員安排";   /* v64：桌號無效時的顯示文字 */
   var tablesPerSide, seatsPerTable, aisleWidthPct, LABELS, tableSuffix, notFoundText, candText;
   var statusEl = null;
 
@@ -68,6 +86,14 @@
     tableSuffix    = OPT.tableSuffix || "桌";
     notFoundText   = OPT.notFoundText || "查無此姓名，請確認輸入或洽現場招待";
     candText       = OPT.candidatesText || "找到多位同名或相似的賓客，請選擇：";
+    unassignedText = OPT.unassignedText || "由現場人員安排";
+
+    /* v64：有效桌號集合（固定 16 桌：1 主桌 + 15 側桌） */
+    validTableNos = {};
+    for (var vi = 0; vi < TABLES.length; vi++) {
+      var vno = parseInt(TABLES[vi].no, 10);
+      if (vno && !isNaN(vno)) validTableNos[vno] = true;
+    }
 
     /* v62：主桌（舞台正前方、紅毯末端）。VENUE.mainTable 為 null 時不畫主桌。 */
     var mt = VENUE.mainTable;
@@ -272,6 +298,7 @@
 
   function guestAt(tableNo, seatNo) {
     for (var i = 0; i < GUESTS.length; i++) {
+      if (GUESTS[i].unassigned) continue;   /* v64：未分配桌次者不佔座位點 */
       if (Number(GUESTS[i].table) === Number(tableNo) && Number(GUESTS[i].seat) === Number(seatNo)) return GUESTS[i];
     }
     return null;
@@ -295,6 +322,9 @@
     }
     hits.sort(function (a, b) {
       if (b.score !== a.score) return b.score - a.score;
+      /* v64：未分配桌次者排在最後 */
+      var au = a.guest.unassigned ? 1 : 0, bu = b.guest.unassigned ? 1 : 0;
+      if (au !== bu) return au - bu;
       return Number(a.guest.table) - Number(b.guest.table) || Number(a.guest.seat) - Number(b.guest.seat);
     });
     return hits.map(function (h) { return h.guest; });
@@ -313,6 +343,10 @@
   function showHit(g, opts) {
     opts = opts || {};
     clearHit();
+    /* v64：未分配桌次者不做座位高亮，只回報文字 */
+    if (g.unassigned) {
+      return { label: String(g.name) + "-" + unassignedText, tableNo: null, seat: null, found: false, unassigned: true };
+    }
     var tn = tableNodes[g.table];
     var label = String(g.name) + "-" + g.table + tableSuffix;
 
@@ -396,8 +430,12 @@
       '<div class="seat-result__cands"><p class="seat-result__cands-title">「' + esc(q) + '」共 ' + list.length + " 筆</p>" +
       '<div class="seat-result__cands-list">';
     list.forEach(function (g, i) {
+      /* v64：未分配桌次者顯示「由現場人員安排」，不顯示錯誤桌號 */
+      var meta = g.unassigned
+        ? unassignedText
+        : (g.table + tableSuffix + (OPT.showSeatLabel !== false && g.seat ? " · 第" + g.seat + "位" : ""));
       html += '<button type="button" class="seat-cand" data-cand="' + i + '">' +
-        esc(g.name) + " <i>" + g.table + tableSuffix + (OPT.showSeatLabel !== false && g.seat ? " · 第" + g.seat + "位" : "") + "</i></button>";
+        esc(g.name) + " <i>" + esc(meta) + "</i></button>";
     });
     html += "</div></div>";
     resultBox.className = "seat-result";
@@ -412,8 +450,16 @@
 
   function renderFound(g, q) {
     var r = showHit(g);
-    var posTxt = r.tableNo + tableSuffix + (OPT.showSeatLabel !== false && g.seat ? " · 第 " + g.seat + " 位" : "");
     resultBox.className = "seat-result";
+    /* v64：桌號無效／查無對應桌次 → 顯示「由現場人員安排」，不顯示錯誤桌號 */
+    if (g.unassigned) {
+      resultBox.innerHTML =
+        '<p class="seat-result__text">' + esc(g.name) + "</p>" +
+        '<p class="seat-result__pos">' + esc(unassignedText) +
+        (g.note ? "　·　" + esc(g.note) : "") + "</p>";
+      return;
+    }
+    var posTxt = r.tableNo + tableSuffix + (OPT.showSeatLabel !== false && g.seat ? " · 第 " + g.seat + " 位" : "");
     resultBox.innerHTML =
       '<p class="seat-result__text">' + esc(g.name + "-" + r.tableNo + tableSuffix) + "</p>" +
       '<p class="seat-result__pos">' + esc(posTxt) +
@@ -582,14 +628,16 @@
     } catch (e) {}
   }
 
-  /* 將 API 回傳的 JSON 轉成本檔使用的 DATA 格式；格式不符回傳 null（→ 回退備援）。 */
+  /* 將 API 回傳的 JSON 轉成本檔使用的 DATA 格式；格式不符回傳 null（→ 回退備援）。
+     v64：桌次一律沿用前端固定配置（BASE_TABLES，16 桌），API 只提供「賓客名單」。
+     API 若提供桌名（tables[].name），僅「併入」對應桌號的名稱，不改變桌數。 */
   function normalizeRemote(json) {
     if (!json || typeof json !== "object") return null;
     var K = CFG.KEYS || {};
     var guests = json[K.guests || "guests"];
     if (!Array.isArray(guests)) return null;
 
-    /* v62：已回覆但尚未分配桌次的姓名（座位圖上不會出現，但會提示） */
+    /* 已回覆但尚未分配桌次的姓名（API 的 unplaced） */
     var unplaced = json[K.unplaced || "unplaced"];
     if (!Array.isArray(unplaced)) unplaced = [];
     unplaced = unplaced.map(function (x) { return String(x == null ? "" : x).trim(); }).filter(Boolean);
@@ -598,56 +646,58 @@
     for (i = 0; i < guests.length; i++) {
       var g = guests[i] || {};
       var name = g.name == null ? "" : String(g.name).trim();
+      if (!name) continue;
       var table = parseInt(g.table, 10);
-      if (!name || !table || isNaN(table)) continue;
       var seat = parseInt(g.seat, 10);
-      var item = { name: name, table: table, seat: (!seat || isNaN(seat)) ? 1 : seat };
+      var item;
+      /* v64：桌號必須是「目前座位圖上存在的桌次」才算有效；
+         無效／查無對應桌次／未填 → 標記為未分配（顯示「由現場人員安排」）。 */
+      if (!table || isNaN(table) || !validTableNos[table]) {
+        item = { name: name, table: null, seat: null, unassigned: true };
+      } else {
+        item = { name: name, table: table, seat: (!seat || isNaN(seat)) ? 1 : seat };
+      }
       if (g.note) item.note = String(g.note);
       list.push(item);
     }
-    /* v62：API 正常但尚無「已分配桌次」的賓客（例如試算表還沒填桌次欄）
-       → 回報 empty，由呼叫端保留備援名單並提示，不視為失敗。 */
-    if (!list.length) return { empty: true, unplaced: unplaced };
 
-    var next = { VENUE: DATA.VENUE, TABLES: null, GUESTS: list, OPTIONS: DATA.OPTIONS || {} };
-
-    /* 場地覆寫（可省略）：只覆蓋有提供的欄位，其餘沿用前端設定 */
-    var venue = json[K.venue || "venue"];
-    if (venue && typeof venue === "object") {
-      var merged = {}, base = DATA.VENUE || {}, k;
-      for (k in base) { if (Object.prototype.hasOwnProperty.call(base, k)) merged[k] = base[k]; }
-      for (k in venue) { if (Object.prototype.hasOwnProperty.call(venue, k)) merged[k] = venue[k]; }
-      next.VENUE = merged;
+    /* 已回覆但尚未分配桌次者 → 同樣列為未分配，仍可被查詢 */
+    for (i = 0; i < unplaced.length; i++) {
+      var nm = String(unplaced[i]).replace(/（[^）]*）\s*$/, "").trim();
+      if (!nm) continue;
+      list.push({ name: nm, table: null, seat: null, unassigned: true });
     }
 
+    /* API 正常但試算表完全沒有可用名單 → 回報 empty，由呼叫端保留備援名單（頁面不空白） */
+    if (!list.length) return { empty: true, unplaced: unplaced };
+
+    /* v64：桌次固定沿用前端配置；API 的桌名僅併入，不改變桌數 */
     var tables = json[K.tables || "tables"];
-    if (Array.isArray(tables) && tables.length) {
-      var tl = [];
+    var names = {};
+    if (Array.isArray(tables)) {
       for (i = 0; i < tables.length; i++) {
         var tb = tables[i] || {};
         var no = parseInt(tb.no, 10);
-        if (!no || isNaN(no)) continue;
-        var rec = { no: no, name: tb.name ? String(tb.name) : "" };
-        var s = parseInt(tb.seats, 10);
-        if (s && !isNaN(s)) rec.seats = s;
-        if (tb.side === "left" || tb.side === "right") rec.side = tb.side;
-        tl.push(rec);
+        if (no && !isNaN(no) && tb.name) names[no] = String(tb.name);
       }
-      if (tl.length) next.TABLES = tl;
     }
-    if (!next.TABLES) {
-      /* API 未提供桌次清單 → 依實際有人坐的桌號產生，並至少保留 VENUE 的桌數 */
-      var maxNo = 0, m;
-      for (m = 0; m < list.length; m++) { if (list[m].table > maxNo) maxNo = list[m].table; }
-      var minNo = Math.max(1, tablesPerSide ? tablesPerSide * 2 : 16);
-      var out = [];
-      for (m = 1; m <= Math.max(maxNo, minNo); m++) out.push({ no: m, name: "" });
-      next.TABLES = out;
+    var fixed = [];
+    for (i = 0; i < BASE_TABLES.length; i++) {
+      var bt = BASE_TABLES[i] || {};
+      var bno = parseInt(bt.no, 10);
+      var rec = { no: bno, name: names[bno] || bt.name || "" };
+      if (bt.seats) rec.seats = bt.seats;
+      if (bt.side) rec.side = bt.side;
+      if (bt.main) rec.main = true;
+      fixed.push(rec);
     }
+
+    var next = { VENUE: BASE_VENUE, TABLES: fixed, GUESTS: list, OPTIONS: BASE_OPTIONS };
     return { data: next, unplaced: unplaced };
   }
 
-  /* 套用新名單並重繪（搜尋與縮放事件不會重複綁定）。 */
+  /* 套用新名單並重繪（搜尋事件不會重複綁定）。
+     v64：statusText 為空時「不」顯示狀態文字（成功取得名單時不再顯示「已連線 X 位賓客」）。 */
   function applyData(next, statusText, kind) {
     DATA = next;
     deriveAll();
@@ -656,8 +706,9 @@
     if (window.seatingPage) {
       window.seatingPage.tables = Object.keys(tableNodes).map(Number);
       window.seatingPage.guests = GUESTS.length;
+      window.seatingPage.unassigned = GUESTS.filter(function (g) { return !!g.unassigned; }).length;
     }
-    setStatus(fmtN(statusText, GUESTS.length), kind);
+    if (statusText) setStatus(fmtN(statusText, GUESTS.length), kind);
   }
 
   var retryTimer = null;
@@ -690,32 +741,20 @@
       var res = normalizeRemote(json);
       if (!res) { throw new Error("bad format"); }
       if (res.empty) {
-        /* v62：API 正常但尚無已分配桌次的賓客 → 保留備援名單，僅提示未排桌者 */
-        setStatus(unplacedText(res.unplaced), "fallback");
+        /* API 正常但試算表完全沒有可用名單 → 保留備援名單，頁面不空白 */
+        setStatus(fmtN(CFG.TEXT_FALLBACK, GUESTS.length), "fallback");
         return;
       }
       writeCache(res.data);
-      applyData(res.data, CFG.TEXT_LIVE, "live");
-      if (res.unplaced && res.unplaced.length) appendUnplaced(res.unplaced);
+      applyData(res.data, null, "live");   /* v64：成功時不顯示狀態文字 */
       if (retryTimer) { window.clearInterval(retryTimer); retryTimer = null; }
     }).catch(function () {
       if (typeof onFail === "function") onFail();
     });
   }
 
-  /* v62：未分配桌次的提示文字（不干擾、不遮擋座位圖） */
-  function unplacedText(list) {
-    list = list || [];
-    var t = CFG.TEXT_UNPLACED || "另有 {n} 位已回覆、尚未分配桌次：{names}";
-    var names = list.slice(0, 12).join("、");
-    if (list.length > 12) names += " 等";
-    return String(t).replace(/\{n\}/g, String(list.length)).replace(/\{names\}/g, names);
-  }
-
-  function appendUnplaced(list) {
-    if (!statusEl || !list || !list.length) return;
-    statusEl.textContent = statusEl.textContent + "　" + unplacedText(list);
-  }
+  /* v64：已移除「未分配桌次」的狀態列提示（unplacedText / appendUnplaced）。
+     未分配桌次的賓客現在直接以「由現場人員安排」顯示於查詢結果中。 */
 
   function startRetry() {
     var ms = parseInt(CFG.RETRY_MS, 10) || 0;
@@ -728,7 +767,7 @@
   function loadRemote() {
     var cached = readCache();
     if (cached) {
-      applyData(cached, CFG.TEXT_CACHED, "cached");     /* 先秒開，再更新 */
+      applyData(cached, null, "cached");     /* 先秒開，再更新（不顯示狀態文字） */
       requestRemote(function () {
         setStatus(fmtN(CFG.TEXT_FALLBACK, GUESTS.length), "fallback");
         startRetry();

@@ -15,6 +15,13 @@
  *   若你的問卷標題不同，只要改下方 COL_*.header / COL_*.aliases 即可，不需改程式邏輯。
  *   若連欄名都不確定，可只設 COL_*.index（第幾欄，從 1 起算）強制以欄位位置取值。
  *
+ * ★ v64 重點：
+ *     1. 桌數固定 16 桌（1 主桌 + 15 側桌），由 TABLE_COUNT / MAIN_TABLE_NO 控制；
+ *        不再依試算表實際出現的桌號產生桌次（避免出現 17~20 桌）。
+ *     2. 桌號由使用者在試算表手動填入，頁面隨時自動讀取；
+ *        桌號無效（非 1~16）或未填者，仍會列在 guests 中（table: null），
+ *        前端會顯示「由現場人員安排」，不顯示錯誤桌號。
+ *
  * 部署步驟（詳見 v61 變更紀錄 CHANGES-v61.md）：
  *   A. 開啟問卷回覆試算表 → 擴充功能 → Apps Script → 貼上本檔 → 儲存。
  *   B. 部署 → 新增部署 → 類型「網頁應用程式」→ 執行身分「我」→
@@ -78,7 +85,15 @@ var ONLY_ATTENDING = true;
 var ATTEND_NO_VALUES = ['不克出席', '不出席', '否', 'No', 'no', 'N', 'n', '無法出席'];
 
 /* ── 3. 場地（可選）──────────────────────────────────────────────
-   留空物件 = 沿用前端 js/seating-data.js 的 VENUE（建議）。
+   v64：桌數固定 16 桌（1 主桌 + 15 側桌）。
+   TABLE_COUNT = 總桌數（含主桌）；MAIN_TABLE_NO = 主桌桌號（0 = 不設主桌）。
+   前端 js/seating-data.js 的 VENUE/TABLES 必須與此一致（預設已一致）。 */
+var TABLE_COUNT = 16;
+var MAIN_TABLE_NO = 1;
+var MAIN_TABLE_NAME = '主桌';
+var MAIN_TABLE_SEATS = 12;
+
+/* 留空物件 = 沿用前端 js/seating-data.js 的 VENUE（建議）。
    若要由試算表驅動場地，填入下列其中幾項即可，未填的沿用前端設定。 */
 var VENUE_OVERRIDE = {
   /* tablesPerSide: 8,
@@ -89,7 +104,7 @@ var VENUE_OVERRIDE = {
 
 /* ── 4. 輸出設定 ───────────────────────────────────────────────── */
 
-var ENDPOINT_VERSION = 'seating-v61';
+var ENDPOINT_VERSION = 'seating-v64';
 /** 伺服器端快取秒數（同一次瀏覽期間內重複請求不會一直讀試算表） */
 var CACHE_SECONDS = 60;
 /** 輸出時是否同時附上統計資訊（方便診斷） */
@@ -193,23 +208,25 @@ function buildPayload_() {
       var seatNo = toSeatNo_(cell_(row, iSeat));
       var note0 = iNote >= 0 ? cell_(row, iNote) : '';
 
-      /* 座位圖只能容納已分配桌次的賓客；未填桌次者不放入圖中，
-         但仍會列在「尚未分配桌次」名單裡（見 unplaced），不會被默默丟掉。 */
-      if (!tableNo) { unplaced.push(name + (note0 ? '（' + note0 + '）' : '')); continue; }
-
-      var g = { name: name, table: tableNo, seat: seatNo || 1 };
+      /* v64：桌號必須落在 1~TABLE_COUNT 且不是主桌以外的無效值才算有效；
+         無效／未填者仍列入 guests（table: null），前端會顯示「由現場人員安排」。 */
+      var valid = (tableNo >= 1 && tableNo <= TABLE_COUNT);
+      var g = { name: name, table: valid ? tableNo : null, seat: valid ? (seatNo || 1) : null };
       if (note0) { g.note = note0; }
       guests.push(g);
+      if (!valid) { unplaced.push(name + (note0 ? '（' + note0 + '）' : '')); }
     }
   }
 
-  /* 依桌次、座位排序，讓輸出穩定 */
+  /* 依桌次、座位排序，讓輸出穩定（未分配桌次者排最後） */
   guests.sort(function (a, b) {
-    return Number(a.table) - Number(b.table) || Number(a.seat) - Number(b.seat) || String(a.name).localeCompare(String(b.name));
+    var at = a.table == null ? 1e9 : Number(a.table);
+    var bt = b.table == null ? 1e9 : Number(b.table);
+    return at - bt || (Number(a.seat) || 0) - (Number(b.seat) || 0) || String(a.name).localeCompare(String(b.name));
   });
 
-  /* 依實際出現的桌號產生 TABLES（桌名可在試算表另設欄位後自行擴充） */
-  var tables = buildTables_(guests);
+  /* v64：桌次固定 16 桌（1 主桌 + 15 側桌），不依試算表實際出現的桌號產生 */
+  var tables = buildTables_();
 
   var payload = {
     ok: true,
@@ -245,15 +262,19 @@ function buildPayload_() {
   return payload;
 }
 
-/** 依賓客實際佔用的桌號產生桌次清單（維持 1..N 連續，缺號也保留） */
-function buildTables_(guests) {
-  var maxNo = 0;
-  for (var i = 0; i < guests.length; i++) {
-    var n = Number(guests[i].table) || 0;
-    if (n > maxNo) maxNo = n;
-  }
+/** v64：固定桌次清單（1 主桌 + 15 側桌，共 TABLE_COUNT 桌）。
+ *  主桌桌號 = MAIN_TABLE_NO（預設 1），其餘為側桌。 */
+function buildTables_() {
   var out = [];
-  for (var t = 1; t <= maxNo; t++) { out.push({ no: t, name: '' }); }
+  for (var t = 1; t <= TABLE_COUNT; t++) {
+    var isMain = (MAIN_TABLE_NO && t === MAIN_TABLE_NO);
+    out.push({
+      no: t,
+      name: isMain ? MAIN_TABLE_NAME : '',
+      seats: isMain ? MAIN_TABLE_SEATS : undefined,
+      main: isMain ? true : undefined
+    });
+  }
   return out;
 }
 
