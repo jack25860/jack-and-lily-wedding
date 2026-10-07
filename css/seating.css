@@ -6,8 +6,8 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── 頁面基底（沿用主站的深色底，但座位圖放在米色宣紙卡上以利閱讀）── */
-.seat-page{background:var(--ink);color:var(--paper)}
-.seat-main{position:relative;z-index:3}
+.seat-page{background:var(--ink);color:var(--paper);overflow-x:hidden}
+.seat-main{position:relative;z-index:3;overflow-x:clip}
 
 /* ══════════ 頁首 ══════════ */
 .seat-hero{position:relative;overflow:hidden;padding:clamp(74px,12vw,132px) 0 clamp(34px,5vw,54px);text-align:center;background:radial-gradient(70% 90% at 50% 0,rgba(110,22,38,.34),transparent 66%),var(--ink)}
@@ -82,6 +82,11 @@
 .seat-data-status[data-kind="cached"]{color:var(--grey-1)}
 .seat-data-status[data-kind="fallback"]{color:#9a6a2f}
 .seat-data-status[data-kind="local"]{color:var(--grey-2)}
+
+/* ── v65：每桌人數上限提示（僅在偵測到超額時顯示） ── */
+.seat-capacity{margin:10px auto 0;text-align:center;font-size:.76rem;letter-spacing:.08em;
+  line-height:1.7;color:#9a6a2f;max-width:min(var(--maxw),92vw)}
+.seat-capacity[hidden]{display:none}
 
 /* ── SVG：場地 ── */
 .venue-bg{fill:#fffdf8;stroke:rgba(110,22,38,.18);stroke-width:1.5}
@@ -159,6 +164,42 @@
   .seat-map-frame{width:94vw}
   .seat-legend{font-size:.74rem;gap:12px}
   .seat-search:before,.seat-search:after{display:none}
+}
+
+/* ══════════ v65：響應式強化（手機／電腦皆可瀏覽、無水平溢位） ══════════ */
+/* 所有區塊一律以視窗寬度為上限，避免任何元素撐出水平捲軸 */
+.seat-hero__inner,.seat-search,.seat-map-head,.seat-map-frame,.seat-legend,
+.seat-notes,.seat-data-status,.seat-capacity{max-width:100%}
+.seat-map-scroll{max-width:100%}
+.seat-map-canvas svg{max-width:100%}
+.seat-result__text,.seat-result__pos,.seat-result__note{overflow-wrap:anywhere;word-break:break-word}
+.seat-cand{max-width:100%;overflow-wrap:anywhere}
+
+/* 平板：縮小座位圖內距，讓圖更完整 */
+@media(max-width:900px){
+  .seat-map-scroll{padding:clamp(8px,1.6vw,16px)}
+  .seat-legend{gap:clamp(10px,2.4vw,20px)}
+}
+
+/* 手機：字距與內距收斂，避免長字串撐破版面 */
+@media(max-width:640px){
+  .seat-hero{padding:clamp(56px,14vw,96px) 0 clamp(28px,6vw,44px)}
+  .seat-hero__title{letter-spacing:.1em}
+  .seat-hero__sub{letter-spacing:.16em}
+  .seat-search__label{letter-spacing:.22em;text-indent:.22em}
+  .seat-search__hint{letter-spacing:.08em}
+  .seat-map-head__sub{letter-spacing:.08em;line-height:1.9}
+  .seat-notes__list li{letter-spacing:.04em}
+  .seat-map-hint{letter-spacing:.06em;padding:0 4vw}
+  .seat-capacity{font-size:.72rem;padding:0 4vw}
+}
+
+/* 極窄機（≤380px）：再收一級，確保不出現水平溢位 */
+@media(max-width:380px){
+  .seat-search{padding:18px 14px}
+  .seat-search__btn{padding:14px 20px;letter-spacing:.2em;text-indent:.2em}
+  .seat-legend{font-size:.68rem;gap:9px}
+  .seat-legend__swatch{width:13px;height:13px}
 }
 
 /* ══════════ 尊重 prefers-reduced-motion ══════════ */

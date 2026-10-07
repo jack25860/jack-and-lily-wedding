@@ -30,6 +30,15 @@
      3. 桌號自動分配：桌號有效（1~16）→ 正常分配；
         桌號無效／查無對應桌次／未填 → 該筆標記為「未分配」，
         查詢結果顯示「由現場人員安排」，不顯示錯誤桌號。
+
+   v65 變更（架構重建）：
+     1. 移除所有放大／縮小功能（v63 已移除縮放鈕，v65 再確認全站無 zoom 控制）。
+     2. 強化響應式：手機／電腦皆可瀏覽、無水平溢位（見 css/seating.css v65 區塊）。
+     3. 固定 16 桌（1 主桌 + 15 側桌），新增硬性上限 MAX_TABLES，畫面桌數不得大於 16。
+     4. 移除頁面下方「已連線 X 位賓客」提示（成功時不顯示任何狀態文字）。
+     5. 桌號由試算表手動填入、頁面自動讀取分配；無效或查無對應桌次顯示「由現場人員安排」。
+     6. 新增每桌人數上限檢查：某桌填寫人數超過該桌上限時，超額者改由現場人員安排，
+        並於座位圖下方顯示提示（#seatCapacity）。
    ═══════════════════════════════════════════════════════════════════════════ */
 (function () {
   "use strict";
@@ -48,7 +57,11 @@
   var validTableNos = {};   /* v64：有效桌號集合（由 BASE_TABLES 產生） */
   var unassignedText = "由現場人員安排";   /* v64：桌號無效時的顯示文字 */
   var tablesPerSide, seatsPerTable, aisleWidthPct, LABELS, tableSuffix, notFoundText, candText;
-  var statusEl = null;
+  var defaultSeatsPerTable = 10, capacityText = "";   /* v65：每桌人數上限與超額提示 */
+  var statusEl = null, capacityEl = null;
+
+  /* v65：硬性桌數上限（1 主桌 + 15 側桌）。任何來源都不得讓畫面桌數大於此值。 */
+  var MAX_TABLES = 16;
 
   var reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
@@ -87,6 +100,12 @@
     notFoundText   = OPT.notFoundText || "查無此姓名，請確認輸入或洽現場招待";
     candText       = OPT.candidatesText || "找到多位同名或相似的賓客，請選擇：";
     unassignedText = OPT.unassignedText || "由現場人員安排";
+    /* v65：每桌人數上限（預設沿用 VENUE.seatsPerTable；單桌可用 TABLES[].seats 覆寫） */
+    defaultSeatsPerTable = Math.max(1, parseInt(VENUE.seatsPerTable, 10) || 10);
+    capacityText = OPT.capacityText || "部分桌次人數已達上限，超額賓客將由現場人員安排。";
+
+    /* v65：硬性上限 16 桌（1 主桌 + 15 側桌），畫面桌數不得大於 16 */
+    if (TABLES.length > MAX_TABLES) TABLES = TABLES.slice(0, MAX_TABLES);
 
     /* v64：有效桌號集合（固定 16 桌：1 主桌 + 15 側桌） */
     validTableNos = {};
@@ -692,6 +711,29 @@
       fixed.push(rec);
     }
 
+    /* v65：每桌人數上限檢查。超過該桌上限（或座位號超出上限）者，
+       改標記為未分配（unassigned），查詢時顯示「由現場人員安排」。 */
+    var capOf = {};
+    for (i = 0; i < fixed.length; i++) {
+      var fno = parseInt(fixed[i].no, 10);
+      if (fno && !isNaN(fno)) capOf[fno] = Math.max(1, parseInt(fixed[i].seats, 10) || defaultSeatsPerTable);
+    }
+    var seen = {};
+    for (i = 0; i < list.length; i++) {
+      var it = list[i];
+      if (it.unassigned || !it.table) continue;
+      var tno = Number(it.table);
+      var cap = capOf[tno] || defaultSeatsPerTable;
+      if (Number(it.seat) > cap) {
+        it.unassigned = true; it.overflow = true; it.table = null; it.seat = null;
+        continue;
+      }
+      seen[tno] = (seen[tno] || 0) + 1;
+      if (seen[tno] > cap) {
+        it.unassigned = true; it.overflow = true; it.table = null; it.seat = null;
+      }
+    }
+
     var next = { VENUE: BASE_VENUE, TABLES: fixed, GUESTS: list, OPTIONS: BASE_OPTIONS };
     return { data: next, unplaced: unplaced };
   }
@@ -703,10 +745,17 @@
     deriveAll();
     if (resultBox) { resultBox.className = "seat-result"; resultBox.innerHTML = ""; }
     buildMap();
+    /* v65：每桌人數上限提示（僅在偵測到超額時顯示） */
+    var overflow = GUESTS.filter(function (g) { return !!g.overflow; }).length;
+    if (capacityEl) {
+      if (overflow > 0) { capacityEl.textContent = fmtN(capacityText, overflow); capacityEl.hidden = false; }
+      else { capacityEl.textContent = ""; capacityEl.hidden = true; }
+    }
     if (window.seatingPage) {
       window.seatingPage.tables = Object.keys(tableNodes).map(Number);
       window.seatingPage.guests = GUESTS.length;
       window.seatingPage.unassigned = GUESTS.filter(function (g) { return !!g.unassigned; }).length;
+      window.seatingPage.overflow = overflow;
     }
     if (statusText) setStatus(fmtN(statusText, GUESTS.length), kind);
   }
@@ -783,6 +832,7 @@
   /* ══════════ 八、啟動 ══════════ */
   function boot() {
     statusEl = document.getElementById((CFG.STATUS_ID || "seatDataStatus"));
+    capacityEl = document.getElementById("seatCapacity");
     deriveAll();
     buildMap();
     initSearch();

@@ -17,12 +17,16 @@
          備援   = js/seating-data.js（API 未設定、逾時或失敗時自動回退）。
      • v64：桌數固定 16 桌（1 主桌 + 15 側桌），不受 API 回傳的桌次數量影響；
        桌號由試算表手動填入後自動讀取分配，無效桌號顯示「由現場人員安排」。
+     • v65：架構重建 —— 移除所有放大／縮小功能；強化響應式（手機／電腦皆可瀏覽、無水平溢位）；
+       固定 16 桌（畫面桌數不得大於 16）；移除頁面下方「已連線 X 位賓客」提示；
+       桌號由試算表手動填入、頁面自動讀取分配，無效或查無對應桌次顯示「由現場人員安排」；
+       若某桌填寫人數超過該桌人數上限，超額者改由現場人員安排並於頁面提示。
      ══════════════════════════════════════════════════════════════════════ -->
 
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
 <meta name="googlebot" content="noindex, nofollow">
 <meta name="theme-color" content="#6E1626">
-<meta name="site-version" content="v64">
+<meta name="site-version" content="v65">
 <meta name="motion" content="silky-no-flash">
 <title>全場座位表｜三生三世・緣定今生 Jack ＆ Lily</title>
 
@@ -97,6 +101,9 @@
          成功取得名單時不顯示任何文字） -->
     <p class="seat-data-status" id="seatDataStatus" role="status" aria-live="polite"></p>
 
+    <!-- v65：每桌人數上限提示（僅在偵測到超額時顯示；超額者改由現場人員安排） -->
+    <p class="seat-capacity" id="seatCapacity" role="status" aria-live="polite" hidden></p>
+
     <div class="seat-legend">
       <span class="seat-legend__item"><i class="seat-legend__swatch seat-legend__swatch--table"></i>桌次</span>
       <span class="seat-legend__item"><i class="seat-legend__swatch seat-legend__swatch--normal"></i>座位</span>
@@ -117,6 +124,7 @@
         <li>若尚未安排桌次，查詢結果會顯示「由現場人員安排」。</li>
         <li>座位圖以現場實際安排為準；如有疑問請洽現場招待人員。</li>
         <li>名單自動同步問卷回覆；若暫時無法連線，會先顯示備援名單並自動重試。</li>
+        <li>每桌人數以該桌上限為準；若某桌填寫人數超過上限，超額賓客將由現場人員安排。</li>
       </ul>
     </div>
   </section>
