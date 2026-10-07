@@ -40,12 +40,19 @@
            直接讀取問卷回覆試算表的「出席人數／大人／兒童／兒童椅」欄位。
        (3) 兒童椅標示：座位圖上以專屬顏色 + 兒童椅圖示標示，並新增圖例；
            查詢結果卡顯示兒童椅數量。
+     • v68：座位查詢操作介面重新設計（人數資訊 + 兒童椅辨識）——
+       (1) 查詢結果卡改以「同行人數」為主視覺：大字人數 + 大人／兒童分項徽章，
+           即使只有 1 人也會顯示，與問卷表單填寫完全一致。
+       (2) 兒童椅改為「圖示 + 標籤 + 顏色」三重編碼：
+           座位圖上兒童椅座位加上高腳椅圖示與外環；該桌顯示「圖示 + 椅N」膠囊徽章；
+           圖例新增兒童椅圖示色票；結果卡以專屬色塊顯示「兒童椅 N 張」。
+       (3) 響應式強化：手機（360/390）與電腦（768/1440）皆易讀、無水平溢位。
      ══════════════════════════════════════════════════════════════════════════════ -->
 
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
 <meta name="googlebot" content="noindex, nofollow">
 <meta name="theme-color" content="#6E1626">
-<meta name="site-version" content="v67">
+<meta name="site-version" content="v68">
 <meta name="motion" content="silky-no-flash">
 <title>全場座位表｜三生三世·緣定今生 Jack ＆ Lily</title>
 
@@ -167,7 +174,7 @@
       <span class="seat-legend__item"><i class="seat-legend__swatch seat-legend__swatch--table"></i>桌次</span>
       <span class="seat-legend__item"><i class="seat-legend__swatch seat-legend__swatch--normal"></i>座位</span>
       <span class="seat-legend__item"><i class="seat-legend__swatch seat-legend__swatch--hit"></i>您的座位</span>
-      <span class="seat-legend__item"><i class="seat-legend__swatch seat-legend__swatch--child"></i>兒童椅</span>
+      <span class="seat-legend__item seat-legend__item--child"><i class="seat-legend__swatch seat-legend__swatch--child"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 3.4v6.6M8 10h7.4a2.6 2.6 0 0 1 2.6 2.6V16M5.8 16h12.4M9 16v4.2M15 16v4.2"/></svg></i>兒童椅</span>
       <span class="seat-legend__item"><i class="seat-legend__swatch seat-legend__swatch--stage"></i>舞台</span>
       <span class="seat-legend__item"><i class="seat-legend__swatch seat-legend__swatch--aisle"></i>紅毯步道</span>
     </div>
@@ -185,8 +192,8 @@
         <li>座位圖以現場實際安排為準；如有疑問請洽現場招待人員。</li>
         <li>名單自動同步問卷回覆；若暫時無法連線，會先顯示備援名單並自動重試。</li>
         <li>每桌人數以該桌上限為準；若某桌填寫人數超過上限，超額賓客將由現場人員安排。</li>
-        <li>查詢結果會顯示您這一組的<b>同行人數</b>（大人／兒童），與問卷填寫的人數一致。</li>
-        <li>需要<b>兒童椅</b>的座位，在座位圖上以專屬顏色標示，該桌也會顯示兒童椅數量。</li>
+        <li>查詢結果會顯示您這一組的<b>同行人數</b>（大人／兒童分項），與問卷填寫的人數一致。</li>
+        <li>需要<b>兒童椅</b>的座位，在座位圖上以<b>專屬顏色 + 兒童椅圖示</b>標示，該桌也會顯示「椅N」徽章。</li>
       </ul>
     </div>
   </section>

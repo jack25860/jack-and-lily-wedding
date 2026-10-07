@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════════════════════
-   seating.js ── 座位表頁面邏輯（v67）
+   seating.js ── 座位表頁面邏輯（v68）
    ──────────────────────────────────────────────────────────────────────────────
    這個檔案「不需要」在替換座位資料時修改。
    資料來源（依序嘗試）：
@@ -31,6 +31,14 @@
         查詢結果卡顯示兒童椅數量。
      4. 桌數固定 16 桌（1 主桌 + 15 側桌），畫面桌數不得大於 16。
      5. 每桌人數上限檢查：某桌填寫人數超過該桌上限時，超額者改由現場人員安排。
+
+   v68 變更（座位查詢操作介面重新設計）：
+     1. 查詢結果卡改以「同行人數」為主視覺：大字人數 + 大人／兒童分項徽章，
+        即使只有 1 人也會顯示，與問卷表單填寫完全一致。
+     2. 兒童椅改為「圖示 + 標籤 + 顏色」三重編碼：
+        座位圖上兒童椅座位加上高腳椅圖示與外環；該桌顯示「圖示 + 椅N」膠囊徽章；
+        圖例新增兒童椅圖示色票；結果卡以專屬色塊顯示「兒童椅 N 張」。
+     3. 響應式強化：手機（360/390）與電腦（768/1440）皆易讀、無水平溢位。
    ══════════════════════════════════════════════════════════════════════════════ */
 (function () {
   "use strict";
@@ -365,7 +373,20 @@
       var owner = guestAt(t.no, s + 1);
       if (owner) {
         var isChild = owner.childSeatFrom && (s + 1) >= owner.childSeatFrom;
-        if (isChild) sc.classList.add("seat-child");
+        if (isChild) {
+          sc.classList.add("seat-child");
+          /* v68：兒童椅座位加上專屬圖示（高腳椅）＋外環，一眼可辨識 */
+          var ic = el("g", { class: "tbl-childseat", "data-seat": s + 1 }, g);
+          el("circle", { class: "tbl-childseat__ring", cx: sx.toFixed(2), cy: sy.toFixed(2), r: (sR + 1.6).toFixed(2) }, ic);
+          var k = (sR * 1.5) / 24;
+          var ip = el("path", {
+            class: "tbl-childseat__ico",
+            transform: "translate(" + (sx - 12 * k).toFixed(2) + "," + (sy - 12 * k).toFixed(2) + ") scale(" + k.toFixed(4) + ")"
+          }, ic);
+          ip.setAttribute("d", CHILD_ICON_D);
+          var cti = el("title", null, ic);
+          cti.textContent = owner.name + " · " + (s + 1) + "號（" + childSeatText + "）";
+        }
         var ti = el("title", null, sc);
         ti.textContent = owner.name + " · " + (s + 1) + "號" + (isChild ? "（" + childSeatText + "）" : "");
       }
@@ -383,9 +404,14 @@
     /* v67：該桌兒童椅數量徽章（僅在該桌有兒童椅時顯示） */
     var childCount = childSeatsAtTable(t.no);
     if (childCount > 0) {
+      /* v68：徽章改為「圖示 + 椅N」膠囊，尺寸加大、位置固定於桌號右上方 */
+      var bw = 42, bh = 20;
+      var bx = cx + tR * 0.44, by = cy - tR * 1.06;
       var cg = el("g", { class: "tbl-childbadge" }, g);
-      el("rect", { class: "tbl-childbadge__bg", rx: 8, x: cx + tR * 0.52, y: cy - tR * 0.98, width: 30, height: 17 }, cg);
-      var cbt = el("text", { class: "tbl-childbadge__text", x: cx + tR * 0.52 + 15, y: cy - tR * 0.98 + 12.5, "text-anchor": "middle" }, cg);
+      el("rect", { class: "tbl-childbadge__bg", rx: 10, x: bx.toFixed(2), y: by.toFixed(2), width: bw, height: bh }, cg);
+      var bip = el("path", { class: "tbl-childbadge__ico", transform: "translate(" + (bx + 4.5).toFixed(2) + "," + (by + 4).toFixed(2) + ") scale(0.5)" }, cg);
+      bip.setAttribute("d", CHILD_ICON_D);
+      var cbt = el("text", { class: "tbl-childbadge__text", x: (bx + 19).toFixed(2), y: (by + 14).toFixed(2), "text-anchor": "start" }, cg);
       cbt.textContent = "椅" + childCount;
       var cti = el("title", null, cg);
       cti.textContent = "本桌有 " + childCount + " 張" + childSeatText;
@@ -553,21 +579,39 @@
     return g.table + tableSuffix + (OPT.showSeatLabel !== false && g.seat ? " · 第" + g.seat + "位" : "");
   }
 
-  /* v67：同行團體人數文字，例如「同行 4 人（大人 3・兒童 1）」 */
-  function partyTextOf(g) {
-    if (!g.partySize || g.partySize <= 1) return "";
-    var s = partyText + " " + g.partySize + " 人";
-    var parts = [];
-    if (g.adults) parts.push("大人 " + g.adults);
-    if (g.children) parts.push("兒童 " + g.children);
-    if (parts.length) s += "（" + parts.join("・") + "）";
-    return s;
+  /* v68：兒童椅圖示（inline SVG；結果卡、座位圖徽章、圖例共用同一造型）
+     造型＝高腳兒童椅：椅背 + 座面 + 餐盤 + 椅腳，24×24 viewBox。 */
+  var CHILD_ICON_D = "M8 3.4v6.6M8 10h7.4a2.6 2.6 0 0 1 2.6 2.6V16M5.8 16h12.4M9 16v4.2M15 16v4.2";
+  function childSeatIcon(cls) {
+    return '<svg class="' + (cls || "cs-ico") + '" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+      '<path d="' + CHILD_ICON_D + '"/></svg>';
   }
 
-  /* v67：兒童椅文字，例如「兒童椅 2 張」 */
-  function childSeatTextOf(g) {
-    if (!g.childSeats || g.childSeats <= 0) return "";
-    return childSeatText + " " + g.childSeats + " 張";
+  /* v68：同行人數區塊（結果卡主視覺）。
+     與問卷表單填寫一致：即使只有 1 人也會顯示，並拆出大人／兒童人數。 */
+  function partyBlock(g) {
+    var size = Math.max(1, parseInt(g.partySize, 10) || 1);
+    var adults = Math.max(0, parseInt(g.adults, 10) || 0);
+    var children = Math.max(0, parseInt(g.children, 10) || 0);
+    if (!adults && !children) adults = size;
+    return '<div class="seat-rc__party">' +
+        '<span class="seat-rc__party-label">' + esc(partyText) + '</span>' +
+        '<span class="seat-rc__party-num">' + size + '</span>' +
+        '<span class="seat-rc__party-unit">人</span>' +
+        '<span class="seat-rc__party-break">' +
+          '<span class="seat-rc__pchip seat-rc__pchip--adult">大人 ' + adults + '</span>' +
+          (children > 0 ? '<span class="seat-rc__pchip seat-rc__pchip--child">兒童 ' + children + '</span>' : '') +
+        '</span>' +
+      '</div>';
+  }
+
+  /* v68：兒童椅區塊（圖示＋標籤＋顏色三重編碼；無兒童椅時不顯示） */
+  function childBlock(g) {
+    var n = Math.max(0, parseInt(g.childSeats, 10) || 0);
+    if (n <= 0) return "";
+    return '<div class="seat-rc__child">' + childSeatIcon("seat-rc__child-ico") +
+        '<span class="seat-rc__child-text">' + esc(childSeatText) + ' <b>' + n + '</b> 張</span>' +
+        '<span class="seat-rc__child-note">座位圖已以專屬顏色標示</span></div>';
   }
 
   /* ── 結果卡：找到座位（含桌次、座位號、人數、兒童椅、說明與行動按鈕）── */
@@ -581,8 +625,7 @@
           '<span class="seat-rc__badge">' + esc(badgeText("wait")) + '</span>' +
           '<p class="seat-rc__name">' + esc(g.name) + '</p>' +
           '<p class="seat-rc__where">' + esc(unassignedText) + '</p>' +
-          (partyTextOf(g) ? '<p class="seat-rc__party">' + esc(partyTextOf(g)) + '</p>' : '') +
-          (childSeatTextOf(g) ? '<p class="seat-rc__child">' + esc(childSeatTextOf(g)) + '</p>' : '') +
+          partyBlock(g) + childBlock(g) +
           (g.note ? '<p class="seat-rc__note">備註：' + esc(g.note) + '</p>' : '') +
           '<p class="seat-rc__hint">您的桌次尚未安排，請於現場洽詢<b>接待人員</b>，由現場人員為您帶位。</p>' +
         '</div>';
@@ -591,11 +634,10 @@
     resultBox.innerHTML =
       '<div class="seat-rc seat-rc--found">' +
         '<span class="seat-rc__badge">' + esc(badgeText("found")) + '</span>' +
-        '<p class="seat-rc__name">' + esc(g.name + "　" + r.tableNo + tableSuffix) + '</p>' +
+        '<p class="seat-rc__name">' + esc(g.name) + '</p>' +
         '<p class="seat-rc__where">您的桌次：<b>' + esc(String(r.tableNo)) + '</b>' + esc(tableSuffix) + '</p>' +
         (OPT.showSeatLabel !== false && g.seat ? '<p class="seat-rc__seat">座位號碼：第 ' + esc(String(g.seat)) + ' 位' + (g.seatEnd && g.seatEnd > g.seat ? '（本團體共 ' + esc(String(g.partySize)) + ' 位，' + esc(String(g.seat)) + '～' + esc(String(g.seatEnd)) + ' 號）' : '') + '</p>' : '') +
-        (partyTextOf(g) ? '<p class="seat-rc__party">' + esc(partyTextOf(g)) + '</p>' : '') +
-        (childSeatTextOf(g) ? '<p class="seat-rc__child">🪑 ' + esc(childSeatTextOf(g)) + '（座位圖已以專屬顏色標示）</p>' : '') +
+        partyBlock(g) + childBlock(g) +
         (g.note ? '<p class="seat-rc__note">備註：' + esc(g.note) + '</p>' : '') +
         (r.found
           ? '<p class="seat-rc__hint">下方座位圖已為您標示並聚焦到 <b>' + esc(String(r.tableNo)) + esc(tableSuffix) + '</b>，該桌將以金色閃爍。</p>'

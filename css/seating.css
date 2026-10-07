@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════════════════════
-   seating.css ── 座位表頁面專用樣式（v66）
+   seating.css ── 座位表頁面專用樣式（v68）
    僅新增 .seat-* / .venue-* / .tbl* 等命名的樣式，
    不動也不依賴 index.html 的既有規則；色彩與動效 token 沿用 css/styles.css：
      --wine #6E1626 / --gold #C9A961 / --paper #F5F0E7 / 毛玻璃 / --ease
@@ -12,6 +12,13 @@
         狀態以「文字標籤 + 顏色 + 圖示」三重編碼，不依賴顏色辨識
      4. 新增「快速查詢座位」浮動鈕（捲離查詢區後出現）
      5. 全體文字對比 ≥ 4.5:1（WCAG AA），互動元件最小觸控 44px
+   v68（座位查詢操作介面重新設計）變更摘要：
+     1. 查詢結果卡改以「同行人數」為主視覺：大字人數 + 大人／兒童分項徽章，
+        即使只有 1 人也會顯示，與問卷表單填寫完全一致。
+     2. 兒童椅改為「圖示 + 標籤 + 顏色」三重編碼：
+        座位圖上兒童椅座位加上高腳椅圖示與外環；該桌顯示「圖示 + 椅N」膠囊徽章；
+        圖例新增兒童椅圖示色票；結果卡以專屬色塊顯示「兒童椅 N 張」。
+     3. 響應式強化：手機（360/390）與電腦（768/1440）皆易讀、無水平溢位。
    ══════════════════════════════════════════════════════════════════════════════ */
 
 /* ── 頁面基底（沿用主站的深色底，但座位圖放在米色宣紙卡上以利閱讀）── */
@@ -363,27 +370,90 @@
    2. 查詢結果卡新增「同行人數（大人／兒童）」與「兒童椅 N 張」兩行。
    ══════════════════════════════════════════════════════════════════════════════ */
 
-/* ── 兒童椅座位（專屬顏色；不依賴顏色者另有 title 文字與圖例）── */
+/* ── 兒童椅座位：專屬顏色 + 高腳椅圖示 + 外環（三重編碼，不依賴顏色）── */
 .tbl-seat.seat-child{fill:#cfe6ea;stroke:#2f6b7a;stroke-width:1.4}
 .tbl--main .tbl-seat.seat-child{fill:#cfe6ea;stroke:#2f6b7a}
 /* 命中（您的座位）時仍以金色為主，但保留較粗的青色外框以維持兒童椅辨識 */
 .tbl-seat.seat-child.seat-hit{fill:var(--gold)!important;stroke:#2f6b7a!important;stroke-width:2.4!important}
+/* 兒童椅座位上的高腳椅圖示與外環 */
+.tbl-childseat__ring{fill:none;stroke:#2f6b7a;stroke-width:1.1;opacity:.85}
+.tbl-childseat__ico{fill:none;stroke:#1f4f5a;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.venue-dim .tbl:not(.is-hit) .tbl-childseat{opacity:.4}
 
-/* ── 該桌兒童椅數量徽章 ── */
+/* ── 該桌兒童椅數量徽章（圖示 + 椅N 膠囊）── */
 .tbl-childbadge__bg{fill:#2f6b7a;stroke:#ffffff;stroke-width:1}
+.tbl-childbadge__ico{fill:none;stroke:#ffffff;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 .tbl-childbadge__text{fill:#ffffff;font-family:var(--zh);font-size:10px;letter-spacing:.02em}
 .venue-dim .tbl:not(.is-hit) .tbl-childbadge{opacity:.35}
 
-/* ── 圖例：兒童椅色票 ── */
-.seat-legend__swatch--child{background:#cfe6ea;border:1.4px solid #2f6b7a}
+/* ── 圖例：兒童椅色票（含圖示，與座位圖一致）── */
+.seat-legend__swatch--child{display:grid;place-items:center;width:18px;height:18px;background:#cfe6ea;border:1.4px solid #2f6b7a}
+.seat-legend__swatch--child svg{width:12px;height:12px;fill:none;stroke:#1f4f5a;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.seat-legend__item--child{color:var(--wine);font-weight:500}
 
-/* ── 查詢結果卡：同行人數 / 兒童椅 ── */
-.seat-rc__party{margin-top:var(--q-2);font-size:var(--q-fs-result);letter-spacing:.08em;color:var(--q-ink-2)}
-.seat-rc__child{margin-top:var(--q-2);display:inline-flex;align-items:center;gap:6px;padding:var(--q-1) var(--q-3);border-radius:100px;background:#2f6b7a1f;color:#245a66;font-size:var(--q-fs-meta);letter-spacing:.1em;font-weight:500}
-.seat-rc--wait .seat-rc__child{background:#8a5a121f;color:var(--q-wait)}
+/* ══════════════════════════════════════════════════════════════════════════
+   v68：查詢結果卡「同行人數」主視覺 + 兒童椅區塊
+   ──────────────────────────────────────────────────────────────────────────
+   1. 同行人數：大字人數 + 大人／兒童分項徽章，即使 1 人也顯示（與表單一致）
+   2. 兒童椅：圖示 + 標籤 + 顏色三重編碼，與座位圖／圖例同一造型
+   ══════════════════════════════════════════════════════════════════════════ */
 
-/* ── 高對比模式：兒童椅徽章與座位需有邊框可辨 ── */
+/* ── 同行人數區塊（結果卡主視覺）── */
+.seat-rc__party{
+  margin-top:var(--q-4);
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--q-2) var(--q-3);
+  padding:var(--q-3) var(--q-4);
+  background:linear-gradient(180deg,#6e16260d,#6e162604);
+  border:1px solid rgba(110,22,38,.16);
+  border-left:3px solid var(--q-wine);
+  border-radius:3px;
+}
+.seat-rc__party-label{font-size:var(--q-fs-meta);letter-spacing:.2em;color:var(--q-ink-3)}
+.seat-rc__party-num{
+  font-family:var(--en);font-size:clamp(1.9rem,6vw,2.6rem);line-height:1;font-weight:600;
+  color:var(--q-wine);font-variant-numeric:tabular-nums;
+}
+.seat-rc__party-unit{font-size:var(--q-fs-result);letter-spacing:.1em;color:var(--q-ink-2)}
+.seat-rc__party-break{display:inline-flex;flex-wrap:wrap;gap:var(--q-2);margin-left:auto}
+.seat-rc__pchip{
+  display:inline-flex;align-items:center;gap:5px;padding:3px 12px;border-radius:100px;
+  font-size:var(--q-fs-meta);letter-spacing:.1em;font-weight:500;white-space:nowrap;
+}
+.seat-rc__pchip--adult{background:#6b5f521a;color:var(--q-ink-2)}
+.seat-rc__pchip--child{background:#2f6b7a1f;color:#245a66}
+
+/* ── 兒童椅區塊（圖示 + 標籤 + 顏色）── */
+.seat-rc__child{
+  margin-top:var(--q-3);
+  display:flex;flex-wrap:wrap;align-items:center;gap:var(--q-2) var(--q-3);
+  padding:var(--q-3) var(--q-4);
+  background:#2f6b7a14;
+  border:1px solid #2f6b7a3d;
+  border-left:3px solid #2f6b7a;
+  border-radius:3px;
+  color:#1f4f5a;
+}
+.seat-rc__child-ico{
+  width:22px;height:22px;flex:none;
+  fill:none;stroke:#2f6b7a;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;
+}
+.seat-rc__child-text{font-size:var(--q-fs-result);letter-spacing:.1em;font-weight:500}
+.seat-rc__child-text b{font-family:var(--en);font-size:1.3em;font-weight:600;color:#1f4f5a}
+.seat-rc__child-note{font-size:var(--q-fs-meta);letter-spacing:.06em;color:#3d6b76}
+
+/* ── 高對比模式：兒童椅徽章、座位與圖示需有邊框可辨 ── */
 @media(forced-colors:active){
   .tbl-childbadge__bg{fill:Highlight;stroke:CanvasText}
   .tbl-seat.seat-child{stroke:CanvasText}
+  .tbl-childseat__ico,.tbl-childbadge__ico,.seat-rc__child-ico{stroke:CanvasText}
+  .seat-rc__child{border:1px solid CanvasText}
+}
+
+/* ── 手機：人數區塊改為上下堆疊，避免擠壓 ── */
+@media(max-width:640px){
+  .seat-rc__party{padding:var(--q-3)}
+  .seat-rc__party-break{margin-left:0;width:100%}
+  .seat-rc__party-num{font-size:clamp(1.7rem,9vw,2.2rem)}
+  .seat-rc__child{padding:var(--q-3)}
+  .seat-rc__child-note{width:100%}
 }
