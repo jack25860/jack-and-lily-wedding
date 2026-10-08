@@ -53,12 +53,19 @@
        (2) 新增整團外框弧線（party arc），將同團座位圈成一個視覺群組。
        (3) 兒童椅座位命中時保留青色外框，維持兒童椅辨識。
        (4) 結果卡明確標出座位區間與兒童椅座位號碼，與座位圖完全對應。
+     • v70：兒童椅判定改以問卷欄位為唯一依據 + 座位圖標示不再遮擋——
+       (1) 兒童椅一律以問卷「需要兒童椅數量」（childSeats）為準，
+           不再由「出席兒童人數」（children）推導，修正「有兒童但未勾選兒童椅，圖上卻出現兒童椅」的問題；
+           未填 childSeats 時，座位圖座位、桌次「椅N」標籤與結果卡皆不出現任何兒童椅標示。
+       (2) 座位圖上的「椅N」文字標籤移出桌面圓環之外（改置於圓環正下方），
+           不再遮擋座位點與座位上的兒童椅圖示；兒童椅座位本身仍保留專屬顏色、外環與高腳椅圖示。
+       (3) 結果卡與座位圖人數、座位區間完全對應（大人／兒童分項＋座位區間）。
      ══════════════════════════════════════════════════════════════════════════════ -->
 
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
 <meta name="googlebot" content="noindex, nofollow">
 <meta name="theme-color" content="#6E1626">
-<meta name="site-version" content="v69">
+<meta name="site-version" content="v70">
 <meta name="motion" content="silky-no-flash">
 <title>全場座位表｜三生三世·緣定今生 Jack ＆ Lily</title>
 
@@ -180,7 +187,7 @@
       <span class="seat-legend__item"><i class="seat-legend__swatch seat-legend__swatch--table"></i>桌次</span>
       <span class="seat-legend__item"><i class="seat-legend__swatch seat-legend__swatch--normal"></i>座位</span>
       <span class="seat-legend__item"><i class="seat-legend__swatch seat-legend__swatch--hit"></i>您的座位</span>
-      <span class="seat-legend__item seat-legend__item--child"><i class="seat-legend__swatch seat-legend__swatch--child"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 3.4v6.6M8 10h7.4a2.6 2.6 0 0 1 2.6 2.6V16M5.8 16h12.4M9 16v4.2M15 16v4.2"/></svg></i>兒童椅</span>
+      <span class="seat-legend__item seat-legend__item--child" title="僅依問卷「需要兒童椅數量」欄位標示"><i class="seat-legend__swatch seat-legend__swatch--child"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 3.4v6.6M8 10h7.4a2.6 2.6 0 0 1 2.6 2.6V16M5.8 16h12.4M9 16v4.2M15 16v4.2"/></svg></i>兒童椅（依問卷勾選）</span>
       <span class="seat-legend__item"><i class="seat-legend__swatch seat-legend__swatch--stage"></i>舞台</span>
       <span class="seat-legend__item"><i class="seat-legend__swatch seat-legend__swatch--aisle"></i>紅毯步道</span>
     </div>
@@ -199,7 +206,8 @@
         <li>名單自動同步問卷回覆；若暫時無法連線，會先顯示備援名單並自動重試。</li>
         <li>每桌人數以該桌上限為準；若某桌填寫人數超過上限，超額賓客將由現場人員安排。</li>
         <li>查詢結果會顯示您這一組的<b>同行人數</b>（大人／兒童分項），與問卷填寫的人數一致。</li>
-        <li>需要<b>兒童椅</b>的座位，在座位圖上以<b>專屬顏色 + 兒童椅圖示</b>標示，該桌也會顯示「椅N」徽章。</li>
+        <li>需要<b>兒童椅</b>的座位，在座位圖上以<b>專屬顏色 + 兒童椅圖示</b>標示；該桌另於桌面圓環下方顯示「椅N」標籤，不遮擋任何座位。</li>
+        <li><b>兒童椅一律以問卷「需要兒童椅數量」欄位為準</b>；未勾選者不會標示兒童椅（即使同行有兒童）。</li>
       </ul>
     </div>
   </section>

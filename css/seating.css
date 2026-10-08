@@ -391,11 +391,16 @@
 .tbl-childseat__ico{fill:none;stroke:#1f4f5a;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 .venue-dim .tbl:not(.is-hit) .tbl-childseat{opacity:.4}
 
-/* ── 該桌兒童椅數量徽章（圖示 + 椅N 膠囊）── */
+/* ── 該桌兒童椅數量標籤（圖示 + 椅N 膠囊；置於桌面圓環下方，不遮擋任何座位）── */
 .tbl-childbadge__bg{fill:#2f6b7a;stroke:#ffffff;stroke-width:1}
 .tbl-childbadge__ico{fill:none;stroke:#ffffff;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
-.tbl-childbadge__text{fill:#ffffff;font-family:var(--zh);font-size:10px;letter-spacing:.02em}
+.tbl-childbadge__text{fill:#ffffff;font-family:var(--zh);font-size:9px;letter-spacing:.02em}
 .venue-dim .tbl:not(.is-hit) .tbl-childbadge{opacity:.35}
+/* v70：命中的桌子，兒童椅標籤與整團弧線一致閃爍 */
+.tbl.is-hit .tbl-childbadge{animation:seatBreath 2.1s var(--ease-io) infinite}
+@media(prefers-reduced-motion:reduce){
+  .tbl.is-hit .tbl-childbadge{animation:none}
+}
 
 /* ── 圖例：兒童椅色票（含圖示，與座位圖一致）── */
 .seat-legend__swatch--child{display:grid;place-items:center;width:18px;height:18px;background:#cfe6ea;border:1.4px solid #2f6b7a}
@@ -467,4 +472,6 @@
   .seat-rc__party-num{font-size:clamp(1.7rem,9vw,2.2rem)}
   .seat-rc__child{padding:var(--q-3)}
   .seat-rc__child-note{width:100%}
+  /* v70：座位圖縮小後，「椅N」標籤保持可讀（tag 高度 18，字 11px 仍不溢出） */
+  .tbl-childbadge__text{font-size:11px}
 }

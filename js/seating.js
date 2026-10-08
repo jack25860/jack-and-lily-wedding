@@ -165,7 +165,9 @@
 
   /* v67：把每一筆賓客正規化為「同行團體」。
      partySize = 出席人數（大人＋兒童）；adults / children / childSeats 為明細。
-     _childMark = 該團體中需要標示為兒童椅的座位數（取 childSeats，若為 0 則取 children）。 */
+     _childMark = 該團體中需要標示為兒童椅的座位數。
+     v70：一律以問卷「需要兒童椅數量」（childSeats）為唯一依據；未填就不標示。
+           不再由「出席兒童人數」（children）推導兒童椅，避免勾選與圖示不一致。 */
   function normalizeParties() {
     for (var i = 0; i < GUESTS.length; i++) {
       var g = GUESTS[i];
@@ -183,7 +185,7 @@
       g.adults     = adults;
       g.children   = children;
       g.childSeats = childSeats;
-      g._childMark = childSeats > 0 ? Math.min(childSeats, size) : Math.min(children, size);
+      g._childMark = Math.min(childSeats, size);
     }
   }
 
@@ -377,11 +379,13 @@
       if (owner) {
         var isChild = owner.childSeatFrom && (s + 1) >= owner.childSeatFrom;
         if (isChild) {
+          /* v70：只以「專屬顏色 + 外環 + 座位上的兒童椅圖示」標示兒童椅座位本身。
+             「椅N」文字標籤已全部移出版面（改到桌面圓環正下方），
+             因此座位點與兒童椅圖示不會再被任何文字遮擋。 */
           sc.classList.add("seat-child");
-          /* v68：兒童椅座位加上專屬圖示（高腳椅）＋外環，一眼可辨識 */
           var ic = el("g", { class: "tbl-childseat", "data-seat": s + 1 }, g);
-          el("circle", { class: "tbl-childseat__ring", cx: sx.toFixed(2), cy: sy.toFixed(2), r: (sR + 1.6).toFixed(2) }, ic);
-          var k = (sR * 1.5) / 24;
+          el("circle", { class: "tbl-childseat__ring", cx: sx.toFixed(2), cy: sy.toFixed(2), r: (sR + 1.5).toFixed(2) }, ic);
+          var k = (sR * 1.65) / 24;
           var ip = el("path", {
             class: "tbl-childseat__ico",
             transform: "translate(" + (sx - 12 * k).toFixed(2) + "," + (sy - 12 * k).toFixed(2) + ") scale(" + k.toFixed(4) + ")"
@@ -404,17 +408,20 @@
       nm.textContent = t.name;
     }
 
-    /* v67：該桌兒童椅數量徽章（僅在該桌有兒童椅時顯示） */
+    /* v67：該桌兒童椅數量標籤（僅在該桌有兒童椅時顯示；childSeats 未填則完全不顯示）
+       v70：位置改到「桌面圓環正下方、所有座位點之外」——
+            原本固定於桌號右上方，會壓到右上角座位點與座位上的兒童椅圖示。 */
     var childCount = childSeatsAtTable(t.no);
     if (childCount > 0) {
-      /* v68：徽章改為「圖示 + 椅N」膠囊，尺寸加大、位置固定於桌號右上方 */
-      var bw = 42, bh = 20;
-      var bx = cx + tR * 0.44, by = cy - tR * 1.06;
+      var bw = 44, bh = 18;
+      var bx = cx - bw / 2;
+      /* 由桌面圓環 + 座位半徑 + 安全邊距再往外推，確保不與任何座位點重疊（含外環） */
+      var by = cy + (rR || (tR + 11)) + (sR || seatR) + 6;
       var cg = el("g", { class: "tbl-childbadge" }, g);
-      el("rect", { class: "tbl-childbadge__bg", rx: 10, x: bx.toFixed(2), y: by.toFixed(2), width: bw, height: bh }, cg);
-      var bip = el("path", { class: "tbl-childbadge__ico", transform: "translate(" + (bx + 4.5).toFixed(2) + "," + (by + 4).toFixed(2) + ") scale(0.5)" }, cg);
+      el("rect", { class: "tbl-childbadge__bg", rx: 9, x: bx.toFixed(2), y: by.toFixed(2), width: bw, height: bh }, cg);
+      var bip = el("path", { class: "tbl-childbadge__ico", transform: "translate(" + (bx + 4.6).toFixed(2) + "," + (by + 3.2).toFixed(2) + ") scale(0.44)" }, cg);
       bip.setAttribute("d", CHILD_ICON_D);
-      var cbt = el("text", { class: "tbl-childbadge__text", x: (bx + 19).toFixed(2), y: (by + 14).toFixed(2), "text-anchor": "start" }, cg);
+      var cbt = el("text", { class: "tbl-childbadge__text", x: (bx + 16.4).toFixed(2), y: (by + 12.8).toFixed(2), "text-anchor": "start" }, cg);
       cbt.textContent = "椅" + childCount;
       var cti = el("title", null, cg);
       cti.textContent = "本桌有 " + childCount + " 張" + childSeatText;
@@ -442,12 +449,14 @@
     return null;
   }
 
+  /* v70：每桌兒童椅張數＝該桌各團體「需要兒童椅數量」（childSeats）之總和。
+     未填 childSeats 者一律不計入，因此沒有填兒童椅的桌子不會出現「椅N」標籤。 */
   function childSeatsAtTable(tableNo) {
     var n = 0;
     for (var i = 0; i < GUESTS.length; i++) {
       var g = GUESTS[i];
       if (g.unassigned || Number(g.table) !== Number(tableNo)) continue;
-      n += (g._childMark || 0);
+      n += Math.max(0, parseInt(g.childSeats, 10) || 0);
     }
     return n;
   }
@@ -643,11 +652,11 @@
   }
 
   /* v68：兒童椅區塊（圖示＋標籤＋顏色三重編碼；無兒童椅時不顯示）
-     數量與座位圖一致：優先取 childSeats，若為 0 則取 children（座位圖的 _childMark 同此邏輯），
-     確保「結果卡顯示的兒童椅張數」與「座位圖標示的兒童椅座位數」完全對應。 */
+     v70：一律以問卷「需要兒童椅數量」（childSeats）為唯一依據。
+          未填 childSeats 就完全不出現此區塊（即使同行有兒童）；
+          有填則張數與座位圖標示的兒童椅座位數完全對應。 */
   function childBlock(g) {
     var n = Math.max(0, parseInt(g.childSeats, 10) || 0);
-    if (n <= 0) n = Math.max(0, parseInt(g.children, 10) || 0);
     if (n <= 0) return "";
     /* v69：明確標出兒童椅的座位號碼，與座位圖上標示的座位完全對應 */
     var seatNote = "";
@@ -685,7 +694,7 @@
         partyBlock(g) + childBlock(g) +
         (g.note ? '<p class="seat-rc__note">備註：' + esc(g.note) + '</p>' : '') +
         (r.found
-          ? '<p class="seat-rc__hint">下方座位圖已為您標示並聚焦到 <b>' + esc(String(r.tableNo)) + esc(tableSuffix) + '</b>，本團體 <b>' + esc(String(g.partySize)) + '</b> 個座位（第 ' + esc(String(g.seat)) + '～' + esc(String(g.seatEnd || g.seat)) + ' 號）將以金色閃爍。' + (g.childSeatFrom ? '其中第 ' + esc(String(g.childSeatFrom)) + '～' + esc(String(g.seatEnd)) + ' 號為' + esc(childSeatText) + '。' : '') + '</p>'
+          ? '<p class="seat-rc__hint">下方座位圖已為您標示並聚焦到 <b>' + esc(String(r.tableNo)) + esc(tableSuffix) + '</b>，本團體 <b>' + esc(String(g.partySize)) + '</b> 個座位（第 ' + esc(String(g.seat)) + '～' + esc(String(g.seatEnd || g.seat)) + ' 號；大人 <b>' + esc(String(Math.max(0, parseInt(g.adults, 10) || g.partySize))) + '</b> 位' + ((parseInt(g.children, 10) || 0) > 0 ? '、兒童 <b>' + esc(String(g.children)) + '</b> 位' : '') + '）將以金色閃爍。' + (g.childSeatFrom ? '其中第 ' + esc(String(g.childSeatFrom)) + '～' + esc(String(g.seatEnd)) + ' 號為' + esc(childSeatText) + '。' : '') + '</p>'
           : '<p class="seat-rc__hint">（此桌次不在目前座位圖中，請於現場洽詢接待人員。）</p>') +
         '<div class="seat-rc__acts">' +
           '<button type="button" class="seat-rc__btn" id="seatRcGo">在座位圖查看我的桌次</button>' +
@@ -1532,7 +1541,9 @@
       guests: GUESTS.length,
       find: findMatches,
       data: function () { return { VENUE: VENUE, TABLES: TABLES, GUESTS: GUESTS, OPTIONS: OPT }; },
-      childSeatsAt: childSeatsAtTable
+      childSeatsAt: childSeatsAtTable,
+      /* v70：供自動化驗證計算「整團弧線」路徑，以便確認弧線只落在該團座位之間 */
+      arcPath: partyArcPath
     };
 
     /* v62：已設定來源 → 載入問卷回覆名單；未設定 → 明確提示目前使用備援名單。 */
