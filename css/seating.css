@@ -254,6 +254,17 @@
 @keyframes ringBreath{0%,100%{opacity:1}50%{opacity:.58}}
 .tbl.is-hit .tbl__ring{animation:ringBreath 2.1s var(--ease-io) infinite}
 .seat-hit{animation:seatBreath 2.1s var(--ease-io) infinite}
+
+/* ── v69：整團高亮 ──
+   1. 同團所有座位（大人＋兒童椅）皆以金色閃爍，修正 v68 只亮單一座位。
+   2. 兒童椅座位命中時保留青色外框，維持兒童椅辨識。
+   3. 整團外框弧線將同團座位圈成一個視覺群組。 */
+.tbl-seat.seat-hit--child{stroke:#2f6b7a!important;stroke-width:2.4!important}
+.tbl-partyarc{fill:none;stroke:var(--gold);stroke-width:2.4;stroke-linecap:round;opacity:0;transition:opacity .4s var(--ease-out);pointer-events:none}
+.tbl-partyarc.is-on{opacity:.95;animation:seatBreath 2.1s var(--ease-io) infinite}
+@media(prefers-reduced-motion:reduce){
+  .tbl-partyarc.is-on{animation:none;opacity:.95}
+}
 .venue-dim .tbl:not(.is-hit) .tbl__ring{stroke:rgba(110,22,38,.24)}
 .venue-dim .tbl:not(.is-hit) .tbl__num{fill:rgba(19,16,16,.34)}
 .venue-dim .tbl:not(.is-hit) .tbl-seat{fill:#efe7d8;stroke:rgba(110,22,38,.16)}

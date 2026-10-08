@@ -47,12 +47,18 @@
            座位圖上兒童椅座位加上高腳椅圖示與外環；該桌顯示「圖示 + 椅N」膠囊徽章；
            圖例新增兒童椅圖示色票；結果卡以專屬色塊顯示「兒童椅 N 張」。
        (3) 響應式強化：手機（360/390）與電腦（768/1440）皆易讀、無水平溢位。
+     • v69：修正座位圖整團高亮邏輯——
+       (1) 查到時依 seat..seatEnd 連續區間，將「同團所有座位」（大人＋兒童椅）逐一標示為金色閃爍，
+           修正 v68 只高亮單一座位、導致同團其他大人座位未變色的問題。
+       (2) 新增整團外框弧線（party arc），將同團座位圈成一個視覺群組。
+       (3) 兒童椅座位命中時保留青色外框，維持兒童椅辨識。
+       (4) 結果卡明確標出座位區間與兒童椅座位號碼，與座位圖完全對應。
      ══════════════════════════════════════════════════════════════════════════════ -->
 
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
 <meta name="googlebot" content="noindex, nofollow">
 <meta name="theme-color" content="#6E1626">
-<meta name="site-version" content="v68">
+<meta name="site-version" content="v69">
 <meta name="motion" content="silky-no-flash">
 <title>全場座位表｜三生三世·緣定今生 Jack ＆ Lily</title>
 

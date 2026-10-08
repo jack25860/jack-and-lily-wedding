@@ -362,6 +362,9 @@
     var rR = isMain ? mainTableRing : ringR;
     var sR = isMain ? Math.max(4.6, Math.min(6.4, rR * 0.115)) : seatR;
 
+    /* v69：整團外框弧線（預設隱藏，查到時依座位區間顯示） */
+    var partyArc = el("path", { class: "tbl-partyarc" }, g);
+
     /* 座位點 */
     var seatNodes = [];
     var step = 360 / seats;
@@ -424,7 +427,7 @@
 
     tableNodes[t.no] = {
       gEl: g, ring: g.querySelector(".tbl__ring"), hitLabel: lg, hitLabelBg: bg, hitLabelText: lt,
-      cx: cx, cy: cy, ringR: rR, isMain: isMain, seats: seatNodes, data: t
+      cx: cx, cy: cy, ringR: rR, seatR: sR, isMain: isMain, seats: seatNodes, partyArc: partyArc, data: t
     };
   }
 
@@ -480,7 +483,8 @@
       var tn = tableNodes[no];
       tn.gEl.classList.remove("is-hit");
       tn.hitLabel.classList.remove("is-on");
-      tn.seats.forEach(function (s) { s.classList.remove("seat-hit"); });
+      tn.seats.forEach(function (s) { s.classList.remove("seat-hit"); s.classList.remove("seat-hit--child"); });
+      if (tn.partyArc) { tn.partyArc.classList.remove("is-on"); tn.partyArc.removeAttribute("d"); }
     });
     if (svg) svg.classList.remove("venue-dim");
   }
@@ -497,8 +501,27 @@
 
     if (tn) {
       tn.gEl.classList.add("is-hit");
-      var sc = tn.seats[Number(g.seat) - 1];
-      if (sc) sc.classList.add("seat-hit");
+      /* v69：整團高亮 —— 依 seat..seatEnd 連續區間，逐一標示「所有」座位（含兒童椅座位），
+         修正 v68 只高亮 g.seat 單一座位、導致同團其他大人座位未變色的問題。 */
+      var from = Math.max(1, Number(g.seat) || 1);
+      var to   = Math.max(from, Number(g.seatEnd) || from);
+      var childFrom = Number(g.childSeatFrom) || 0;
+      for (var si = from; si <= to; si++) {
+        var sn = tn.seats[si - 1];
+        if (!sn) continue;
+        sn.classList.add("seat-hit");
+        if (childFrom && si >= childFrom) sn.classList.add("seat-hit--child");
+      }
+      /* v69：整團外框弧線，讓「同一團」在座位圖上被視為一個群組 */
+      if (tn.partyArc) {
+        if (to > from) {
+          tn.partyArc.setAttribute("d", partyArcPath(tn.cx, tn.cy, (tn.ringR || ringR) + (tn.seatR || seatR) + 2.5, tn.seats.length, from, to));
+          tn.partyArc.classList.add("is-on");
+        } else {
+          tn.partyArc.removeAttribute("d");
+          tn.partyArc.classList.remove("is-on");
+        }
+      }
       /* 標籤文字與寬度 */
       tn.hitLabelText.textContent = label;
       var w = labelWidth(label);
@@ -522,6 +545,20 @@
       w += text.charCodeAt(i) > 0x2E80 ? 13.6 : 7.4;
     }
     return Math.max(56, w + 24);
+  }
+
+  /* v69：依座位區間（from..to）產生沿桌緣的弧線路徑，將整團座位圈成一個視覺群組。
+     座位編號為順時針遞增，故 sweep-flag 固定為 1。 */
+  function partyArcPath(cx, cy, r, seats, from, to) {
+    var step = 360 / Math.max(1, seats);
+    var a1 = (-90 + (from - 1) * step) * Math.PI / 180;
+    var a2 = (-90 + (to - 1) * step) * Math.PI / 180;
+    var x1 = cx + Math.cos(a1) * r, y1 = cy + Math.sin(a1) * r;
+    var x2 = cx + Math.cos(a2) * r, y2 = cy + Math.sin(a2) * r;
+    var span = (to - from) * step;
+    var large = span > 180 ? 1 : 0;
+    return "M" + x1.toFixed(2) + " " + y1.toFixed(2) +
+           " A" + r.toFixed(2) + " " + r.toFixed(2) + " 0 " + large + " 1 " + x2.toFixed(2) + " " + y2.toFixed(2);
   }
 
   /* ══════════ 四、聚焦 ══════════ */
@@ -612,8 +649,13 @@
     var n = Math.max(0, parseInt(g.childSeats, 10) || 0);
     if (n <= 0) n = Math.max(0, parseInt(g.children, 10) || 0);
     if (n <= 0) return "";
+    /* v69：明確標出兒童椅的座位號碼，與座位圖上標示的座位完全對應 */
+    var seatNote = "";
+    if (g.childSeatFrom && g.seatEnd) {
+      seatNote = '（第 ' + esc(String(g.childSeatFrom)) + '～' + esc(String(g.seatEnd)) + ' 號）';
+    }
     return '<div class="seat-rc__child">' + childSeatIcon("seat-rc__child-ico") +
-        '<span class="seat-rc__child-text">' + esc(childSeatText) + ' <b>' + n + '</b> 張</span>' +
+        '<span class="seat-rc__child-text">' + esc(childSeatText) + ' <b>' + n + '</b> 張' + seatNote + '</span>' +
         '<span class="seat-rc__child-note">座位圖已以專屬顏色標示</span></div>';
   }
 
@@ -639,11 +681,11 @@
         '<span class="seat-rc__badge">' + esc(badgeText("found")) + '</span>' +
         '<p class="seat-rc__name">' + esc(g.name) + '</p>' +
         '<p class="seat-rc__where">您的桌次：<b>' + esc(String(r.tableNo)) + '</b>' + esc(tableSuffix) + '</p>' +
-        (OPT.showSeatLabel !== false && g.seat ? '<p class="seat-rc__seat">座位號碼：第 ' + esc(String(g.seat)) + ' 位' + (g.seatEnd && g.seatEnd > g.seat ? '（本團體共 ' + esc(String(g.partySize)) + ' 位，' + esc(String(g.seat)) + '～' + esc(String(g.seatEnd)) + ' 號）' : '') + '</p>' : '') +
+        (OPT.showSeatLabel !== false && g.seat ? '<p class="seat-rc__seat">座位號碼：' + (g.seatEnd && g.seatEnd > g.seat ? '第 ' + esc(String(g.seat)) + '～' + esc(String(g.seatEnd)) + ' 號（本團體共 ' + esc(String(g.partySize)) + ' 位）' : '第 ' + esc(String(g.seat)) + ' 位') + '</p>' : '') +
         partyBlock(g) + childBlock(g) +
         (g.note ? '<p class="seat-rc__note">備註：' + esc(g.note) + '</p>' : '') +
         (r.found
-          ? '<p class="seat-rc__hint">下方座位圖已為您標示並聚焦到 <b>' + esc(String(r.tableNo)) + esc(tableSuffix) + '</b>，該桌將以金色閃爍。</p>'
+          ? '<p class="seat-rc__hint">下方座位圖已為您標示並聚焦到 <b>' + esc(String(r.tableNo)) + esc(tableSuffix) + '</b>，本團體 <b>' + esc(String(g.partySize)) + '</b> 個座位（第 ' + esc(String(g.seat)) + '～' + esc(String(g.seatEnd || g.seat)) + ' 號）將以金色閃爍。' + (g.childSeatFrom ? '其中第 ' + esc(String(g.childSeatFrom)) + '～' + esc(String(g.seatEnd)) + ' 號為' + esc(childSeatText) + '。' : '') + '</p>'
           : '<p class="seat-rc__hint">（此桌次不在目前座位圖中，請於現場洽詢接待人員。）</p>') +
         '<div class="seat-rc__acts">' +
           '<button type="button" class="seat-rc__btn" id="seatRcGo">在座位圖查看我的桌次</button>' +
