@@ -166,11 +166,14 @@
     STAGE.y = 4;
     STAGE.h = 70;
 
-    /* 主桌（舞台正前方、中軸線上；12 人） */
-    mainTableR    = mainTableNo ? 42 : 0;
-    mainTableRing = mainTableNo ? 58 : 0;
-    mainTableY    = 138;
-    mainTableH    = mainTableNo ? 126 : 0;
+    /* 主桌（舞台正前方、中軸線上；12 人）
+       v76：縮小主桌半徑並上移，使座位點與標籤不與舞台、紅毯、左右桌區重疊。
+       實測：外緣 r = 44 + 6.2 = 50.2 → 上緣 81.8（舞台底 74，留 7.8）、
+             下緣 182.2（桌區頂 192，留 9.8；紅毯頂 208，留 25.8）。 */
+    mainTableR    = mainTableNo ? 34 : 0;
+    mainTableRing = mainTableNo ? 44 : 0;
+    mainTableY    = 132;
+    mainTableH    = mainTableNo ? 100 : 0;
     mainTablePos  = { x: axc, y: mainTableY };
 
     /* 紅毯（L 形）：垂直段沿中軸往南，水平段於南端往東至出入口 */
@@ -455,7 +458,7 @@
     var seats = Math.max(1, parseInt(t.seats, 10) || (isMain ? mainTableSeats : seatsPerTable));
     var tR = isMain ? mainTableR : tableR;
     var rR = isMain ? mainTableRing : ringR;
-    var sR = isMain ? Math.max(5.6, Math.min(7.6, rR * 0.175)) : seatR;
+    var sR = isMain ? Math.max(5.2, Math.min(6.4, rR * 0.141)) : seatR;   /* v76：主桌座位點縮小，避免外緣壓到舞台／桌區 */
 
     /* v69：整團外框弧線（預設隱藏，查到時依座位區間顯示） */
     var partyArc = el("path", { class: "tbl-partyarc" }, g);
@@ -616,8 +619,9 @@
       var w = labelWidth(label);
       var ty, tx = tn.cx;
       if (tn.isMain) {
-        /* v75：主桌緊跟舞台、下方即紅毯起點，上下皆無空間 → 標籤置於桌面右側 */
-        tx = tn.cx + (tn.ringR || ringR) + 8 + w / 2;
+        /* v76：主桌上下皆無空間（舞台／紅毯），標籤置於桌面右側的空區；
+           起點再外推 12px，避免壓到 3 點鐘方向的座位點。 */
+        tx = tn.cx + (tn.ringR || ringR) + 12 + w / 2;
         ty = tn.cy - 10;
       } else {
         ty = tn.cy - (tn.ringR || ringR) - 26;

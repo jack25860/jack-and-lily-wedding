@@ -26,11 +26,22 @@
 - 未更動色票／字級／間距 token（金色 accent、酒紅主色、卡片陰影均沿用）。
 - 查詢流程已為「純前端狀態切換、無整頁刷新」，動畫過場與既有的 silky-no-flash 基調一致。
 
-## 變更檔案
-- `seating.html`（版本標記 v73、移除提醒 4 項）
-- `css/seating.css`（新增查詢流程過場動畫）
-- `CHANGES-v73.md`（新增）
+## 四、UI/UX 收尾（UI Designer 接棒）
+- 「貼心提醒」卡改為與 hero／座位圖一致的標題層級：金色英文小標 `Good to Know`（`--en-caps`、字距 .42em）＋米白中文主標＋金色漸層分隔線。
+- 卡片加入「金色角標」母題（左上／右下 `::before`／`::after`），沿用查詢卡與座位圖框的視覺語言，強化區塊一致性；手機版（`max-width:768px`）隱藏角標避免貼邊。
+- 卡片內距由 `clamp(24px,3.4vw,38px)` 提升至 `clamp(26px,3.6vw,42px)`，清單上距由 18px → 20px，改善呼吸感。
+- 未動任何色票／字級／間距 token，未新增功能、未重新設計。
 
-## 未做（交由 UI Designer）
-- 尚未部署上線、尚未以真實瀏覽器驗證。
-- 版面美感／元件一致性／可用性的完整 UI/UX 收尾。
+## 五、驗證結論（本次實測，非目測）
+- **無閃動**：於真實 Chromium 逐步輸入 `TEST`，即時建議清單只在「顯示那一刻」播一次過場——連續鍵擊取樣的 opacity 為 0 → 0.046 → 0.58 → 0.94 → 1.0，**不重播、不閃爍**；穩定後 600ms 再取樣仍為 1.0，`animationName` 恆為 `seatFadeSlide`。
+- **不整頁刷新**：查詢前在 window 上種下標記，送出表單後標記仍在（`sameDocument: true`），且全程 `console.error` 為 0 筆。
+- **提醒筆數**：`seat-notes__list > li` = **6 筆**（本機四寬度與線上皆然）。
+- **版面**：360／390／768／1440 四寬度 `scrollWidth <= clientWidth + 1`，**無水平溢位**；16 桌／162 座位齊備。
+- **整團高亮仍正確**：線上查詢 `TEST` → 座位 6～9 全數金色（`rgb(201,169,97)`）＋ `seatBreath` 閃爍。
+- **線上與本機位元一致**：`seating.html`／`css/seating.css`／`js/seating.js` 三檔 live md5 全數 MATCH（HTTP 200）。
+- **部署**：workflow run **#86** `Deploy wedding site` → success；Pages build **#105** → success；線版標 `site-version = v73`。
+
+## 變更檔案
+- `seating.html`（版本標記 v73、移除提醒 4 項、提醒卡 eyebrow／分隔線）
+- `css/seating.css`（查詢流程過場動畫、提醒卡角標與標題層級）
+- `CHANGES-v73.md`（新增）

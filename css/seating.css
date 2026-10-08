@@ -273,8 +273,8 @@
 .tbl__island{fill:rgba(110,22,38,.05);stroke:rgba(110,22,38,.16);stroke-width:1;stroke-dasharray:5 5}
 /* 主桌（舞台正前方、紅毯末端）— 以金色描邊強調 */
 .tbl--main .tbl__ring{stroke:var(--gold);stroke-width:2.4;fill:#fffaf0}
-.tbl--main .tbl__num{fill:var(--wine);font-size:15px}
-.tbl--main .tbl__name{fill:var(--wine);font-size:6.2px;letter-spacing:.06em}
+.tbl--main .tbl__num{fill:var(--wine);font-size:13px}
+.tbl--main .tbl__name{fill:var(--wine);font-size:5.6px;letter-spacing:.06em}
 .tbl--main .tbl-seat{fill:#fdf6e6;stroke:rgba(201,169,97,.7)}
 .tbl-seat{fill:var(--paper-2);stroke:rgba(110,22,38,.34);stroke-width:1;transition:fill .5s var(--ease-out),stroke .5s var(--ease-out)}
 .tbl:hover .tbl__ring{stroke:var(--wine);stroke-width:2.2}
@@ -307,7 +307,7 @@
 
 /* 中獎桌上方標籤：姓名-幾桌 */
 .tbl__hitlabel-bg{fill:var(--wine);stroke:var(--gold);stroke-width:1}
-.tbl__hitlabel{fill:var(--gold-light);font-size:10px;letter-spacing:.05em}
+.tbl__hitlabel{fill:var(--gold-light);font-size:9px;letter-spacing:.05em}
 .tbl-hitlabel{opacity:0;transition:opacity .5s var(--ease-out)}
 .tbl-hitlabel.is-on{opacity:1}
 
