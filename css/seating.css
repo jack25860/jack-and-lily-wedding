@@ -162,14 +162,6 @@
 .seat-rc__hint{margin-top:var(--q-3);font-size:var(--q-fs-meta);letter-spacing:.06em;line-height:1.95;color:var(--q-ink-3);max-width:52ch}
 .seat-rc__hint b{color:var(--q-ink);font-weight:500}
 
-/* 結果卡內的行動按鈕 */
-.seat-rc__acts{display:flex;flex-wrap:wrap;gap:var(--q-3);margin-top:var(--q-5)}
-.seat-rc__btn{display:inline-flex;align-items:center;gap:var(--q-2);min-height:var(--q-touch-min);padding:var(--q-3) var(--q-5);background:var(--q-wine);border:1px solid var(--q-wine);border-radius:2px;color:var(--gold-light);font-family:var(--zh);font-size:.88rem;letter-spacing:.14em;transition:background .35s var(--ease-soft),transform .35s var(--ease)}
-.seat-rc__btn:hover{background:var(--wine-deep);transform:translateY(-1px)}
-.seat-rc__btn:focus-visible{outline:2px solid var(--q-focus);outline-offset:3px}
-.seat-rc__btn--ghost{background:transparent;color:var(--q-wine);border-color:rgba(110,22,38,.34)}
-.seat-rc__btn--ghost:hover{background:#6e16261a;color:var(--q-wine)}
-
 /* 候選／相似名單（chip） */
 .seat-rc__chips{display:flex;flex-wrap:wrap;gap:var(--q-3);margin-top:var(--q-4)}
 .seat-rc__chip{display:inline-flex;align-items:baseline;gap:var(--q-2);max-width:100%;min-height:var(--q-touch-min);padding:var(--q-3) var(--q-5);background:#ffffff;border:1px solid rgba(110,22,38,.3);border-radius:100px;color:var(--q-wine);font-family:var(--zh);font-size:.9rem;letter-spacing:.08em;transition:background .3s var(--ease-soft),color .3s,border-color .3s,transform .3s var(--ease)}
@@ -328,8 +320,6 @@
   .seat-search:before,.seat-search:after{display:none}
   .seat-rc{padding:var(--q-5) var(--q-4) var(--q-4)}
   .seat-rc__where{gap:6px}
-  .seat-rc__acts{flex-direction:column;align-items:stretch}
-  .seat-rc__btn{justify-content:center}
   .seat-rc__chips{gap:var(--q-2)}
   .seat-rc__chip{width:100%;justify-content:space-between;border-radius:3px}
   .seat-map-frame{width:94vw}
@@ -358,14 +348,14 @@
   .tbl.is-hit .tbl__ring,.seat-hit,.seat-search__voice.is-listening,.seat-rc{animation:none}
   .tbl.is-hit .tbl__ring{opacity:1}
   .seat-hit{opacity:1}
-  .seat-rc__chip,.seat-rc__btn,.seat-recent__item,.seat-suggest__item,.seat-search__btn,.seat-search__field,.seat-fab,.tbl__ring,.tbl-seat{transition:none}
+  .seat-rc__chip,.seat-recent__item,.seat-suggest__item,.seat-search__btn,.seat-search__field,.seat-fab,.tbl__ring,.tbl-seat{transition:none}
   .seat-fab{transform:none}
 }
 
 /* ── 高對比（Windows 高對比模式）：確保互動元素有邊框可辨 ── */
 @media(forced-colors:active){
   .seat-search__field,.seat-rc,.seat-suggest{border:1px solid CanvasText}
-  .seat-rc__chip,.seat-search__btn,.seat-rc__btn,.seat-fab,.seat-recent__item{border:1px solid ButtonText}
+  .seat-rc__chip,.seat-search__btn,.seat-fab,.seat-recent__item{border:1px solid ButtonText}
 }
 
 /* ── 列印：只留座位圖 ── */

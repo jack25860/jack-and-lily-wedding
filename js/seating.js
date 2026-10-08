@@ -655,14 +655,7 @@
         (r.found
           ? '<p class="seat-rc__hint">下方座位圖已為您標示並聚焦到 <b>' + esc(String(r.tableNo)) + esc(tableSuffix) + '</b>，本團體 <b>' + esc(String(g.partySize)) + '</b> 個座位（第 ' + esc(String(g.seat)) + '～' + esc(String(g.seatEnd || g.seat)) + ' 號；大人 <b>' + esc(String(Math.max(0, parseInt(g.adults, 10) || g.partySize))) + '</b> 位' + ((parseInt(g.children, 10) || 0) > 0 ? '、兒童 <b>' + esc(String(g.children)) + '</b> 位' : '') + '）將以金色閃爍。' + (g.childSeatFrom ? '其中第 ' + esc(String(g.childSeatFrom)) + '～' + esc(String(g.seatEnd)) + ' 號為' + esc(childSeatText) + '。' : '') + '</p>'
           : '<p class="seat-rc__hint">（此桌次不在目前座位圖中，請於現場洽詢接待人員。）</p>') +
-        '<div class="seat-rc__acts">' +
-          '<button type="button" class="seat-rc__btn" id="seatRcGo">在座位圖查看我的桌次</button>' +
-          '<button type="button" class="seat-rc__btn seat-rc__btn--ghost" id="seatRcAgain">查詢其他姓名</button>' +
-        '</div>' +
       '</div>';
-    var goBtn = $("#seatRcGo", resultBox), againBtn = $("#seatRcAgain", resultBox);
-    if (goBtn) goBtn.addEventListener("click", function () { focusTable(tableNodes[r.tableNo]); });
-    if (againBtn) againBtn.addEventListener("click", function () { resetQuery(true); });
   }
 
   /* ── 結果卡：查無（含相似姓名建議，降低打錯字的挫折）── */
