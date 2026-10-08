@@ -10,8 +10,8 @@
 
    功能：
      1. 依 VENUE 參數繪製「全場座位圖」：
-        前方大舞台 + 中間紅毯步道 + 紅毯末端（舞台正前方）12 人主桌
-        + 紅毯左右兩側共 15 桌（左 8、右 7）
+        中央 12 人主桌 + 左右兩側共 15 桌（左 8、右 7）
+        （v71：已移除舞台與紅毯步道圖形；場地上緣留白縮減，座位區向上讓出空間。）
      2. 姓名查詢（模糊／部分比對、同名候選、查無資料三種情境）
      3. 查到時：座位變色 + 呼吸燈、顯示「姓名-幾桌」、自動捲動聚焦到該桌
      4. 右下角「Tt」字級浮動鈕（三檔 sm/md/lg，沿用主站 localStorage 記憶）
@@ -80,7 +80,7 @@
   function intOr(v, d) { var n = parseInt(String(v == null ? "" : v).replace(/[^\d-]/g, ""), 10); return isNaN(n) ? d : n; }
 
   /* ══════════ 一、計算場地幾何 ══════════ */
-  var STAGE = { x: 0, y: 14, w: 0, h: 66 };
+  var STAGE = { x: 0, y: 8, w: 0, h: 0 };   /* v71：不再繪製舞台，僅保留場地上緣留白 */
   var AISLE = { x: 0, y: 0, w: 0, h: 0 };
   var boardY, boardH, aisleW, aisleX, sideW, nCols, nRows, pad, colW, rowH, tableR, ringR, seatR;
   /* v62：主桌（舞台正前方、紅毯末端）幾何 */
@@ -272,18 +272,13 @@
     svg = el("svg", {
       viewBox: "0 0 " + VB_W + " " + VB_H,
       role: "img",
-      "aria-label": "全場座位圖：前方舞台、中間紅毯步道、左右兩側共 " + TABLES.length + " 桌"
+      "aria-label": "全場座位圖：左右兩側共 " + TABLES.length + " 桌"
     });
     svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
     /* 漸層定義 */
     var defs = el("defs", null, svg);
-    var g1 = el("linearGradient", { id: "stageGrad", x1: "0", y1: "0", x2: "0", y2: "1" }, defs);
-    el("stop", { offset: "0", "stop-color": "#7d1c2e" }, g1);
-    el("stop", { offset: "1", "stop-color": "#4A0E19" }, g1);
-    var g2 = el("linearGradient", { id: "aisleGrad", x1: "0", y1: "0", x2: "0", y2: "1" }, defs);
-    el("stop", { offset: "0", "stop-color": "#8f2436" }, g2);
-    el("stop", { offset: "1", "stop-color": "#5c1220" }, g2);
+    /* v71：已移除舞台／紅毯漸層定義（座位圖不再繪製舞台與紅毯步道） */
 
     /* 場地底板 */
     el("rect", { class: "venue-bg", x: 6, y: 6, width: VB_W - 12, height: VB_H - 12, rx: 14 }, svg);
@@ -294,31 +289,8 @@
     el("rect", { class: "tbl__island", x: 16, y: islandTop, width: aisleX - 32, height: sideBlockH - 16, rx: 18 }, svg);
     el("rect", { class: "tbl__island", x: VB_W - aisleX + 16, y: islandTop, width: aisleX - 32, height: sideBlockH - 16, rx: 18 }, svg);
 
-    /* 舞台 */
-    el("rect", { class: "stage", x: STAGE.x, y: STAGE.y, width: STAGE.w, height: STAGE.h, rx: 6 }, svg);
-    var stageTx = el("text", {
-      class: "stage__text", x: VB_W / 2, y: STAGE.y + STAGE.h / 2 - 2,
-      "text-anchor": "middle", "dominant-baseline": "middle"
-    }, svg);
-    stageTx.textContent = LABELS.stage || "舞台";
-    var stageEn = el("text", {
-      class: "stage__en", x: VB_W / 2, y: STAGE.y + STAGE.h - 16, "text-anchor": "middle"
-    }, svg);
-    stageEn.textContent = "STAGE";
-
-    /* 紅毯步道（由舞台往後延伸） */
-    el("rect", { class: "aisle", x: AISLE.x, y: AISLE.y, width: AISLE.w, height: AISLE.h }, svg);
-    /* 紅毯中央裝飾線 */
-    el("line", {
-      x1: VB_W / 2, y1: AISLE.y + 6, x2: VB_W / 2, y2: AISLE.y + AISLE.h - 6,
-      stroke: "rgba(201,169,97,.45)", "stroke-width": 1, "stroke-dasharray": "8 10"
-    }, svg);
-    var aisleLabelY = AISLE.y + (mainTableNo ? mainTableH + 30 : 34);
-    var aisleTx = el("text", {
-      class: "aisle__text", x: VB_W / 2, y: aisleLabelY, "text-anchor": "middle",
-      transform: "rotate(90 " + (VB_W / 2) + " " + aisleLabelY + ")"
-    }, svg);
-    aisleTx.textContent = LABELS.aisle || "紅毯步道";
+    /* v71：已移除舞台與紅毯步道圖形（含標示文字與中央裝飾線）。
+       座位區的左右分欄與中央走道寬度仍由 aisleX / aisleW 決定，故版面維持不變。 */
 
     /* 左右側標示 */
     var sideLabelY = islandTop + 14;
@@ -411,21 +383,8 @@
     /* v67：該桌兒童椅數量標籤（僅在該桌有兒童椅時顯示；childSeats 未填則完全不顯示）
        v70：位置改到「桌面圓環正下方、所有座位點之外」——
             原本固定於桌號右上方，會壓到右上角座位點與座位上的兒童椅圖示。 */
-    var childCount = childSeatsAtTable(t.no);
-    if (childCount > 0) {
-      var bw = 44, bh = 18;
-      var bx = cx - bw / 2;
-      /* 由桌面圓環 + 座位半徑 + 安全邊距再往外推，確保不與任何座位點重疊（含外環） */
-      var by = cy + (rR || (tR + 11)) + (sR || seatR) + 6;
-      var cg = el("g", { class: "tbl-childbadge" }, g);
-      el("rect", { class: "tbl-childbadge__bg", rx: 9, x: bx.toFixed(2), y: by.toFixed(2), width: bw, height: bh }, cg);
-      var bip = el("path", { class: "tbl-childbadge__ico", transform: "translate(" + (bx + 4.6).toFixed(2) + "," + (by + 3.2).toFixed(2) + ") scale(0.44)" }, cg);
-      bip.setAttribute("d", CHILD_ICON_D);
-      var cbt = el("text", { class: "tbl-childbadge__text", x: (bx + 16.4).toFixed(2), y: (by + 12.8).toFixed(2), "text-anchor": "start" }, cg);
-      cbt.textContent = "椅" + childCount;
-      var cti = el("title", null, cg);
-      cti.textContent = "本桌有 " + childCount + " 張" + childSeatText;
-    }
+    /* v71：已移除桌次「椅N」文字標籤（原本置於桌面圓環下方）。
+       兒童椅仍以「專屬顏色 + 外環 + 座位上的高腳椅圖示」標示，不再有任何文字標籤遮擋或佔位。 */
 
     /* 命中標籤（預設隱藏，查到時顯示「姓名-幾桌」） */
     var lg = el("g", { class: "tbl-hitlabel" }, g);
@@ -601,7 +560,7 @@
   var suggestItems = [];       /* 目前建議清單對應的賓客物件 */
   var LAST_QUERY = "";         /* 最近一次查詢字串 */
   var RECENT_KEY = "ssss-seating-recent-v1";
-  var RECENT_MAX = 5;
+  var RECENT_MAX = 3;          /* v71：最近查詢最多顯示 3 筆 */
 
   /* ── 共用小工具 ── */
   function badgeText(state) {

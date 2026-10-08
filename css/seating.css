@@ -204,6 +204,15 @@
 .seat-map-canvas svg{display:block;width:100%;height:auto;margin:0 auto;font-family:var(--zh)}
 .seat-map-hint{margin:14px auto 0;text-align:center;font-size:.78rem;letter-spacing:.12em;color:var(--grey-2)}
 
+/* ══ v71：座位圖可單指拖曳平移 ══
+   手機版把畫布放大到超過螢幕寬度，使座位圖溢出容器；
+   由 .seat-map-scroll 的原生捲動以「單指拖曳」平移瀏覽全部桌次。 */
+.seat-map-scroll{touch-action:pan-x pan-y}
+@media(max-width:768px){
+  .seat-map-canvas{width:760px;min-width:760px;max-width:none}
+  .seat-map-canvas svg{width:760px;height:auto;max-width:none}
+}
+
 /* ── 名單來源狀態（僅在 API 失敗／逾時／未設定時顯示）── */
 .seat-data-status{margin:10px auto 0;text-align:center;font-size:.72rem;letter-spacing:.08em;line-height:1.6;color:var(--grey-2);max-width:min(var(--maxw),92vw)}
 .seat-data-status:empty{display:none}
@@ -219,12 +228,7 @@
 /* ── SVG：場地 ── */
 .venue-bg{fill:#fffdf8;stroke:rgba(110,22,38,.18);stroke-width:1.5}
 .venue-gridline{stroke:rgba(110,22,38,.06);stroke-width:1}
-.stage{fill:url(#stageGrad);stroke:var(--gold);stroke-width:2}
-.stage__text{fill:#fbf7ef;font-size:20px;letter-spacing:.3em;font-weight:400}
-.stage__en{fill:var(--gold);font-family:var(--en-caps);font-size:9px;letter-spacing:.34em}
-.aisle{fill:url(#aisleGrad);stroke:rgba(110,22,38,.34);stroke-width:1;stroke-dasharray:none}
-.aisle__text{fill:#fbf7ef;font-size:13px;letter-spacing:.28em;opacity:.92}
-.aisle__arrow{fill:var(--gold-light);opacity:.7}
+/* v71：已移除舞台／紅毯樣式（座位圖不再繪製舞台與紅毯步道） */
 .side-label{fill:var(--wine);font-size:12px;letter-spacing:.3em;opacity:.72}
 .venue-caption{fill:var(--grey-1);font-family:var(--en-caps);font-size:9px;letter-spacing:.28em}
 
@@ -283,8 +287,6 @@
 .seat-legend__swatch--normal{background:var(--paper-2);border:1px solid rgba(110,22,38,.34)}
 .seat-legend__swatch--hit{background:var(--gold);border:1px solid var(--wine)}
 .seat-legend__swatch--table{background:#fbf7ef;border:1.6px solid rgba(110,22,38,.5)}
-.seat-legend__swatch--stage{background:linear-gradient(180deg,#7d1c2e,var(--wine-deep));border:1px solid var(--gold)}
-.seat-legend__swatch--aisle{background:linear-gradient(180deg,#8f2436,var(--wine));border:1px solid rgba(110,22,38,.4)}
 
 /* ══════════════════════ 說明區 / 頁尾 ══════════════════════ */
 .seat-notes{width:min(880px,92vw);margin:0 auto;padding:clamp(44px,6vw,76px) 0}
@@ -391,16 +393,7 @@
 .tbl-childseat__ico{fill:none;stroke:#1f4f5a;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 .venue-dim .tbl:not(.is-hit) .tbl-childseat{opacity:.4}
 
-/* ── 該桌兒童椅數量標籤（圖示 + 椅N 膠囊；置於桌面圓環下方，不遮擋任何座位）── */
-.tbl-childbadge__bg{fill:#2f6b7a;stroke:#ffffff;stroke-width:1}
-.tbl-childbadge__ico{fill:none;stroke:#ffffff;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
-.tbl-childbadge__text{fill:#ffffff;font-family:var(--zh);font-size:9px;letter-spacing:.02em}
-.venue-dim .tbl:not(.is-hit) .tbl-childbadge{opacity:.35}
-/* v70：命中的桌子，兒童椅標籤與整團弧線一致閃爍 */
-.tbl.is-hit .tbl-childbadge{animation:seatBreath 2.1s var(--ease-io) infinite}
-@media(prefers-reduced-motion:reduce){
-  .tbl.is-hit .tbl-childbadge{animation:none}
-}
+/* v71：已移除桌次「椅N」文字標籤樣式（兒童椅改以專屬顏色／外環／圖示標示） */
 
 /* ── 圖例：兒童椅色票（含圖示，與座位圖一致）── */
 .seat-legend__swatch--child{display:grid;place-items:center;width:18px;height:18px;background:#cfe6ea;border:1.4px solid #2f6b7a}
@@ -457,11 +450,10 @@
 .seat-rc__child-text b{font-family:var(--en);font-size:1.3em;font-weight:600;color:#1f4f5a}
 .seat-rc__child-note{font-size:var(--q-fs-meta);letter-spacing:.06em;color:#3d6b76}
 
-/* ── 高對比模式：兒童椅徽章、座位與圖示需有邊框可辨 ── */
+/* ── 高對比模式：兒童椅座位與圖示需有邊框可辨 ── */
 @media(forced-colors:active){
-  .tbl-childbadge__bg{fill:Highlight;stroke:CanvasText}
   .tbl-seat.seat-child{stroke:CanvasText}
-  .tbl-childseat__ico,.tbl-childbadge__ico,.seat-rc__child-ico{stroke:CanvasText}
+  .tbl-childseat__ico,.seat-rc__child-ico{stroke:CanvasText}
   .seat-rc__child{border:1px solid CanvasText}
 }
 
@@ -472,6 +464,4 @@
   .seat-rc__party-num{font-size:clamp(1.7rem,9vw,2.2rem)}
   .seat-rc__child{padding:var(--q-3)}
   .seat-rc__child-note{width:100%}
-  /* v70：座位圖縮小後，「椅N」標籤保持可讀（tag 高度 18，字 11px 仍不溢出） */
-  .tbl-childbadge__text{font-size:11px}
 }
