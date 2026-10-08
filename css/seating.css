@@ -114,6 +114,16 @@
 .seat-suggest__meta{flex:none;font-size:var(--q-fs-meta);letter-spacing:.12em;color:var(--q-wine);white-space:nowrap}
 .seat-suggest__empty{padding:var(--q-4);font-size:var(--q-fs-meta);letter-spacing:.1em;color:var(--q-ink-3);line-height:1.8}
 
+/* ═══ v73：查詢流程過場動畫（淡入滑入，避免閃動/整頁刷新）═══
+   建議清單與最近查詢區塊於顯示時淡入滑入；結果卡沿用 seatRcIn 淡入。
+   只對容器做過場、不對逐項 item 做動畫，避免每次鍵擊重新淡入造成閃動。 */
+.seat-suggest:not([hidden]){animation:seatFadeSlide .26s var(--ease-soft) both}
+.seat-recent:not([hidden]){animation:seatFadeSlide .3s var(--ease-soft) both}
+@keyframes seatFadeSlide{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){
+  .seat-suggest:not([hidden]),.seat-recent:not([hidden]){animation:none}
+}
+
 /* ── 查詢按鈕列 ── */
 .seat-search__actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--q-3);margin-top:var(--q-4)}
 .seat-search__btn{flex:1 1 220px;min-height:54px;padding:var(--q-4) var(--q-6);display:inline-flex;align-items:center;justify-content:center;gap:var(--q-2);background:linear-gradient(180deg,#7d1c2e,var(--wine) 58%,#5c1220);border:1px solid var(--gold);border-radius:3px;color:var(--gold-light);font-family:var(--zh);font-size:clamp(.94rem,1.8vw,1.04rem);letter-spacing:.2em;text-indent:.2em;box-shadow:0 16px 34px -18px #4a0e19d9,0 0 0 1px #c9a96147 inset;transition:transform .4s var(--ease),box-shadow .4s var(--ease-soft),border-color .4s}
@@ -282,9 +292,17 @@
 
 /* ══════════════════════ 說明區 / 頁尾 ══════════════════════ */
 .seat-notes{width:min(880px,92vw);margin:0 auto;padding:clamp(44px,6vw,76px) 0}
-.seat-notes__card{padding:clamp(24px,3.4vw,38px);background:linear-gradient(180deg,#ffffff0b,#ffffff03);border:1px solid var(--line-light)}
-.seat-notes__title{font-size:.92rem;letter-spacing:.26em;color:var(--gold);font-weight:400}
-.seat-notes__list{margin-top:18px}
+.seat-notes__card{position:relative;padding:clamp(26px,3.6vw,42px);background:linear-gradient(180deg,#ffffff0b,#ffffff03);border:1px solid var(--line-light)}
+/* v73：說明卡沿用查詢卡／座位圖框的「金色角標」母題，強化區塊一致性 */
+.seat-notes__card:before,.seat-notes__card:after{content:"";position:absolute;width:22px;height:22px;border:1px solid rgba(201,169,97,.5);pointer-events:none}
+.seat-notes__card:before{top:10px;left:10px;border-right:0;border-bottom:0}
+.seat-notes__card:after{bottom:10px;right:10px;border-left:0;border-top:0}
+/* 標題層級與 hero／座位圖一致：金色英文小標 + 米白主標 + 金色分隔線 */
+.seat-notes__eyebrow{font-family:var(--en-caps);font-size:.66rem;letter-spacing:.42em;text-indent:.42em;color:var(--gold);opacity:.9}
+.seat-notes__title{margin-top:12px;font-family:var(--zh);font-size:clamp(1.05rem,2.4vw,1.35rem);letter-spacing:.2em;color:#fbf7ef;font-weight:400}
+.seat-notes__rule{display:flex;margin:18px 0 0}
+.seat-notes__rule span{width:min(180px,42%);height:1px;background:linear-gradient(90deg,var(--gold),transparent)}
+.seat-notes__list{margin-top:20px}
 .seat-notes__list li{position:relative;padding:11px 0 11px 26px;font-size:.88rem;letter-spacing:.08em;line-height:2;color:var(--paper);border-top:1px solid rgba(255,255,255,.07)}
 .seat-notes__list li:before{content:"◆";position:absolute;left:0;top:11px;font-size:.5rem;color:var(--gold)}
 .seat-foot{padding:clamp(40px,6vw,72px) 6vw calc(clamp(40px,6vw,72px) + 96px);text-align:center;background:linear-gradient(180deg,var(--wine-dark),#0C0908)}
@@ -326,6 +344,8 @@
   .seat-legend{font-size:.74rem;gap:12px}
   .seat-map-head__sub{letter-spacing:.08em;line-height:1.9}
   .seat-notes__list li{letter-spacing:.04em}
+  /* 手機版隱藏角標，與查詢卡一致，避免貼邊 */
+  .seat-notes__card:before,.seat-notes__card:after{display:none}
   .seat-map-hint{letter-spacing:.06em;padding:0 4vw}
   .seat-capacity{font-size:.72rem;padding:0 4vw}
   .seat-fab{padding:11px 17px;font-size:.82rem}
