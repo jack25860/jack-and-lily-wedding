@@ -230,7 +230,24 @@
 /* ── SVG：場地 ── */
 .venue-bg{fill:#fffdf8;stroke:rgba(110,22,38,.18);stroke-width:1.5}
 .venue-gridline{stroke:rgba(110,22,38,.06);stroke-width:1}
-/* v71：已移除舞台／紅毯樣式（座位圖不再繪製舞台與紅毯步道） */
+
+/* ══ v74：依婚宴場地示意圖重繪的場地元素（舞台／L 形紅毯／出入口／廚房上菜口）══ */
+/* 舞台（正上方中央）：酒紅漸層 + 金色描邊 */
+.venue-stage{fill:url(#v74Stage);stroke:var(--gold);stroke-width:1.6}
+.venue-stage__edge{stroke:var(--gold-light);stroke-width:1.2;opacity:.7}
+.venue-stage__label{fill:var(--gold-light);font-family:var(--zh);font-size:15px;letter-spacing:.34em;text-indent:.34em}
+/* 紅毯（L 形）：酒紅漸層 + 金色細邊 */
+.venue-carpet{fill:url(#v74Carpet);stroke:rgba(201,169,97,.55);stroke-width:1}
+.venue-carpet__line{stroke:rgba(232,217,181,.5);stroke-width:1.4;stroke-dasharray:7 7}
+.venue-carpet__label{fill:var(--gold-light);font-family:var(--zh);font-size:13px;letter-spacing:.3em;writing-mode:vertical-rl;text-orientation:upright;opacity:.92}
+/* 出入口（右下角）：米白底 + 酒紅框 + 雙扇門圖示 */
+.venue-entrance{fill:#fbf7ef;stroke:var(--wine);stroke-width:1.6}
+.venue-door{fill:#fffdf8;stroke:var(--wine);stroke-width:1.2}
+.venue-entrance__label{fill:var(--wine);font-family:var(--zh);font-size:11px;letter-spacing:.16em}
+/* 廚房上菜口（左側）：暖灰底 + 虛線框 */
+.venue-kitchen{fill:rgba(110,22,38,.06);stroke:rgba(110,22,38,.42);stroke-width:1.2;stroke-dasharray:6 4}
+.venue-kitchen__label{fill:var(--wine);font-family:var(--zh);font-size:11px;letter-spacing:.14em;writing-mode:vertical-rl;text-orientation:upright;opacity:.9}
+
 .side-label{fill:var(--wine);font-size:12px;letter-spacing:.3em;opacity:.72}
 .venue-caption{fill:var(--grey-1);font-family:var(--en-caps);font-size:9px;letter-spacing:.28em}
 
