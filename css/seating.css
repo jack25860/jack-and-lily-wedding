@@ -197,12 +197,13 @@
 .seat-map-head__sub{margin-top:12px;font-size:.88rem;letter-spacing:.14em;color:var(--grey-2)}
 
 /* v63：已移除工具列（縮放 / 重設）。座位圖改為固定寬度、隨裝置自適應。 */
-.seat-map-frame{position:relative;width:min(var(--maxw),92vw);margin:0 auto;border:1px solid rgba(110,22,38,.28);background:linear-gradient(180deg,#fffdf8,#f7f1e6);box-shadow:0 30px 70px -42px #13101073,0 0 0 1px #c9a9612e inset;overflow:hidden}
+.seat-map-frame{position:relative;width:min(680px,94vw);margin:0 auto;border:1px solid rgba(110,22,38,.28);background:linear-gradient(180deg,#fffdf8,#f7f1e6);box-shadow:0 30px 70px -42px #13101073,0 0 0 1px #c9a9612e inset;overflow:hidden}
 .seat-map-frame:before,.seat-map-frame:after{content:"";position:absolute;width:22px;height:22px;border:1px solid rgba(110,22,38,.34);pointer-events:none;z-index:4}
 .seat-map-frame:before{top:8px;left:8px;border-right:0;border-bottom:0}
 .seat-map-frame:after{bottom:8px;right:8px;border-left:0;border-top:0}
 .seat-map-scroll{width:100%;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:clamp(12px,2vw,22px)}
-.seat-map-canvas{width:100%}
+/* v75：場地為直式（647:740）→ 限制畫布寬度，讓整張圖在電腦上完整呈現 */
+.seat-map-canvas{width:100%;max-width:600px;margin:0 auto}
 .seat-map-canvas svg{display:block;width:100%;height:auto;margin:0 auto;font-family:var(--zh)}
 .seat-map-hint{margin:14px auto 0;text-align:center;font-size:.78rem;letter-spacing:.12em;color:var(--grey-2)}
 
@@ -211,8 +212,10 @@
    由 .seat-map-scroll 的原生捲動以「單指拖曳」平移瀏覽全部桌次。 */
 .seat-map-scroll{touch-action:pan-x pan-y}
 @media(max-width:768px){
-  .seat-map-canvas{width:760px;min-width:760px;max-width:none}
-  .seat-map-canvas svg{width:760px;height:auto;max-width:none}
+  .seat-map-canvas{width:600px;min-width:600px;max-width:none}
+  .seat-map-canvas svg{width:600px;height:auto;max-width:none}
+  /* 手機：地圖為可平移的視窗（單指拖曳） */
+  .seat-map-scroll{max-height:min(80vh,760px)}
 }
 
 /* ── 名單來源狀態（僅在 API 失敗／逾時／未設定時顯示）── */
@@ -228,48 +231,57 @@
 .seat-capacity[hidden]{display:none}
 
 /* ── SVG：場地 ── */
-.venue-bg{fill:#fffdf8;stroke:rgba(110,22,38,.18);stroke-width:1.5}
+.venue-bg{fill:#fffdf8;stroke:rgba(110,22,38,.18);stroke-width:1.2}
 .venue-gridline{stroke:rgba(110,22,38,.06);stroke-width:1}
 
 /* ══ v74：依婚宴場地示意圖重繪的場地元素（舞台／L 形紅毯／出入口／廚房上菜口）══ */
 /* 舞台（正上方中央）：酒紅漸層 + 金色描邊 */
-.venue-stage{fill:url(#v74Stage);stroke:var(--gold);stroke-width:1.6}
+.venue-floor{fill:url(#v75Floor);stroke:none}
+.venue-wall-gap{fill:#fffdf8;stroke:none}
+.venue-stage{fill:url(#v75Stage);stroke:var(--gold);stroke-width:1.6}
+.venue-stage__deco{stroke:rgba(232,217,181,.5);stroke-width:1.2}
+.venue-stage__led{fill:rgba(255,253,248,.6);stroke:rgba(232,217,181,.7);stroke-width:1}
 .venue-stage__edge{stroke:var(--gold-light);stroke-width:1.2;opacity:.7}
-.venue-stage__label{fill:var(--gold-light);font-family:var(--zh);font-size:15px;letter-spacing:.34em;text-indent:.34em}
+.venue-stage__label{fill:var(--gold-light);font-family:var(--zh);font-size:13px;letter-spacing:.3em;text-indent:.3em}
 /* 紅毯（L 形）：酒紅漸層 + 金色細邊 */
-.venue-carpet{fill:url(#v74Carpet);stroke:rgba(201,169,97,.55);stroke-width:1}
+.venue-carpet{fill:url(#v75Carpet);stroke:rgba(201,169,97,.55);stroke-width:1}
 .venue-carpet__line{stroke:rgba(232,217,181,.5);stroke-width:1.4;stroke-dasharray:7 7}
-.venue-carpet__label{fill:var(--gold-light);font-family:var(--zh);font-size:13px;letter-spacing:.3em;writing-mode:vertical-rl;text-orientation:upright;opacity:.92}
+.venue-carpet__label{fill:var(--gold-light);font-family:var(--zh);font-size:11px;letter-spacing:.26em;writing-mode:vertical-rl;text-orientation:upright;opacity:.92}
 /* 出入口（右下角）：米白底 + 酒紅框 + 雙扇門圖示 */
 .venue-entrance{fill:#fbf7ef;stroke:var(--wine);stroke-width:1.6}
 .venue-door{fill:#fffdf8;stroke:var(--wine);stroke-width:1.2}
-.venue-entrance__label{fill:var(--wine);font-family:var(--zh);font-size:11px;letter-spacing:.16em}
+.venue-door__arc{fill:none;stroke:rgba(110,22,38,.45);stroke-width:.9;stroke-dasharray:4 3}
+.venue-kitchen__hatch{fill:rgba(110,22,38,.45);stroke:none}
+.venue-entrance__label{fill:var(--wine);font-family:var(--zh);font-size:9.5px;letter-spacing:.14em}
 /* 廚房上菜口（左側）：暖灰底 + 虛線框 */
 .venue-kitchen{fill:rgba(110,22,38,.06);stroke:rgba(110,22,38,.42);stroke-width:1.2;stroke-dasharray:6 4}
-.venue-kitchen__label{fill:var(--wine);font-family:var(--zh);font-size:11px;letter-spacing:.14em;writing-mode:vertical-rl;text-orientation:upright;opacity:.9}
+.venue-utility{fill:#f4eee2;stroke:rgba(110,22,38,.34);stroke-width:1;stroke-dasharray:5 4}
+.venue-utility__pad{fill:rgba(201,169,97,.22);stroke:rgba(201,169,97,.75);stroke-width:.9}
+.venue-utility__label{fill:var(--wine);font-family:var(--zh);font-size:9.5px;letter-spacing:.12em;writing-mode:vertical-rl;text-orientation:upright;opacity:.78}
+.venue-kitchen__label{fill:var(--wine);font-family:var(--zh);font-size:9.5px;letter-spacing:.12em;writing-mode:vertical-rl;text-orientation:upright;opacity:.9}
 
-.side-label{fill:var(--wine);font-size:12px;letter-spacing:.3em;opacity:.72}
-.venue-caption{fill:var(--grey-1);font-family:var(--en-caps);font-size:9px;letter-spacing:.28em}
+.side-label{fill:var(--wine);font-size:10px;letter-spacing:.26em;opacity:.72}
+.venue-caption{fill:var(--grey-1);font-family:var(--en-caps);font-size:7.5px;letter-spacing:.24em}
 
 /* ── SVG：桌次 ── */
 .tbl{cursor:pointer}
 .tbl:focus-visible{outline:none}
 .tbl:focus-visible .tbl__ring{stroke:var(--wine);stroke-width:3}
 .tbl__ring{fill:#fbf7ef;stroke:rgba(110,22,38,.5);stroke-width:1.6;transition:stroke .5s var(--ease-out),fill .5s var(--ease-out)}
-.tbl__num{fill:var(--ink-2);font-family:var(--en);font-size:21px;font-weight:500;letter-spacing:.02em}
-.tbl__name{fill:var(--wine);font-size:8px;letter-spacing:.02em}
+.tbl__num{fill:var(--ink-2);font-family:var(--en);font-size:12.5px;font-weight:500;letter-spacing:.02em}
+.tbl__name{fill:var(--wine);font-size:5.6px;letter-spacing:.02em}
 .tbl__island{fill:rgba(110,22,38,.05);stroke:rgba(110,22,38,.16);stroke-width:1;stroke-dasharray:5 5}
 /* 主桌（舞台正前方、紅毯末端）— 以金色描邊強調 */
 .tbl--main .tbl__ring{stroke:var(--gold);stroke-width:2.4;fill:#fffaf0}
-.tbl--main .tbl__num{fill:var(--wine);font-size:24px}
-.tbl--main .tbl__name{fill:var(--wine);font-size:9px;letter-spacing:.06em}
+.tbl--main .tbl__num{fill:var(--wine);font-size:15px}
+.tbl--main .tbl__name{fill:var(--wine);font-size:6.2px;letter-spacing:.06em}
 .tbl--main .tbl-seat{fill:#fdf6e6;stroke:rgba(201,169,97,.7)}
 .tbl-seat{fill:var(--paper-2);stroke:rgba(110,22,38,.34);stroke-width:1;transition:fill .5s var(--ease-out),stroke .5s var(--ease-out)}
 .tbl:hover .tbl__ring{stroke:var(--wine);stroke-width:2.2}
 .tbl:hover .tbl__num{fill:var(--wine)}
 
 /* ── 中獎座位：變色 + 呼吸燈 ── */
-.seat-hit{fill:var(--gold)!important;stroke:var(--wine)!important;stroke-width:2!important}
+.seat-hit{fill:var(--gold)!important;stroke:var(--wine)!important;stroke-width:1.7!important}
 .tbl.is-hit .tbl__ring{fill:var(--wine);stroke:var(--gold-light);stroke-width:3}
 .tbl.is-hit .tbl__num{fill:var(--gold-light)}
 .tbl.is-hit .tbl__name{fill:var(--gold-light)}
@@ -282,8 +294,8 @@
    1. 同團所有座位（大人＋兒童椅）皆以金色閃爍，修正 v68 只亮單一座位。
    2. 兒童椅座位命中時保留青色外框，維持兒童椅辨識。
    3. 整團外框弧線將同團座位圈成一個視覺群組。 */
-.tbl-seat.seat-hit--child{stroke:#2f6b7a!important;stroke-width:2.4!important}
-.tbl-partyarc{fill:none;stroke:var(--gold);stroke-width:2.4;stroke-linecap:round;opacity:0;transition:opacity .4s var(--ease-out);pointer-events:none}
+.tbl-seat.seat-hit--child{stroke:#2f6b7a!important;stroke-width:2!important}
+.tbl-partyarc{fill:none;stroke:var(--gold);stroke-width:1.8;stroke-linecap:round;opacity:0;transition:opacity .4s var(--ease-out);pointer-events:none}
 .tbl-partyarc.is-on{opacity:.95;animation:seatBreath 2.1s var(--ease-io) infinite}
 @media(prefers-reduced-motion:reduce){
   .tbl-partyarc.is-on{animation:none;opacity:.95}
@@ -295,7 +307,7 @@
 
 /* 中獎桌上方標籤：姓名-幾桌 */
 .tbl__hitlabel-bg{fill:var(--wine);stroke:var(--gold);stroke-width:1}
-.tbl__hitlabel{fill:var(--gold-light);font-size:13px;letter-spacing:.06em}
+.tbl__hitlabel{fill:var(--gold-light);font-size:10px;letter-spacing:.05em}
 .tbl-hitlabel{opacity:0;transition:opacity .5s var(--ease-out)}
 .tbl-hitlabel.is-on{opacity:1}
 

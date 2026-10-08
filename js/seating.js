@@ -44,7 +44,7 @@
   "use strict";
 
   var NS = "http://www.w3.org/2000/svg";
-  var VB_W = 1200, VB_H = 620;      /* SVG 內部座標系（與裝置無關） */
+  var VB_W = 647, VB_H = 740;       /* v75：SVG 內部座標系＝婚宴場地示意圖實測比例（W:H ≈ 0.87 : 1，直式） */
 
   var DATA   = window.SEATING_DATA || {};
   var CFG    = window.SEATING_CONFIG || {};
@@ -96,6 +96,9 @@
   var LREGION  = { x: 0, y: 0, w: 0, h: 0 };   /* 左側桌區 */
   var RREGION  = { x: 0, y: 0, w: 0, h: 0 };   /* 右側桌區 */
   var boardY, boardH, aisleW, aisleX, sideW, nCols, nRows, pad, colW, rowH, tableR, ringR, seatR;
+  /* v75：下牆門洞（出入口）與紅毯／主桌中軸線 */
+  var GATE = { x: 0, w: 0 };
+  var axc = 338.5;                             /* 示意圖實測：紅毯／主桌中軸線 x＝338.5 */
   /* v62：主桌（舞台正前方、紅毯末端）幾何 */
   var mainTableNo = 0, mainTableSeats = 12, mainTableName = "主桌";
   var mainTableR = 0, mainTableRing = 0, mainTableY = 0, mainTableH = 0, mainTablePos = { x: 0, y: 0 };
@@ -148,65 +151,76 @@
        左側：廚房上菜口；左右兩側為桌次區。 */
     var cx = VB_W / 2;
 
-    /* 舞台（正上方中央） */
-    STAGE.w = VB_W * 0.34;
-    STAGE.h = 56;
-    STAGE.x = cx - STAGE.w / 2;
-    STAGE.y = 10;
+    /* ── v75：所有座標＝示意圖實測像素（場地內緣 647 × 740）──
+       舞台   x 223~511   y   4~74（緊貼上牆、正上方中央）
+       主桌   中心 (338.5,138) 桌面 r 42 椅圈 r 58（舞台正前方）
+       紅毯   L 形：垂直段 x 315~362、y 208~642；水平段 y 614~642、x 362~580
+       出入口 下牆門洞 x 575~639（右下角、貼近右牆）
+       廚房   左牆 x 6~64、y 478~582（場地中段）
+       桌次區 紅毯兩側，左 66~300、右 375~609、y 200~596 */
+    axc = VB_W * 0.5232;                        /* 338.5 → 紅毯／主桌中軸線 */
 
-    /* 主桌（舞台正前方、紅毯末端、中軸線上） */
-    mainTableR    = mainTableNo ? 34 : 0;
-    mainTableRing = mainTableR + 12;
-    mainTableY    = STAGE.y + STAGE.h + mainTableRing + 18;
-    mainTableH    = mainTableNo ? (mainTableRing * 2 + 26) : 0;
-    mainTablePos  = { x: cx, y: mainTableY };
+    /* 舞台（正上方、緊貼上牆；中軸對齊主桌與紅毯） */
+    STAGE.w = 288;
+    STAGE.x = axc - STAGE.w / 2;                /* 194.5~482.5（置中） */
+    STAGE.y = 4;
+    STAGE.h = 70;
 
-    /* 紅毯（L 形）：垂直段沿中軸，水平段於南端往東至出入口 */
-    aisleW = 88;
-    aisleX = cx - aisleW / 2;
+    /* 主桌（舞台正前方、中軸線上；12 人） */
+    mainTableR    = mainTableNo ? 42 : 0;
+    mainTableRing = mainTableNo ? 58 : 0;
+    mainTableY    = 138;
+    mainTableH    = mainTableNo ? 126 : 0;
+    mainTablePos  = { x: axc, y: mainTableY };
+
+    /* 紅毯（L 形）：垂直段沿中軸往南，水平段於南端往東至出入口 */
+    aisleW = 47;
+    aisleX = axc - aisleW / 2;                  /* 315 */
     AISLE.x = aisleX;
     AISLE.w = aisleW;
-    AISLE.y = mainTableY + mainTableRing + 14;
-    AISLE.h = VB_H - AISLE.y - 64;              /* 垂直段底端 */
+    AISLE.y = 208;
+    AISLE.h = 434;                              /* 208~642 */
 
-    HCARPET.h = 44;
-    HCARPET.y = AISLE.y + AISLE.h - HCARPET.h;  /* 與垂直段底端對齊 */
-    HCARPET.x = cx;
-    HCARPET.w = 0;                              /* 於下方依出入口位置決定 */
+    HCARPET.h = 28;
+    HCARPET.y = 614;                            /* 614~642 */
+    HCARPET.x = aisleX + aisleW;                /* 362 */
+    HCARPET.w = 218;                            /* 362~580 */
 
-    /* 出入口（右下角） */
-    ENTRANCE.w = 120;
-    ENTRANCE.h = 64;
-    ENTRANCE.x = VB_W - 30 - ENTRANCE.w;
-    ENTRANCE.y = HCARPET.y + HCARPET.h / 2 - ENTRANCE.h / 2;
-    HCARPET.w = ENTRANCE.x - cx;                /* 水平段由中軸連到出入口 */
+    /* 出入口（右下角、貼下牆）：門洞 x 575~639 */
+    ENTRANCE.w = 64;
+    ENTRANCE.h = 66;
+    ENTRANCE.x = VB_W - 72;                     /* 575 → 右下角 */
+    ENTRANCE.y = VB_H - 74;
+    GATE.x = ENTRANCE.x + 3;                    /* 578 */
+    GATE.w = ENTRANCE.w - 8;                    /* 56 */
 
-    /* 廚房上菜口（左側牆面） */
-    KITCHEN.w = 62;
-    KITCHEN.h = 180;
-    KITCHEN.x = 14;
-    KITCHEN.y = 250;
+    /* 廚房上菜口（左側牆面、場地中段） */
+    KITCHEN.x = 6;
+    KITCHEN.w = 58;
+    KITCHEN.y = 478;
+    KITCHEN.h = 104;
 
     /* 左右桌次區（紅毯兩側；左右同寬以維持視覺對稱） */
-    var bandTop = AISLE.y;
-    var bandH   = 306;
-    LREGION.x = KITCHEN.x + KITCHEN.w + 14;     /* 90（廚房上菜口右側） */
+    var bandTop = 200;
+    var bandH   = 396;
+    LREGION.x = 74;                             /* 廚房上菜口右側 */
     LREGION.y = bandTop;
-    LREGION.w = aisleX - 20 - LREGION.x;        /* 至紅毯左緣留 20 */
+    LREGION.w = aisleX - 15 - LREGION.x;        /* 至紅毯左緣留 15 → 74~300 */
     LREGION.h = bandH;
-    RREGION.x = aisleX + aisleW + 20;           /* 紅毯右緣留 20 */
+    RREGION.x = aisleX + aisleW + 13;           /* 紅毯右緣留 13 → 375 */
     RREGION.y = bandTop;
-    RREGION.w = LREGION.w;                      /* v74：與左側同寬 → 左右對稱 */
+    RREGION.w = LREGION.w;                      /* 與左側同寬 → 左右對稱 */
     RREGION.h = bandH;
 
-    nCols = Math.max(1, Math.ceil(tablesPerSide / 2));
-    nRows = Math.min(2, tablesPerSide);
+    /* v75：直式場地 → 每側 2 欄 × 4 列（共 8 格；左用 8、右用 7） */
+    nCols = 2;
+    nRows = 4;
     pad   = 12;
     colW  = Math.min(LREGION.w, RREGION.w) / nCols;
     rowH  = bandH / nRows;
-    tableR = Math.max(20, Math.min(colW * 0.30, rowH * 0.20, 40));
+    tableR = Math.max(18, Math.min(colW * 0.34, rowH * 0.42, 28));
     ringR  = tableR + 11;
-    seatR  = Math.max(4.2, Math.min(6, ringR * 0.115));
+    seatR  = Math.max(5.4, Math.min(7.5, ringR * 0.175));   /* v75：配合縮小後的 viewBox 放大座位點 */
 
     boardY = bandTop;
     boardH = bandH;
@@ -297,9 +311,10 @@
     for (var c = 0; c < nCols; c++) {
       for (var r = 0; r < nRows; r++) {
         /* 內側欄（c=0）最靠近紅毯：左側由右往左、右側由左往右 */
+        /* v75：col 0 為最靠近紅毯的內側欄 */
         var cx = mirror
-          ? reg.x + reg.w - colW * (c + 0.5)
-          : reg.x + colW * (c + 0.5);
+          ? reg.x + colW * (c + 0.5)
+          : reg.x + reg.w - colW * (c + 0.5);
         out.push({ x: cx, y: reg.y + rh * (r + 0.5) });
       }
     }
@@ -330,57 +345,79 @@
     });
     svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
-    /* 漸層定義（v74：舞台與紅毯漸層） */
+    /* 漸層定義（v75：舞台、紅毯、地板） */
     var defs = el("defs", null, svg);
-    var gStage = el("linearGradient", { id: "v74Stage", x1: "0", y1: "0", x2: "0", y2: "1" }, defs);
+    var gFloor = el("linearGradient", { id: "v75Floor", x1: "0", y1: "0", x2: "0.6", y2: "1" }, defs);
+    el("stop", { offset: "0", "stop-color": "#fffdf8" }, gFloor);
+    el("stop", { offset: "1", "stop-color": "#f8f2e7" }, gFloor);
+    var gStage = el("linearGradient", { id: "v75Stage", x1: "0", y1: "0", x2: "0", y2: "1" }, defs);
     el("stop", { offset: "0", "stop-color": "#7d1c2e" }, gStage);
     el("stop", { offset: "1", "stop-color": "#5c1220" }, gStage);
-    var gCarpet = el("linearGradient", { id: "v74Carpet", x1: "0", y1: "0", x2: "0", y2: "1" }, defs);
+    var gCarpet = el("linearGradient", { id: "v75Carpet", x1: "0", y1: "0", x2: "0", y2: "1" }, defs);
     el("stop", { offset: "0", "stop-color": "#8d2233" }, gCarpet);
     el("stop", { offset: "1", "stop-color": "#6E1626" }, gCarpet);
 
-    /* 場地底板 */
-    el("rect", { class: "venue-bg", x: 6, y: 6, width: VB_W - 12, height: VB_H - 12, rx: 14 }, svg);
+    /* 場地外框與地板（比例＝示意圖實測 647 × 740） */
+    el("rect", { class: "venue-bg", x: 1, y: 1, width: VB_W - 2, height: VB_H - 2, rx: 14 }, svg);
+    el("rect", { class: "venue-floor", x: 5, y: 5, width: VB_W - 10, height: VB_H - 10, rx: 11 }, svg);
 
-    /* ── 左右桌次區塊（紅毯兩側）── */
-    el("rect", { class: "tbl__island", x: LREGION.x - 10, y: LREGION.y - 10, width: LREGION.w + 20, height: LREGION.h + 20, rx: 18 }, svg);
-    el("rect", { class: "tbl__island", x: RREGION.x - 10, y: RREGION.y - 10, width: RREGION.w + 20, height: RREGION.h + 20, rx: 18 }, svg);
+    /* ── 左右桌次區塊（紅毯兩側，對稱）── */
+    el("rect", { class: "tbl__island", x: LREGION.x - 8, y: LREGION.y - 8, width: LREGION.w + 16, height: LREGION.h + 16, rx: 16 }, svg);
+    el("rect", { class: "tbl__island", x: RREGION.x - 8, y: RREGION.y - 8, width: RREGION.w + 16, height: RREGION.h + 16, rx: 16 }, svg);
 
     /* ── 紅毯（L 形）：先畫水平段（南端往東），再畫垂直段（中軸）── */
     el("rect", { class: "venue-carpet", x: HCARPET.x, y: HCARPET.y, width: HCARPET.w, height: HCARPET.h, rx: 4 }, svg);
     el("rect", { class: "venue-carpet", x: AISLE.x, y: AISLE.y, width: AISLE.w, height: AISLE.h, rx: 4 }, svg);
-    /* 紅毯中央導引虛線（垂直段） */
-    el("line", { class: "venue-carpet__line", x1: VB_W / 2, y1: AISLE.y + 16, x2: VB_W / 2, y2: AISLE.y + AISLE.h - 16 }, svg);
+    /* 紅毯中央導引虛線（垂直段，沿中軸） */
+    el("line", { class: "venue-carpet__line", x1: axc, y1: AISLE.y + 16, x2: axc, y2: AISLE.y + AISLE.h - 16 }, svg);
     /* 紅毯文字（垂直段中央，直排） */
-    var carpetTx = el("text", { class: "venue-carpet__label", x: VB_W / 2, y: AISLE.y + AISLE.h / 2, "text-anchor": "middle" }, svg);
+    var carpetTx = el("text", { class: "venue-carpet__label", x: axc, y: AISLE.y + 110, "text-anchor": "middle" }, svg);
     carpetTx.textContent = LABELS.aisle || "紅毯";
 
-    /* ── 舞台（正上方中央）── */
-    el("rect", { class: "venue-stage", x: STAGE.x, y: STAGE.y, width: STAGE.w, height: STAGE.h, rx: 6 }, svg);
-    el("line", { class: "venue-stage__edge", x1: STAGE.x + 10, y1: STAGE.y + STAGE.h, x2: STAGE.x + STAGE.w - 10, y2: STAGE.y + STAGE.h }, svg);
-    var stageTx = el("text", { class: "venue-stage__label", x: VB_W / 2, y: STAGE.y + STAGE.h / 2 + 6, "text-anchor": "middle" }, svg);
+    /* ── 舞台（正上方中央、緊貼上牆）── */
+    el("rect", { class: "venue-stage", x: STAGE.x, y: STAGE.y, width: STAGE.w, height: STAGE.h, rx: 4 }, svg);
+    el("line", { class: "venue-stage__edge", x1: STAGE.x + 8, y1: STAGE.y + STAGE.h, x2: STAGE.x + STAGE.w - 8, y2: STAGE.y + STAGE.h }, svg);
+    /* 舞台背板（示意圖中的 LED／背板凹槽） */
+    el("rect", { class: "venue-stage__led", x: STAGE.x + STAGE.w / 2 - 32, y: STAGE.y + 7, width: 64, height: 13, rx: 2 }, svg);
+    /* 兩側裝飾垂直線（示意圖舞台兩端各數條） */
+    [26, 34, 42].forEach(function (off) {
+      el("line", { class: "venue-stage__deco", x1: STAGE.x + off, y1: STAGE.y + 12, x2: STAGE.x + off, y2: STAGE.y + STAGE.h - 10 }, svg);
+      el("line", { class: "venue-stage__deco", x1: STAGE.x + STAGE.w - off, y1: STAGE.y + 12, x2: STAGE.x + STAGE.w - off, y2: STAGE.y + STAGE.h - 10 }, svg);
+    });
+    var stageTx = el("text", { class: "venue-stage__label", x: STAGE.x + STAGE.w / 2, y: STAGE.y + STAGE.h - 14, "text-anchor": "middle" }, svg);
     stageTx.textContent = LABELS.stage || "舞台";
 
-    /* ── 出入口（右下角）── */
-    el("rect", { class: "venue-entrance", x: ENTRANCE.x, y: ENTRANCE.y, width: ENTRANCE.w, height: ENTRANCE.h, rx: 6 }, svg);
-    /* 雙扇門圖示 */
-    var doorW = 26, doorH = 34;
-    var dx = ENTRANCE.x + ENTRANCE.w / 2 - doorW - 3;
-    var dy = ENTRANCE.y + ENTRANCE.h / 2 - doorH / 2;
-    el("rect", { class: "venue-door", x: dx, y: dy, width: doorW, height: doorH, rx: 2 }, svg);
-    el("rect", { class: "venue-door", x: dx + doorW + 6, y: dy, width: doorW, height: doorH, rx: 2 }, svg);
-    var entTx = el("text", { class: "venue-entrance__label", x: ENTRANCE.x + ENTRANCE.w / 2, y: ENTRANCE.y + ENTRANCE.h - 8, "text-anchor": "middle" }, svg);
+    /* ── 出入口（右下角）：下牆開洞 + 雙扇門 + 場內開啟弧線 ── */
+    el("rect", { class: "venue-wall-gap", x: GATE.x, y: VB_H - 7, width: GATE.w, height: 7 }, svg);
+    var hingeY = VB_H - 2;
+    var leaf   = GATE.w / 2;
+    var rhs    = GATE.x + leaf;
+    el("rect", { class: "venue-door", x: GATE.x, y: hingeY - 3.2, width: leaf, height: 3.2, rx: 1 }, svg);
+    el("rect", { class: "venue-door", x: rhs, y: hingeY - 3.2, width: leaf, height: 3.2, rx: 1 }, svg);
+    el("path", { class: "venue-door__arc", d: "M" + GATE.x + " " + (hingeY - 3.2) + " A" + leaf + " " + leaf + " 0 0 1 " + rhs + " " + (hingeY - 3.2 - leaf) }, svg);
+    el("path", { class: "venue-door__arc", d: "M" + (GATE.x + GATE.w) + " " + (hingeY - 3.2) + " A" + leaf + " " + leaf + " 0 0 0 " + rhs + " " + (hingeY - 3.2 - leaf) }, svg);
+    var entTx = el("text", { class: "venue-entrance__label", x: GATE.x - 12, y: VB_H - 34, "text-anchor": "end" }, svg);
     entTx.textContent = LABELS.entrance || "出入口";
 
-    /* ── 廚房上菜口（左側）── */
-    el("rect", { class: "venue-kitchen", x: KITCHEN.x, y: KITCHEN.y, width: KITCHEN.w, height: KITCHEN.h, rx: 6 }, svg);
+    /* ── 廚房上菜口（左側牆面）：牆上開洞 + 台面 + 區域 ── */
+    el("rect", { class: "venue-wall-gap", x: 0, y: KITCHEN.y + 22, width: 4, height: KITCHEN.h - 44 }, svg);
+    el("rect", { class: "venue-kitchen__hatch", x: 1, y: KITCHEN.y + 24, width: 7, height: KITCHEN.h - 48, rx: 2 }, svg);
+    el("rect", { class: "venue-kitchen", x: KITCHEN.x, y: KITCHEN.y, width: KITCHEN.w, height: KITCHEN.h, rx: 4 }, svg);
     var kitTx = el("text", { class: "venue-kitchen__label", x: KITCHEN.x + KITCHEN.w / 2, y: KITCHEN.y + KITCHEN.h / 2, "text-anchor": "middle" }, svg);
     kitTx.textContent = LABELS.kitchen || "廚房上菜口";
 
-    /* ── 左右側標示 ── */
-    var lft = el("text", { class: "side-label", x: LREGION.x + LREGION.w / 2, y: LREGION.y - 18, "text-anchor": "middle" }, svg);
+    /* ── 音控台（左上角；示意圖實測 x 2~88、y 4~126）── */
+    el("rect", { class: "venue-utility", x: 2, y: 4, width: 86, height: 122, rx: 5 }, svg);
+    el("rect", { class: "venue-utility__pad", x: 26, y: 16, width: 20, height: 98, rx: 3 }, svg);
+    var utiTx = el("text", { class: "venue-utility__label", x: 68, y: 65, "text-anchor": "middle" }, svg);
+    utiTx.textContent = "音控台";
+    /* 上牆後台開口（音控台右側，示意圖實測 x 89~109） */
+    el("rect", { class: "venue-wall-gap", x: 89, y: 0, width: 20, height: 4 }, svg);
+
+    /* ── 左右側標示（置於各桌次區正上方）── */
+    var lft = el("text", { class: "side-label", x: LREGION.x + LREGION.w / 2, y: LREGION.y - 16, "text-anchor": "middle" }, svg);
     lft.textContent = LABELS.leftSide || "左側";
-    var rgt = el("text", { class: "side-label", x: RREGION.x + RREGION.w / 2, y: RREGION.y - 18, "text-anchor": "middle" }, svg);
+    var rgt = el("text", { class: "side-label", x: RREGION.x + RREGION.w / 2, y: RREGION.y - 16, "text-anchor": "middle" }, svg);
     rgt.textContent = LABELS.rightSide || "右側";
 
     /* 主桌（v62：舞台正前方、紅毯末端） */
@@ -408,7 +445,7 @@
     canvas.appendChild(svg);
 
     /* 圖例 / 資料來源註記（SVG 內；v74：移至右下角，避開廚房上菜口） */
-    var srcTx = el("text", { class: "venue-caption", x: VB_W - 24, y: VB_H - 12, "text-anchor": "end" }, svg);
+    var srcTx = el("text", { class: "venue-caption", x: 18, y: VB_H - 14, "text-anchor": "start" }, svg);
     srcTx.textContent = "SEATING CHART · JACK & LILY";
   }
 
@@ -418,7 +455,7 @@
     var seats = Math.max(1, parseInt(t.seats, 10) || (isMain ? mainTableSeats : seatsPerTable));
     var tR = isMain ? mainTableR : tableR;
     var rR = isMain ? mainTableRing : ringR;
-    var sR = isMain ? Math.max(4.6, Math.min(6.4, rR * 0.115)) : seatR;
+    var sR = isMain ? Math.max(5.6, Math.min(7.6, rR * 0.175)) : seatR;
 
     /* v69：整團外框弧線（預設隱藏，查到時依座位區間顯示） */
     var partyArc = el("path", { class: "tbl-partyarc" }, g);
@@ -472,8 +509,8 @@
 
     /* 命中標籤（預設隱藏，查到時顯示「姓名-幾桌」） */
     var lg = el("g", { class: "tbl-hitlabel" }, g);
-    var bg = el("rect", { class: "tbl__hitlabel-bg", rx: 6, height: 26 }, lg);
-    var lt = el("text", { class: "tbl__hitlabel", "text-anchor": "middle", y: 18 }, lg);
+    var bg = el("rect", { class: "tbl__hitlabel-bg", rx: 5, height: 20 }, lg);
+    var lt = el("text", { class: "tbl__hitlabel", "text-anchor": "middle", y: 14 }, lg);
 
     tableNodes[t.no] = {
       gEl: g, ring: g.querySelector(".tbl__ring"), hitLabel: lg, hitLabelBg: bg, hitLabelText: lt,
@@ -577,13 +614,20 @@
       /* 標籤文字與寬度 */
       tn.hitLabelText.textContent = label;
       var w = labelWidth(label);
+      var ty, tx = tn.cx;
+      if (tn.isMain) {
+        /* v75：主桌緊跟舞台、下方即紅毯起點，上下皆無空間 → 標籤置於桌面右側 */
+        tx = tn.cx + (tn.ringR || ringR) + 8 + w / 2;
+        ty = tn.cy - 10;
+      } else {
+        ty = tn.cy - (tn.ringR || ringR) - 26;
+        if (ty < 6) ty = tn.cy + (tn.ringR || ringR) + 10;
+      }
       tn.hitLabelBg.setAttribute("width", w);
-      tn.hitLabelBg.setAttribute("x", tn.cx - w / 2);
-      tn.hitLabelText.setAttribute("x", tn.cx);
-      var ty = tn.cy - (tn.ringR || ringR) - 34;
-      if (ty < 8) ty = tn.cy + (tn.ringR || ringR) + 12;
+      tn.hitLabelBg.setAttribute("x", tx - w / 2);
+      tn.hitLabelText.setAttribute("x", tx);
       tn.hitLabelBg.setAttribute("y", ty);
-      tn.hitLabelText.setAttribute("y", ty + 18);
+      tn.hitLabelText.setAttribute("y", ty + 14);
       tn.hitLabel.classList.add("is-on");
       if (svg) svg.classList.add("venue-dim");
       if (opts.focus !== false) focusTable(tn);
@@ -594,9 +638,9 @@
   function labelWidth(text) {
     var w = 0;
     for (var i = 0; i < text.length; i++) {
-      w += text.charCodeAt(i) > 0x2E80 ? 13.6 : 7.4;
+      w += text.charCodeAt(i) > 0x2E80 ? 10.6 : 5.8;
     }
-    return Math.max(56, w + 24);
+    return Math.max(44, w + 18);
   }
 
   /* v69：依座位區間（from..to）產生沿桌緣的弧線路徑，將整團座位圈成一個視覺群組。
