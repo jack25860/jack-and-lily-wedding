@@ -182,7 +182,9 @@
 .seat-rc__similar-title{margin-top:var(--q-5);font-size:var(--q-fs-meta);letter-spacing:.18em;color:var(--q-ink-2)}
 
 /* ══════════════════════ 浮動工具鈕（v66）══════════════════════ */
-.seat-fab{position:fixed;right:clamp(14px,2.4vw,30px);bottom:clamp(14px,2.4vw,30px);z-index:820;display:inline-flex;align-items:center;gap:var(--q-2,8px);min-height:var(--q-touch,48px);padding:12px 20px;background:linear-gradient(180deg,#7d1c2e,var(--wine) 58%,#5c1220);border:1px solid var(--gold);border-radius:100px;color:var(--gold-light);font-family:var(--zh);font-size:.86rem;letter-spacing:.14em;box-shadow:0 18px 40px -18px #4a0e19d9,0 0 0 1px #c9a96147 inset;opacity:0;visibility:hidden;transform:translateY(10px);transition:opacity .5s var(--ease-soft),visibility .5s,transform .5s var(--ease-soft),background .4s}
+/* v77：快速查詢浮動鈕改置左下角 —— 右下角已有背景音樂鈕與字級鈕（且字級面板向上展開），
+   三者同角必然重疊；左下角為空，且與全站「回到頂端」鈕同側，視覺平衡。 */
+.seat-fab{position:fixed;left:clamp(14px,2.4vw,30px);bottom:clamp(14px,2.4vw,30px);z-index:820;display:inline-flex;align-items:center;gap:var(--q-2,8px);min-height:var(--q-touch,48px);padding:12px 20px;background:linear-gradient(180deg,#7d1c2e,var(--wine) 58%,#5c1220);border:1px solid var(--gold);border-radius:100px;color:var(--gold-light);font-family:var(--zh);font-size:.86rem;letter-spacing:.14em;box-shadow:0 18px 40px -18px #4a0e19d9,0 0 0 1px #c9a96147 inset;opacity:0;visibility:hidden;transform:translateY(10px);transition:opacity .5s var(--ease-soft),visibility .5s,transform .5s var(--ease-soft),background .4s}
 .seat-fab.show{opacity:1;visibility:visible;transform:none}
 .seat-fab:hover{background:var(--wine-deep)}
 .seat-fab:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
