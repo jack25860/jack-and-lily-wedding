@@ -89,13 +89,13 @@
 │   ├── rsvp-to-sheet.gs           # ★ Google Apps Script 後端（RSVP 寫表 + 電子喜帖寄信 + diag）
 │   ├── seating-from-sheet.gs      # ★ Google Apps Script 後端（座位表名單 JSON）
 │   └── verify-seating-gs.js       # 座位表 Apps Script 離線驗證 harness（node scripts/verify-seating-gs.js）
-├── CHANGES-vNN.md                 # 各版本變更紀錄（repo 根目錄）
+├── changelog/                     # 各版本變更紀錄（CHANGES-vNN.md）
 ├── README.md                      # 本文件
 └── .github/workflows/
     └── deploy-site.yml            # ★ 唯一部署流程（workflow_dispatch + zip_url）
 ```
 
-> `CHANGES-vNN.md`（repo 根目錄）為各版本變更紀錄，是版本歷程的權威來源。
+> `changelog/CHANGES-vNN.md` 為各版本變更紀錄，是版本歷程的權威來源。
 
 ---
 
@@ -136,7 +136,7 @@
    v1 無後綴；版本目錄一律使用**底線** `_vN`（例如 `demo_v2`），不使用 `-v2`。
 2. **原版本保持不變** — 所有編輯只在新 `vN+1` 目錄內進行，舊版本可完整追溯。
 3. 內層檔名跨版本**不變**（只有目錄名改變）。
-4. 每次部署後於 repo 根目錄新增 `CHANGES-vN.md`，記錄：基準版本、修改檔案、修改內容、驗證方式。
+4. 每次部署後於 `changelog/` 新增 `CHANGES-vN.md`，記錄：基準版本、修改檔案、修改內容、驗證方式。
 5. 圖片等生成媒體的版本由生成工具產生，**不要**用 `cp -r` 複製。
 
 ---
@@ -274,7 +274,7 @@ RSVP 流程（**維持不變**）：送出後**不跳轉新分頁**、**不寄�
 | v41 | **大人出席人數上限 10 人**（小孩維持 0–4）＋ 電子喜帖去重窗口 90 秒 → **8 秒** |
 | v42 | **電子喜帖寄送成功後自動清空輸入框**（失敗／授權未完成時不清空） |
 | v43 | **婚禮當日注意事項內容補齊**（婚宴 12:00／Dress code 正式服裝／拍照／禮金／其他提醒）＋ **座位表連結預留**（`SEATING_URL`） |
-| v44–v59 | 版面、座位表、電子喜帖與驗證迭代（詳見各 `CHANGES-vNN.md`） |
+| v44–v59 | 版面、座位表、電子喜帖與驗證迭代（詳見各 `changelog/CHANGES-vNN.md`） |
 | v61 | 座位表 Apps Script 離線驗證 harness（`scripts/verify-seating-gs.js`，29 項斷言） |
 | v65–v75 | 座位表遠端名單來源（gviz／CSV／Apps Script 四層備援）、字級控制、版面修正 |
 | v77–v79 | 電子喜帖信件內嵌媒體、循環 GIF、版面調整 |
@@ -300,10 +300,11 @@ RSVP 流程（**維持不變**）：送出後**不跳轉新分頁**、**不寄�
 - 未發現 md5 完全重複檔、未發現 `.bak`／`.orig`／`.tmp`／`.DS_Store` 等殘留檔。
 - **保留但標示為未使用**（依安全規則不刪，供人工確認）：`images/` 下 18 張未被任何消費者引用的照片 — `ch1-encounter.jpg`、`ch2-knowing.jpg`、`ch3-understanding.jpg`、`ch4-love.jpg`、`ch5-forever.jpg`、`ch5-forever-gongbi.jpg`、`g1–g6.jpg`、`m1–m6.jpg`。這些屬**內容資產**（照片），部分於 `index.html` 註解中標示為「可替換」的替代圖，部分為早期版本素材，刪除不可由程式還原，故一律保留。
 - 目錄結構維持既有分類（頁面／樣式／腳本／圖片／音訊／媒體／版本紀錄），**未更動任何線上載入路徑**。
+- **版本紀錄歸檔**：50 個 `CHANGES-vNN.md` 由 repo 根目錄移入 `changelog/`，內容逐位元不變（byte-identical），上方樹狀圖與說明同步更新。
 
 ### 前次整理（v43 時期）
 
-移除了 52 個已確認無用的檔案（詳見 `CHANGES-v43.md`）：
+移除了 52 個已確認無用的檔案（詳見 `changelog/CHANGES-v43.md`）：
 
 - `.github/workflows/deploy.yml` — 已死的舊版 v14 部署流程（從未執行、其下載網址已過期 403），且與 `deploy-site.yml` **同名**造成誤選風險。
 - `scripts/` 下 31 個歷史版本的驗證腳本與一次性產生器（v30–v40）。
