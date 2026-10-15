@@ -6,7 +6,8 @@
      • 主來源 1 = 問卷回覆的 Google 試算表 gviz JSON（js/seating-config.js 的 SHEET_GVIZ_URL）
      • 主來源 2 = 問卷回覆的 Google 試算表 CSV（SHEET_CSV_URL）
      • 主來源 3 = Apps Script Web App JSON（API_URL）
-     • 備援     = js/seating-data.js（window.SEATING_DATA；前三者皆失敗時回退）
+     • v83：不再有「備援名單」。前三者皆失敗或試算表為空時，一律顯示空名單
+       （不顯示任何姓名），並提示「座位尚在安排中，請洽現場招待」。
 
    功能：
      1. 依 VENUE 參數繪製「全場座位圖」：
@@ -25,7 +26,7 @@
           childSeats 需要兒童椅數量
         修正「表單填寫人數與查詢結果不匹配」：查詢結果卡會顯示該團體的
         大人／兒童人數，且座位圖會依 partySize 連續配位（不再一人一格）。
-     2. 資料讀取改為多層（gviz → CSV → Apps Script → 本機備援），
+     2. 資料讀取改為多層（gviz → CSV → Apps Script）；v83 起失敗／為空一律空名單，
         直接讀取問卷回覆試算表的「出席人數／大人／兒童／兒童椅」欄位。
      3. 兒童椅標示：座位圖上以專屬顏色 + 兒童椅圖示標示，並新增圖例；
         查詢結果卡顯示兒童椅數量。
@@ -756,7 +757,7 @@
       if (n === nq) score = 3;
       else if (n.indexOf(nq) === 0) score = 2;
       else if (n.indexOf(nq) >= 0) score = 1;
-      else if (nq.indexOf(n) >= 0) score = 0;   /* 使用者輸入較長時（例如「王小明先生」） */
+      else if (nq.indexOf(n) >= 0) score = 0;   /* 使用者輸入較長時（例如「姓名先生」） */
       if (score >= 0) hits.push({ guest: g, score: score });
     }
     hits.sort(function (a, b) {
@@ -1764,14 +1765,20 @@
       .catch(function () { return fromCsv(); })
       .catch(function () { return fromApi(); })
       .then(function (res) {
-        if (!res || res.empty) { done(false); return; }
+        if (!res || res.empty) { applyEmpty(); done(false); return; }
         var data = buildData(res);
         writeCache(data);
         applyData(data, null, "live");   /* v64：成功時不顯示狀態文字 */
         if (retryTimer) { window.clearInterval(retryTimer); retryTimer = null; }
         done(true);
       })
-      .catch(function () { done(false); });
+      .catch(function () { applyEmpty(); done(false); });
+  }
+
+  /* v83：遠端為空或失敗時，一律套用「空名單」——不顯示任何示範／預設姓名。
+     查詢因此只可能命中問卷回覆（表單）實際填寫的資料。 */
+  function applyEmpty() {
+    applyData({ VENUE: BASE_VENUE, TABLES: fixedTables(null), GUESTS: [], OPTIONS: BASE_OPTIONS }, null, "empty");
   }
 
   /* 套用新名單並重繪（搜尋事件不會重複綁定）。
@@ -1863,6 +1870,8 @@
     if (hasGviz || hasCsv || hasApi) {
       loadRemote();
     } else {
+      /* v83：未設定任何來源 → 空名單（不顯示任何示範姓名）。 */
+      applyEmpty();
       setStatus(CFG.TEXT_LOCAL, "local");
     }
   }

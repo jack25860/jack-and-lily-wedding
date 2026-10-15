@@ -15,7 +15,8 @@
          主來源 1 = 問卷回覆的 Google 試算表 gviz JSON（SHEET_GVIZ_URL）
          主來源 2 = 問卷回覆的 Google 試算表 CSV（SHEET_CSV_URL）
          主來源 3 = Google Apps Script Web App JSON（API_URL）
-         備援     = js/seating-data.js（以上皆未設定、逾時或失敗時自動回退）。
+         v83：不再有「備援名單」。以上皆未設定、逾時、失敗或試算表為空時，
+              一律顯示空名單（不顯示任何姓名），並提示「座位尚在安排中，請洽現場招待」。
          以上皆設定於 js/seating-config.js。
      • v64：桌數固定 16 桌（1 主桌 + 15 側桌），不受 API 回傳的桌次數量影響；
        桌號由試算表手動填入後自動讀取分配，無效桌號顯示「由現場人員安排」。
@@ -98,7 +99,7 @@
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
 <meta name="googlebot" content="noindex, nofollow">
 <meta name="theme-color" content="#6E1626">
-<meta name="site-version" content="v82">
+<meta name="site-version" content="v83">
 <meta name="motion" content="silky-no-flash">
 <title>全場座位表｜三生三世·緣定今生 Jack ＆ Lily</title>
 
@@ -146,7 +147,7 @@
                    enterkeyhint="search" role="combobox"
                    aria-autocomplete="list" aria-expanded="false"
                    aria-controls="seatSuggest" aria-describedby="seatHint"
-                   placeholder="請輸入姓名，例如：王小明">
+                   placeholder="請輸入您的姓名">
             <button class="seat-search__clear" id="seatClear" type="button" hidden aria-label="清除查詢內容">
               <span aria-hidden="true">✕</span>
             </button>
@@ -173,7 +174,7 @@
           </div>
 
           <p class="seat-search__hint" id="seatHint">
-            可只輸入姓名的一部分（例如輸入「<b>小明</b>」也能找到「王小明」）；
+            可只輸入姓名的一部分（例如輸入名字的後兩字也能找到）；
             若有同名賓客，會列出候選讓您選擇正確的那一位。
             查不到時可在現場洽詢接待人員，或請現場人員協助安排。
           </p>
