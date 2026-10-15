@@ -9,7 +9,7 @@
 單頁式婚禮邀請網站，包含：Hero 首屏、倒數計時、婚禮資訊、交通資訊、三生三世故事、相簿（三朝代主題）、婚禮當日注意事項、賓客留言、RSVP 出席回覆、電子喜帖寄送。
 
 - **前端**：原生 HTML / CSS / Vanilla JS，無框架、無建置步驟，直接由 GitHub Pages 靜態託管。
-- **後端**：Google Apps Script Web App（`scripts/rsvp-to-sheet.gs`），負責 RSVP 寫入 Google 試算表、電子喜帖寄信、以及 `/exec?diag=1` 健康檢查。
+- **後端**：Google Apps Script Web App（`scripts/rsvp-to-sheet.gs`、`scripts/seating-from-sheet.gs`），負責 RSVP 寫入 Google 試算表、電子喜帖寄信、座位表名單 JSON，以及 `/exec?diag=1` 健康檢查。
 - **設計規範**：酒紅 `#6E1626`／金 `#C9A961`／宣紙米色 `#F5F0E7`／深底 `#131010`；字體 `Noto Serif TC`、`Cormorant Garamond`、`Cinzel`。
 
 ---
@@ -25,18 +25,54 @@
 
 ---
 
+## 頁面清單
+
+| 頁面 | 檔案 | 說明 |
+|---|---|---|
+| 首頁 | `index.html` | 單頁式主站：Hero／倒數／婚禮資訊／交通／三生三世故事／**相簿**／注意事項／留言／RSVP／電子喜帖 |
+| 相簿 | `index.html` 內 `#gallery` 區塊 | 三主題（戰國／唐代／明朝）分類相簿，資料來自 `js/config.js` 的 `GALLERY_THEMES` |
+| 電子喜帖（影片頁） | `ecard-video.html` | 電子喜帖影片播放頁（`media/ecard-video.mp4` + `.webm` 雙來源） |
+| 電子喜帖（信件預覽） | `ecard-email-preview.html` | Apps Script 產生之信件內文原樣預覽（對照／驗證用，`noindex`） |
+| 座位表 | `seating.html` | 賓客座位查詢（`js/seating.js` + `js/seating-config.js` + `js/seating-data.js`） |
+
+---
+
+## 相簿三主題分類
+
+相簿共 **137 張原始照片**（`images/album/`），依服裝／造型／風格分為三主題：
+
+| 主題 | 英文 | 張數 | 說明 |
+|---|---|---|---|
+| 戰國 | WARRING STATES | 36 | 鐵馬金戈，亂世相逢。 |
+| 唐代 | TANG DYNASTY | 38 | 盛世繁華，錦繡良緣。 |
+| 明朝 | MING DYNASTY | 63 | 鳳冠霞帔，一世相守。 |
+| **合計** | | **137** | |
+
+- 每主題含 `FEATURED`（大圖 6 張）與 `MORE`（縮圖，可展開），完整涵蓋 137 張、每張各引用一次、無重複、無缺漏。
+- 相簿檔名對應：`candid-01..08`（8）、`couple-01..81`（81）、`group-01..06`（6）、`portrait-01..42`（42），合計 137。
+- **v81 起為「原始照片」**：逐位元（byte-for-byte）直接放入相簿，未做任何影像處理（不去浮水印、不修陰影、不調色、不重新編碼）。每張 album 檔案的 sha256 與原始檔完全相同（137/137 驗證通過）。
+
+---
+
 ## 目錄結構
 
 ```
 .
 ├── index.html                     # 主頁（單頁式；Hero/倒數/婚禮資訊/交通/三生三世/相簿/注意事項/留言/RSVP/電子喜帖）
+├── seating.html                   # 座位表查詢頁
+├── ecard-video.html               # 電子喜帖影片播放頁
+├── ecard-email-preview.html       # 電子喜帖信件內文預覽（對照／驗證用）
 ├── css/
-│   └── styles.css                 # 全站樣式（酒紅/金/宣紙米色系）
+│   ├── styles.css                 # 全站樣式（酒紅/金/宣紙米色系）
+│   └── seating.css                # 座位表專用樣式
 ├── js/
-│   ├── config.js                  # ★ 所有可編輯內容集中於此（新人資料、日期、場地、表單、電子喜帖文案…）
-│   └── app.js                     # 互動邏輯（導覽、Lightbox、倒數、表單送出、音樂、回到頂端…）
+│   ├── config.js                  # ★ 所有可編輯內容集中於此（新人資料、日期、場地、表單、電子喜帖文案、相簿主題…）
+│   ├── app.js                     # 互動邏輯（導覽、Lightbox、倒數、表單送出、音樂、回到頂端…）
+│   ├── seating-config.js          # 座位表名單來源設定（gviz / CSV / Apps Script / 本機備援）
+│   ├── seating-data.js            # 座位表本機備援名單
+│   └── seating.js                 # 座位表繪製與查詢邏輯
 ├── images/                        # 版面圖片
-│   ├── album/                     # 婚紗照 142 張：zg1–6／n01–74／tg1–6／p01–56（電子喜帖隨機池全池）
+│   ├── album/                     # 婚紗照 137 張（candid/couple/group/portrait）
 │   ├── hero.jpg, og.jpg           # 首屏主視覺、社群分享縮圖
 │   ├── ch1–ch5-*.jpg              # 三生三世各世章節插圖
 │   ├── ecard-poster-*.jpg         # 電子喜帖輪播海報
@@ -45,13 +81,16 @@
 │   └── texture-*.jpg              # 紙質／絹質／墨韻材質底紋
 ├── audio/
 │   └── wedding-theme.mp3          # 背景音樂
+├── media/
+│   ├── ecard-video.mp4            # 電子喜帖影片（H.264）
+│   ├── ecard-video.webm           # 電子喜帖影片（VP9 備援）
+│   └── ecard-loop-hd.gif          # 信件用 HD 循環 GIF
 ├── scripts/
 │   ├── rsvp-to-sheet.gs           # ★ Google Apps Script 後端（RSVP 寫表 + 電子喜帖寄信 + diag）
-│   ├── send-invitation.gs         # 舊版「表單觸發自動寄喜帖」腳本（備用／歷史參考，目前未使用）
-│   ├── ecard-email-preview.html   # 電子喜帖信件 HTML 設計稿（離線預覽用）
-│   ├── verify-v42-live.py         # 正式站真實瀏覽器驗證腳本（最新版）
-│   ├── verify-v42-sheet.js        # Apps Script 離線驗證 harness（最新版）
-│   └── verify-v39-sheet.js        # v39 去重／lastEcard 專項 harness
+│   ├── seating-from-sheet.gs      # ★ Google Apps Script 後端（座位表名單 JSON）
+│   └── verify-seating-gs.js       # 座位表 Apps Script 離線驗證 harness（node scripts/verify-seating-gs.js）
+├── CHANGES-vNN.md                 # 各版本變更紀錄（repo 根目錄）
+├── README.md                      # 本文件
 └── .github/workflows/
     └── deploy-site.yml            # ★ 唯一部署流程（workflow_dispatch + zip_url）
 ```
@@ -66,12 +105,14 @@
 
 ### 運作方式
 
-1. 將要部署的網站打包成 `.zip`（內容為網站根目錄檔案：`index.html`、`css/`、`js/`、`images/`、`audio/`、`.nojekyll` 等），上傳取得可公開下載的網址。
+1. 將要部署的網站打包成 `.zip`（內容為網站根目錄檔案：`index.html`、`css/`、`js/`、`images/`、`audio/`、`media/`、`.nojekyll` 等），上傳取得可公開下載的網址。
 2. 到 repo → **Actions** → 左側選 **Deploy wedding site** → 右側 **Run workflow**。
 3. 填入 `zip_url`（必填，網站壓縮檔網址；網址需含有效的存取簽章，例如 `?tk=…`，否則下載會失敗）→ 執行。
 4. 流程會下載 zip → 解壓覆蓋到 repo 根目錄 → 自動 commit & push → GitHub Pages 隨即在數十秒內更新。
 
 `zip_url_fallback` 為選填的第二下載網址，主網址失敗時會自動嘗試。
+
+> **注意**：流程內建的 `Download archive` 步驟有 **1 MB 下限**（`sz -gt 1000000`）。若只打包少量文字檔（< 1 MB）會被拒絕，需一併打包其餘非二進位內容以超過下限。
 
 ### 常見失敗原因
 
@@ -142,7 +183,7 @@
 
 | 設定 | 說明 |
 |---|---|
-| `GALLERY_THEMES` | 三主題：戰國（39 張）→ 唐代（47 張）→ 明朝（56 張），各含 `FEATURED`（大圖）與 `MORE`（縮圖），合計 **142 張** |
+| `GALLERY_THEMES` | 三主題：戰國（36 張）→ 唐代（38 張）→ 明朝（63 張），各含 `FEATURED`（大圖）與 `MORE`（縮圖），合計 **137 張** |
 | `MUSIC_URL` / `MUSIC_TITLE` | 背景音樂路徑與曲名 |
 
 ### RSVP 出席回覆
@@ -161,7 +202,7 @@ RSVP 流程（**維持不變**）：送出後**不跳轉新分頁**、**不寄�
 
 | 設定 | 說明 |
 |---|---|
-| `ECARD_PHOTO_POOL` | 隨機婚紗照池，**142 張全池** |
+| `ECARD_PHOTO_POOL` | 隨機婚紗照池，**137 張全池** |
 | `ECARD_SUBJECT` / `ECARD_MAIL_SUBJECT` / `ECARD_GREETING` / `ECARD_BODY` / `ECARD_INVITE_TEXT` | 信件主旨與內文 |
 | `ECARD_PHOTO` / `ECARD_VIDEO_POSTER` / `ECARD_VIDEO_URL` | 信件內嵌圖片（以 `cid:` 直接內嵌，非外部連結）與影片示意圖 |
 | `ECARD_SLIDES` / `ECARD_SLIDE_MS` | 網站上喜帖卡片輪播海報 |
@@ -180,7 +221,7 @@ RSVP 流程（**維持不變**）：送出後**不跳轉新分頁**、**不寄�
 
 ## ⚠️ Google Apps Script 待辦（重要）
 
-**`scripts/rsvp-to-sheet.gs` 只是 repo 內的版本控管副本；部署到 GitHub Pages 不會更新 Google 端的 Apps Script 專案。** Google 端必須手動同步，否則線上仍是舊版、電子喜帖**不會真的寄出**。
+**`scripts/*.gs` 只是 repo 內的版本控管副本；部署到 GitHub Pages 不會更新 Google 端的 Apps Script 專案。** Google 端必須手動同步，否則線上仍是舊版、電子喜帖**不會真的寄出**。
 
 請執行（約 2 分鐘）：
 
@@ -189,6 +230,8 @@ RSVP 流程（**維持不變**）：送出後**不跳轉新分頁**、**不寄�
 3. 函式下拉選 **`testEcard`** → 執行 → 同意 **Gmail 寄信權限**
 4. 右上「**部署 (Deploy)**」→「**管理部署**」→ 編輯現有部署 → 版本選「**新版本**」→ 部署
 5. 若產生新網址，填入 `js/config.js` 的 `SHEET_WEBAPP_URL`，並重新部署網站
+
+座位表後端同理：`scripts/seating-from-sheet.gs` 需同步至 Google 端，並將 `/exec` 網址填入 `js/seating-config.js` 的 `API_URL`。
 
 ### 驗證方式
 
@@ -200,7 +243,7 @@ RSVP 流程（**維持不變**）：送出後**不跳轉新分頁**、**不寄�
 
 - `mailScope: true` → Gmail 寄信權限已授予
 - `version` → 應等於目前 repo 的 `ENDPOINT_VERSION`
-- 另含 `photoPool`（142）、`videoPoster`、`lastEcard`（最近一次寄送結果）等診斷欄位
+- 另含 `photoPool`（137）、`videoPoster`、`lastEcard`（最近一次寄送結果）等診斷欄位
 
 只要 `mailScope` 仍為 `false`，網站送出電子喜帖會顯示「電子喜帖功能尚未完成授權…」且**不會寄出**（這是預期行為，不會誤報成功）。
 
@@ -208,7 +251,7 @@ RSVP 流程（**維持不變**）：送出後**不跳轉新分頁**、**不寄�
 
 ## 目前最新版本與版本歷程
 
-**目前最新版本：`v43`**
+**目前最新版本：`v81`**
 
 | 版本 | 內容 |
 |---|---|
@@ -228,23 +271,43 @@ RSVP 流程（**維持不變**）：送出後**不跳轉新分頁**、**不寄�
 | v38 | 電子喜帖寄信鏈路修復（第 2 棒：AI Engineer 複查）— 修正 `videoPoster` 相對路徑未轉絕對網址 |
 | v39 | 電子喜帖寄信鏈路「架構面」強化（第 3 棒：Software Architect）— 移除 opaque 誤判、錯誤分類、去重、`lastEcard` 診斷 |
 | v40 | Product Manager 最終驗證報告（真實瀏覽器 34/34 通過） |
-| v41 | **大人出席人數上限 10 人**（小孩維持 0–4）＋ 電子喜帖去重窗期 90 秒 → **8 秒** |
+| v41 | **大人出席人數上限 10 人**（小孩維持 0–4）＋ 電子喜帖去重窗口 90 秒 → **8 秒** |
 | v42 | **電子喜帖寄送成功後自動清空輸入框**（失敗／授權未完成時不清空） |
 | v43 | **婚禮當日注意事項內容補齊**（婚宴 12:00／Dress code 正式服裝／拍照／禮金／其他提醒）＋ **座位表連結預留**（`SEATING_URL`） |
+| v44–v59 | 版面、座位表、電子喜帖與驗證迭代（詳見各 `CHANGES-vNN.md`） |
+| v61 | 座位表 Apps Script 離線驗證 harness（`scripts/verify-seating-gs.js`，29 項斷言） |
+| v65–v75 | 座位表遠端名單來源（gviz／CSV／Apps Script 四層備援）、字級控制、版面修正 |
+| v77–v79 | 電子喜帖信件內嵌媒體、循環 GIF、版面調整 |
+| v80 | 相簿浮水印去除與朝代主題重新分類（戰國 39／唐代 42／明朝 56，共 137） |
+| **v81** | **相簿改用原始照片並重新分類（零影像處理）**：自使用者最新上傳的 137 張原始照片逐位元放入相簿，sha256 137/137 驗證通過；主題維持三類，數量為 **戰國 36／唐代 38／明朝 63，合計 137**；`index.html` 的 `site-version` 為 v81 |
 
-> v43 已部署至正式站；`CHANGES-v43.md` 於本次 repo 整理時補進版本庫。
+> v81 已部署至正式站。
 
 ---
 
 ## Repo 整理紀錄
 
-本次整理移除了 52 個已確認無用的檔案（詳見 `CHANGES-v43.md` 或交付報告）：
+### 本輪整理（v81 之後）
 
-- `.github/workflows/deploy.yml` — 已死的舊版 v14 部署流程（從未執行、其下載網址已過期 403），且與 `deploy-site.yml` **同名**造成誤選風險，推送觸發時會覆蓋現有網站。
+本輪以 **consumer-based 引用掃描**（HTML + CSS `url()` + JS config 資源池 + `.gs` 後端 + workflow）＋ **md5 全樹重複比對** 盤點全部 250 個檔案，僅刪除**零引用且屬程式產物**的檔案：
+
+| 刪除檔案 | 類型 | 原因 |
+|---|---|---|
+| `scripts/verify-v58.py` | 一次性驗證腳本 | v58 專版 Playwright 驗證腳本，已被 `scripts/verify-seating-gs.js` 取代；無任何引用 |
+| `scripts/send-invitation.gs` | 過時後端腳本 | 舊版「表單觸發自動寄喜帖」腳本，已被 `scripts/rsvp-to-sheet.gs` 取代；無任何引用 |
+
+- **檔案數變化：250 → 248**（刪除 2 個程式產物）。
+- 未發現 md5 完全重複檔、未發現 `.bak`／`.orig`／`.tmp`／`.DS_Store` 等殘留檔。
+- **保留但標示為未使用**（依安全規則不刪，供人工確認）：`images/` 下 18 張未被任何消費者引用的照片 — `ch1-encounter.jpg`、`ch2-knowing.jpg`、`ch3-understanding.jpg`、`ch4-love.jpg`、`ch5-forever.jpg`、`ch5-forever-gongbi.jpg`、`g1–g6.jpg`、`m1–m6.jpg`。這些屬**內容資產**（照片），部分於 `index.html` 註解中標示為「可替換」的替代圖，部分為早期版本素材，刪除不可由程式還原，故一律保留。
+- 目錄結構維持既有分類（頁面／樣式／腳本／圖片／音訊／媒體／版本紀錄），**未更動任何線上載入路徑**。
+
+### 前次整理（v43 時期）
+
+移除了 52 個已確認無用的檔案（詳見 `CHANGES-v43.md`）：
+
+- `.github/workflows/deploy.yml` — 已死的舊版 v14 部署流程（從未執行、其下載網址已過期 403），且與 `deploy-site.yml` **同名**造成誤選風險。
 - `scripts/` 下 31 個歷史版本的驗證腳本與一次性產生器（v30–v40）。
 - `sheets/` 下 20 個已被取代的縮圖／聯絡表（7.4 MB，全站 0 引用）。
-
-保留但**標示為未使用**（未刪除，供人工確認）：`images/` 下 12 張未被引用的舊版照片（`ch1–ch4` 非 `-v20` 版本、`ch5-forever-gongbi.jpg`、`ch5-forever.jpg`、`m1–m6.jpg`，共 2.6 MB）。
 
 ---
 
