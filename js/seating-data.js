@@ -113,19 +113,14 @@
      ⚠ 目前為【示範資料】，正式名單請由問卷回覆提供。
      ────────────────────────────────────────────────────────────────────────── */
   var GUESTS = [
-    /* ── 1 桌（主桌，12 人）── */
-    { name: "王大朋", table: 1,  seat: 1,  note: "新郎父親" },
-    { name: "林月娥", table: 1,  seat: 2,  note: "新郎母親" },
-    { name: "杜振發", table: 1,  seat: 3,  note: "新娘父親" },
-    { name: "郭秋菊", table: 1,  seat: 4,  note: "新娘母親" },
-    { name: "王有岑", table: 1,  seat: 5,  note: "新郎" },
-    { name: "杜伊筠", table: 1,  seat: 6,  note: "新娘" },
-    { name: "王志豪", table: 1,  seat: 7 },
-    { name: "王志玲", table: 1,  seat: 8 },
-    { name: "杜伊菱", table: 1,  seat: 9,  note: "新娘妹妹" },
-    { name: "杜仲凱", table: 1,  seat: 10 },
-    { name: "張文彬", table: 1,  seat: 11 },
-    { name: "李秀英", table: 1,  seat: 12 },
+    /* ── 1 桌（主桌）── ★ v82：已移除 12 筆預設（示範）人員姓名與備註。
+       主桌的 12 個座位「本身」不變（座位數 12、編號 1～12 不變，定義於 VENUE.mainTable.seats
+       與 TABLES[0].seats）。主桌座位一律「由表單填寫後才顯示姓名」：
+         • 未填寫  → 12 個座位全部空白，不帶入任何預設姓名。
+         • 已填寫  → 依「男左女右」分配（男性坐左側 7～12 號位、女性坐右側 1～6 號位），
+                     設定於 js/seating-config.js 的 MAIN_TABLE_GENDER。
+       因此本檔不再提供任何主桌（table: 1）的 GUESTS 資料；主桌名單只可能來自
+       問卷回覆（Google 試算表／Apps Script）或表單填寫。 */
 
     /* ── 2 桌 ── */
     { name: "王小明", table: 2,  seat: 3,  note: "同名示範 A" },

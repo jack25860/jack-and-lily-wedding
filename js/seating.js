@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════════════════════
-   seating.js ── 座位表頁面邏輯（v68）
+   seating.js ── 座位表頁面邏輯（v82）
    ──────────────────────────────────────────────────────────────────────────────
    這個檔案「不需要」在替換座位資料時修改。
    資料來源（依序嘗試）：
@@ -102,6 +102,13 @@
   /* v62：主桌（舞台正前方、紅毯末端）幾何 */
   var mainTableNo = 0, mainTableSeats = 12, mainTableName = "主桌";
   var mainTableR = 0, mainTableRing = 0, mainTableY = 0, mainTableH = 0, mainTablePos = { x: 0, y: 0 };
+  /* v82：主桌座位分配規則「男左女右」。
+     mainTblGenderCfg ── 由 js/seating-config.js 的 MAIN_TABLE_GENDER 正規化後的設定
+     mainTblLeftSeats / mainTblRightSeats ── 依座位圖「實際左右方位」算出的左右兩側座位號
+     mainTblGenderOfSeat ── 座位號 → "male" / "female" / ""（未指定） */
+  var mainTblGenderCfg = null;
+  var mainTblLeftSeats = [], mainTblRightSeats = [];
+  var mainTblGenderOfSeat = {};
 
   /* 依目前的 DATA 重新計算所有衍生變數與場地幾何。
      遠端名單載入後會再呼叫一次，因此不需要重新載入頁面。 */
@@ -141,9 +148,15 @@
     if (isNaN(mainTableNo)) mainTableNo = 0;
     mainTableSeats = (mt && mt.seats) ? Math.max(1, parseInt(mt.seats, 10) || 12) : 12;
     mainTableName  = (mt && mt.name) ? String(mt.name) : (LABELS.mainTable || "主桌");
+    /* v82：主桌席次固定（座位數／編號不變），僅人員由表單／問卷填入 */
+
+    /* v82：主桌「男左女右」設定（並依座位圖實際方位算出左右兩側座位號） */
+    mainTblGenderCfg = normalizeMainGenderCfg(CFG.MAIN_TABLE_GENDER);
+    buildMainTableSeatSides();
 
     /* v67：正規化同行團體欄位，並依 partySize 連續配位 */
     normalizeParties();
+    normalizeGenders();
     assignSeats();
 
     /* ── v74：依示意圖重算場地幾何 ──────────────────────────────────
@@ -259,6 +272,159 @@
     }
   }
 
+  /* ══════════ v82：主桌「男左女右」 ══════════ */
+
+  /* 由 CFG.MAIN_TABLE_GENDER 正規化設定（缺少欄位時給預設值）。 */
+  function normalizeMainGenderCfg(raw) {
+    var c = raw || {};
+    var maleSeats   = Array.isArray(c.maleSeats)   ? c.maleSeats.slice()   : [7, 8, 9, 10, 11, 12];
+    var femaleSeats = Array.isArray(c.femaleSeats) ? c.femaleSeats.slice() : [1, 2, 3, 4, 5, 6];
+    return {
+      enabled: (c.enabled === false) ? false : true,
+      maleSeats: maleSeats,
+      femaleSeats: femaleSeats,
+      maleValues: Array.isArray(c.maleValues) ? c.maleValues.slice()
+        : ["男", "男性", "男生", "male", "m", "1"],
+      femaleValues: Array.isArray(c.femaleValues) ? c.femaleValues.slice()
+        : ["女", "女性", "女生", "female", "f", "2"]
+    };
+  }
+
+  /* 把任一性別寫法正規化為 "male" / "female" / ""（未提供）。
+     注意順序：先判 female 再判 male，否則 "female" 會被 /male/ 誤判為男性。 */
+  function genderKey(v) {
+    var s = String(v == null ? "" : v).trim().toLowerCase();
+    if (!s) return "";
+    var G = mainTblGenderCfg, i;
+    if (G) {
+      for (i = 0; i < G.femaleValues.length; i++) {
+        if (s === String(G.femaleValues[i]).trim().toLowerCase()) return "female";
+      }
+      for (i = 0; i < G.maleValues.length; i++) {
+        if (s === String(G.maleValues[i]).trim().toLowerCase()) return "male";
+      }
+    }
+    if (/女|female|^f$/.test(s)) return "female";
+    if (/男|male|^m$/.test(s)) return "male";
+    return "";
+  }
+
+  function normalizeGenders() {
+    for (var i = 0; i < GUESTS.length; i++) {
+      GUESTS[i]._gender = genderKey(GUESTS[i].gender);
+    }
+  }
+
+  /* 依「座位圖實際左右方位」決定主桌每一席屬於左半或右半。
+     座位點自 12 點鐘方向起、順時針遞增（程式內角度 = -90° + (s-1)*step）：
+       角度 θ 於 (-90, 90)   → 圓環東半 → 右半邊（女）
+       角度 θ 於 (90, 270)   → 圓環西半 → 左半邊（男）
+     恰落於中央軸線者（θ = -90 即 12 點鐘＝第 1 位 → 右；θ = 90 即 6 點鐘 → 左），
+     與「男左女右」以座位圖方位為準的定義一致。 */
+  function buildMainTableSeatSides() {
+    mainTblLeftSeats = [];
+    mainTblRightSeats = [];
+    mainTblGenderOfSeat = {};
+    if (!mainTableNo || !mainTblGenderCfg || !mainTblGenderCfg.enabled) return;
+
+    var seats = Math.max(1, parseInt(mainTableSeats, 10) || 12);
+    var step  = 360 / seats;
+    for (var s = 1; s <= seats; s++) {
+      var th = -90 + (s - 1) * step;
+      if (th >= 90 && th <= 270) mainTblLeftSeats.push(s);
+      else mainTblRightSeats.push(s);
+    }
+    mainTblLeftSeats.sort(function (a, b) { return a - b; });
+    mainTblRightSeats.sort(function (a, b) { return a - b; });
+
+    /* 性別標記：以設定檔為準（預設左＝男、右＝女）。 */
+    var i, n;
+    for (i = 0; i < mainTblGenderCfg.maleSeats.length; i++) {
+      n = parseInt(mainTblGenderCfg.maleSeats[i], 10);
+      if (n) mainTblGenderOfSeat[n] = "male";
+    }
+    for (i = 0; i < mainTblGenderCfg.femaleSeats.length; i++) {
+      n = parseInt(mainTblGenderCfg.femaleSeats[i], 10);
+      if (n) mainTblGenderOfSeat[n] = "female";
+    }
+    for (i = 0; i < mainTblLeftSeats.length; i++) {
+      if (!mainTblGenderOfSeat[mainTblLeftSeats[i]]) mainTblGenderOfSeat[mainTblLeftSeats[i]] = "male";
+    }
+    for (i = 0; i < mainTblRightSeats.length; i++) {
+      if (!mainTblGenderOfSeat[mainTblRightSeats[i]]) mainTblGenderOfSeat[mainTblRightSeats[i]] = "female";
+    }
+  }
+
+  /* v82：主桌專用分配 —— 男性坐左側、女性坐右側。
+     • 男性 → 左側座位（依座位號順序）
+     • 女性 → 右側座位（依座位號順序）
+     • 未提供性別者、或該側已滿 → 不進主桌（unassigned，查詢顯示「由現場人員安排」）
+     • 主桌原有的 12 席與編號完全不變；沒有任何資料時 12 席全部為空。 */
+  function assignMainTableGender(arr) {
+    var cap = capOfTable(mainTableNo);
+    var i;
+
+    /* 來源完全未提供性別欄位（例如僅由表單填寫姓名）：不強制性別，
+       僅將填寫者依序安置於 1..cap，仍然「絕不帶入任何預設姓名」。 */
+    var anyGender = false;
+    for (i = 0; i < arr.length; i++) { if (arr[i]._gender) { anyGender = true; break; } }
+
+    if (!anyGender) {
+      arr.sort(function (a, b) {
+        var as = (Number(a.seat) || 0) || 999, bs = (Number(b.seat) || 0) || 999;
+        return as - bs || String(a.name).localeCompare(String(b.name));
+      });
+      var cur = 1;
+      for (i = 0; i < arr.length; i++) {
+        var q = arr[i];
+        var qz = Math.max(1, parseInt(q.partySize, 10) || 1);
+        if (cur + qz - 1 > cap) {
+          q.unassigned = true; q.mainFull = true; q.table = null; q.seat = null; continue;
+        }
+        q.seat = cur; q.seatEnd = cur + qz - 1; q.childSeatFrom = 0;
+        cur += qz;
+      }
+      return;
+    }
+
+    var lefts  = mainTblLeftSeats.slice();
+    var rights = mainTblRightSeats.slice();
+
+    /* 桌內排序：先依原座位號，其次依姓名（穩定且可預期） */
+    arr.sort(function (a, b) {
+      var as = (Number(a.seat) || 0) || 999, bs = (Number(b.seat) || 0) || 999;
+      return as - bs || String(a.name).localeCompare(String(b.name));
+    });
+
+    var li = 0, ri = 0;
+    for (i = 0; i < arr.length; i++) {
+      var p = arr[i];
+      var gender = p._gender;
+      if (gender !== "male" && gender !== "female") {
+        /* 未提供性別 → 不進主桌 */
+        p.unassigned = true; p.noGender = true; p.table = null; p.seat = null; continue;
+      }
+      var size = Math.max(1, parseInt(p.partySize, 10) || 1);
+      if (size > 1) {
+        /* 主桌為「一人一席」，同行團體超過 1 人不入主桌 */
+        p.unassigned = true; p.mainParty = true; p.table = null; p.seat = null; continue;
+      }
+      var list = (gender === "male") ? lefts : rights;
+      var idx  = (gender === "male") ? li : ri;
+      if (idx >= list.length) {
+        /* 該側席次已滿 → 不進主桌 */
+        p.unassigned = true; p.mainFull = true; p.table = null; p.seat = null; continue;
+      }
+      var seatNo = list[idx];
+      if (gender === "male") li++; else ri++;
+      p.seat = seatNo;
+      p.seatEnd = seatNo;
+      p._seatList = [seatNo];
+      p._side = (gender === "male") ? "left" : "right";
+      p.childSeatFrom = 0;
+    }
+  }
+
   /* v67：依 partySize 連續配位。
      同一桌的團體依「原座位號 → 姓名」排序後，從第 1 位起連續佔位；
      若某團體放不進該桌剩餘座位（超過該桌人數上限），該團體改標記為
@@ -274,6 +440,11 @@
     }
     Object.keys(byTable).forEach(function (k) {
       var tno = Number(k);
+      /* v82：主桌（桌號 1）走「男左女右」專用分配 */
+      if (mainTableNo && tno === mainTableNo && mainTblGenderCfg && mainTblGenderCfg.enabled) {
+        assignMainTableGender(byTable[k]);
+        return;
+      }
       var cap = capOfTable(tno);
       var arr = byTable[k];
       arr.sort(function (a, b) {
@@ -496,6 +667,27 @@
       seatNodes.push(sc);
     }
 
+    /* ── v82：主桌「男左女右」— 中央分隔軸線 + 左「男」右「女」標示 ──
+       依座位圖實際方位繪製：軸線沿 12 點鐘↔6 點鐘方向，把圓環分成左右兩半。 */
+    if (isMain && mainTblGenderCfg && mainTblGenderCfg.enabled) {
+      var gHalf = rR + sR + 6;
+      el("line", {
+        class: "tbl-maingender__axis",
+        x1: cx.toFixed(2), y1: (cy - gHalf).toFixed(2),
+        x2: cx.toFixed(2), y2: (cy + gHalf).toFixed(2)
+      }, g);
+      var glM = el("text", {
+        class: "tbl-maingender__label tbl-maingender__label--m",
+        x: (cx - (rR + sR + 11)).toFixed(2), y: (cy + 3).toFixed(2), "text-anchor": "end"
+      }, g);
+      glM.textContent = "男";
+      var glF = el("text", {
+        class: "tbl-maingender__label tbl-maingender__label--f",
+        x: (cx + (rR + sR + 11)).toFixed(2), y: (cy + 3).toFixed(2), "text-anchor": "start"
+      }, g);
+      glF.textContent = "女";
+    }
+
     el("circle", { class: "tbl__ring", cx: cx, cy: cy, r: tR }, g);
     var num = el("text", { class: "tbl__num", x: cx, y: cy + tR * 0.20, "text-anchor": "middle" }, g);
     num.textContent = String(t.no);
@@ -526,6 +718,13 @@
       var g = GUESTS[i];
       if (g.unassigned) continue;   /* v64：未分配桌次者不佔座位點 */
       if (Number(g.table) !== Number(tableNo)) continue;
+      /* v82：主桌「男左女右」為非連續座位（男左 7~12／女右 1~6），改以座位清單判定 */
+      if (Array.isArray(g._seatList) && g._seatList.length) {
+        for (var k2 = 0; k2 < g._seatList.length; k2++) {
+          if (Number(g._seatList[k2]) === Number(seatNo)) return g;
+        }
+        continue;
+      }
       var from = Number(g.seat), to = Number(g.seatEnd || g.seat);
       if (Number(seatNo) >= from && Number(seatNo) <= to) return g;
     }
@@ -598,11 +797,20 @@
       var from = Math.max(1, Number(g.seat) || 1);
       var to   = Math.max(from, Number(g.seatEnd) || from);
       var childFrom = Number(g.childSeatFrom) || 0;
-      for (var si = from; si <= to; si++) {
-        var sn = tn.seats[si - 1];
-        if (!sn) continue;
-        sn.classList.add("seat-hit");
-        if (childFrom && si >= childFrom) sn.classList.add("seat-hit--child");
+      if (Array.isArray(g._seatList) && g._seatList.length) {
+        /* v82：主桌「男左女右」為非連續座位，逐席標示（單席，不畫整團弧線） */
+        for (var sj = 0; sj < g._seatList.length; sj++) {
+          var snj = tn.seats[Number(g._seatList[sj]) - 1];
+          if (snj) snj.classList.add("seat-hit");
+        }
+        to = from;
+      } else {
+        for (var si = from; si <= to; si++) {
+          var sn = tn.seats[si - 1];
+          if (!sn) continue;
+          sn.classList.add("seat-hit");
+          if (childFrom && si >= childFrom) sn.classList.add("seat-hit--child");
+        }
       }
       /* v69：整團外框弧線，讓「同一團」在座位圖上被視為一個群組 */
       if (tn.partyArc) {
@@ -1378,6 +1586,7 @@
     var iTable     = resolveCol(header, C.table);
     var iSeat      = resolveCol(header, C.seat);
     var iNote      = resolveCol(header, C.note);
+    var iGender    = resolveCol(header, C.gender);   /* v82：性別（主桌男左女右） */
 
     var list = [], unplaced = [];
     for (var r = 1; r < rows.length; r++) {
@@ -1397,6 +1606,7 @@
       var tableNo = intOr(cellOf(row, iTable), 0);
       var seatNo  = intOr(cellOf(row, iSeat), 0);
       var note    = iNote >= 0 ? cellOf(row, iNote) : "";
+      var gender  = iGender >= 0 ? cellOf(row, iGender) : "";
       var valid   = (tableNo >= 1 && tableNo <= MAX_TABLES);
       var g = {
         name: name,
@@ -1404,6 +1614,7 @@
         seat: valid ? (seatNo || 0) : null,
         partySize: partySize, adults: adults, children: children, childSeats: childSeats
       };
+      if (gender) g.gender = gender;
       if (note) g.note = note;
       if (!valid) { g.unassigned = true; unplaced.push(name); }
       list.push(g);
@@ -1445,6 +1656,7 @@
         item = { name: name, table: table, seat: (!seat || isNaN(seat)) ? 0 : seat };
       }
       item.partySize = partySize; item.adults = adults; item.children = children; item.childSeats = childSeats;
+      if (g.gender) item.gender = String(g.gender);   /* v82：性別（主桌男左女右） */
       if (g.note) item.note = String(g.note);
       list.push(item);
     }
@@ -1625,6 +1837,20 @@
       guests: GUESTS.length,
       find: findMatches,
       data: function () { return { VENUE: VENUE, TABLES: TABLES, GUESTS: GUESTS, OPTIONS: OPT }; },
+      /* v82：主桌「男左女右」驗證用（僅供測試／除錯） */
+      mainGender: function () {
+        return { cfg: mainTblGenderCfg, leftSeats: mainTblLeftSeats.slice(),
+                 rightSeats: mainTblRightSeats.slice(), genderOfSeat: mainTblGenderOfSeat };
+      },
+      seatOwners: function (no) {
+        var out = {}, tn = tableNodes[Number(no)];
+        if (!tn) return out;
+        for (var q = 1; q <= tn.seats.length; q++) {
+          var o = guestAt(Number(no), q);
+          out[q] = o ? String(o.name) : "";
+        }
+        return out;
+      },
       childSeatsAt: childSeatsAtTable,
       /* v70：供自動化驗證計算「整團弧線」路徑，以便確認弧線只落在該團座位之間 */
       arcPath: partyArcPath

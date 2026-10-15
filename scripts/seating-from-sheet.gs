@@ -82,6 +82,23 @@ var COL_NOTE = {
   index: 0
 };
 
+/* ── v82：性別（主桌「男左女右」分配依據）──
+   在問卷回覆試算表新增一欄「性別」並填入 男／女（或 M／F）。
+   未填性別者不會進主桌（前端會標示為「由現場人員安排」）。 */
+var COL_GENDER = {
+  header: '性別',
+  aliases: ['性別', '性别', 'gender'],
+  index: 0
+};
+
+/* ── v82：主桌座位分配規則「男左女右」──
+   座位編號以座位圖為準：第 1 位自 12 點鐘方向起、順時針遞增。
+     ── 左半（中央軸線以左）= 座位 7～12（男）
+     ── 右半（中央軸線以右）= 座位 1～6 （女）
+   前端 js/seating.js 會依同一規則分配；本後端只負責輸出 gender 欄位。 */
+var MAIN_GENDER_MALE_SIDE   = 'left';
+var MAIN_GENDER_FEMALE_SIDE = 'right';
+
 /** 出席欄位（用來篩掉「不克出席」的回覆；設 header/index 為空則不篩選） */
 var COL_ATTEND = {
   header: '是否能出席本次盛宴',
@@ -138,7 +155,7 @@ var VENUE_OVERRIDE = {
 
 /* ── 4. 輸出設定 ───────────────────────────────────────────────── */
 
-var ENDPOINT_VERSION = 'seating-v67';
+var ENDPOINT_VERSION = 'seating-v82';
 /** 伺服器端快取秒數（同一次瀏覽期間內重複請求不會一直讀試算表） */
 var CACHE_SECONDS = 60;
 /** 輸出時是否同時附上統計資訊（方便診斷） */
@@ -217,6 +234,7 @@ function buildPayload_() {
   var iAdults = resolveCol_(headerRow, COL_ADULTS);
   var iChildren = resolveCol_(headerRow, COL_CHILDREN);
   var iChildSeats = resolveCol_(headerRow, COL_CHILDSEATS);
+  var iGender = resolveCol_(headerRow, COL_GENDER);   /* v82：性別（主桌男左女右） */
 
   if (iName < 0) {
     throw new Error('找不到「姓名」欄位，請檢查 COL_NAME.header 或 COL_NAME.index（目前標題列：' + headerRow.join(' / ') + '）');
@@ -268,6 +286,9 @@ function buildPayload_() {
         childSeats: childSeats
       };
       if (note0) { g.note = note0; }
+      /* v82：性別（主桌男左女右）；未填則不輸出，前端主桌會顯示為未分配 */
+      var gender0 = iGender >= 0 ? cell_(row, iGender) : '';
+      if (gender0) { g.gender = gender0; }
       guests.push(g);
       if (!valid) { unplaced.push(name + (note0 ? '（' + note0 + '）' : '')); }
     }
@@ -299,7 +320,8 @@ function buildPayload_() {
       partySize: iParty >= 0 ? headerRow[iParty] : null,
       adults: iAdults >= 0 ? headerRow[iAdults] : null,
       children: iChildren >= 0 ? headerRow[iChildren] : null,
-      childSeats: iChildSeats >= 0 ? headerRow[iChildSeats] : null
+      childSeats: iChildSeats >= 0 ? headerRow[iChildSeats] : null,
+      gender: iGender >= 0 ? headerRow[iGender] : null
     },
     tables: tables,
     guests: guests

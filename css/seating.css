@@ -278,6 +278,13 @@
 .tbl--main .tbl__num{fill:var(--wine);font-size:13px}
 .tbl--main .tbl__name{fill:var(--wine);font-size:5.6px;letter-spacing:.06em}
 .tbl--main .tbl-seat{fill:#fdf6e6;stroke:rgba(201,169,97,.7)}
+/* v82：主桌「男左女右」— 中央分隔軸線與左「男」右「女」標示
+   （座向依座位圖實際方位：軸線沿 12 點鐘↔6 點鐘，左半＝男、右半＝女） */
+.tbl-maingender__axis{stroke:var(--wine);stroke-width:.8;stroke-dasharray:3 3;opacity:.5}
+.tbl-maingender__label{font-size:9px;font-weight:600;letter-spacing:.06em;fill:var(--wine);opacity:.88}
+.tbl-maingender__label--m{fill:#7a4a1e}
+.tbl-maingender__label--f{fill:#8d2233}
+.venue-dim .tbl.is-hit .tbl-maingender__label{fill:var(--gold-light)}
 .tbl-seat{fill:var(--paper-2);stroke:rgba(110,22,38,.34);stroke-width:1;transition:fill .5s var(--ease-out),stroke .5s var(--ease-out)}
 .tbl:hover .tbl__ring{stroke:var(--wine);stroke-width:2.2}
 .tbl:hover .tbl__num{fill:var(--wine)}
