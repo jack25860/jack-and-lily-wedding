@@ -1,6 +1,6 @@
 # 三生三世・緣定今生 · 婚禮網站
 
-> 王有岑 ＆ 杜伊穠 婚禮邀請網站（純靜態：HTML / CSS / Vanilla JS，無需建置流程）
+> 王有岑 ＆ 杜伊筠 婚禮邀請網站（純靜態：HTML / CSS / Vanilla JS，無需建置流程）
 
 ---
 
@@ -22,6 +22,7 @@
 | Repo | https://github.com/jack25860/jack-and-lily-wedding |
 | 分支 | `main` |
 | Pages 來源 | Deploy from a branch → `main` / `/ (root)`（由 `.nojekyll` 關閉 Jekyll 處理） |
+| 目前版本 | **v86**（見 `index.html` 的 `<meta name="site-version">`） |
 
 ---
 
@@ -37,20 +38,33 @@
 
 ---
 
-## 相簿三主題分類
+## 相簿：三主題分類與雙層圖片方案
 
-相簿共 **137 張原始照片**（`images/album/`），依服裝／造型／風格分為三主題：
+### 三主題分類
 
-| 主題 | 英文 | 張數 | 說明 |
-|---|---|---|---|
-| 戰國 | WARRING STATES | 36 | 鐵馬金戈，亂世相逢。 |
-| 唐代 | TANG DYNASTY | 45 | 盛世繁華，錦繡良緣。 |
-| 明朝 | MING DYNASTY | 56 | 鳳冠霞帔，一世相守。 |
-| **合計** | | **137** | |
+相簿共 **137 張**婚紗照，依服裝／造型／風格分為三主題（**僅此三種，名稱固定**）：
+
+| 主題 | 英文 | 張數 | FEATURED | MORE | 說明 |
+|---|---|---|---|---|---|
+| 戰國 | WARRING STATES | 36 | 6 | 30 | 鐵馬金戈，亂世相逢。 |
+| 唐代 | TANG DYNASTY | 45 | 6 | 39 | 盛世繁華，錦繡良緣。 |
+| 明朝 | MING DYNASTY | 56 | 6 | 50 | 鳳冠霞帔，一世相守。 |
+| **合計** | | **137** | **18** | **119** | |
 
 - 每主題含 `FEATURED`（大圖 6 張）與 `MORE`（縮圖，可展開），完整涵蓋 137 張、每張各引用一次、無重複、無缺漏。
-- 相簿檔名對應：`candid-01..08`（8）、`couple-01..81`（81）、`group-01..06`（6）、`portrait-01..42`（42），合計 137。
-- **v81 起為「原始照片」**：逐位元（byte-for-byte）直接放入相簿，未做任何影像處理（不去浮水印、不修陰影、不調色、不重新編碼）。每張 album 檔案的 sha256 與原始檔完全相同（137/137 驗證通過）。
+- 縮圖檔名：`images/album/warring/warring-01..36.jpg`、`images/album/tang/tang-01..45.jpg`、`images/album/ming/ming-01..56.jpg`。
+
+### 雙層圖片方案（縮圖瀏覽 ＋ 點開看原檔）
+
+| 層級 | 位置 | 規格 | 用途 |
+|---|---|---|---|
+| **縮圖層** | `images/album/{warring,tang,ming}/` | 長邊 1600px、JPEG q82、progressive，共 **39.2 MiB** | 相簿平常瀏覽；`loading="lazy"` + `decoding="async"` + 明確 `width`/`height`（避免版面跳動） |
+| **原檔層** | GitHub Release **`originals-v86`** | 4640×6960 原始精修檔，**2.03 GiB**、137 個資產 | 只有使用者點開燈箱時才按需載入 |
+
+- **原檔不預先載入**：燈箱開啟前不會發出任何 Release 請求；點開時才載入該張，並顯示「正在載入原圖…」狀態，失敗時提供「重新載入」並退回顯示縮圖。
+- **原檔網址格式**：`https://github.com/jack25860/jack-and-lily-wedding/releases/download/originals-v86/<asset>.jpg`
+- **為何分兩層**：GitHub Pages 已發布網站有 **1 GB 上限**，2.03 GiB 的原檔無法放在 Pages；因此網站程式留在 Pages，原檔改放 Release CDN（公開、免登入、支援 Range、可長期存取）。
+- **未做任何影像處理**：縮圖僅為尺寸縮放（不去浮水印、不修陰影、不調色）；原檔位元不變（僅改檔名），sha256 與攝影師交付檔一致。
 
 ---
 
@@ -69,12 +83,12 @@
 │   ├── config.js                  # ★ 所有可編輯內容集中於此（新人資料、日期、場地、表單、電子喜帖文案、相簿主題…）
 │   ├── app.js                     # 互動邏輯（導覽、Lightbox、倒數、表單送出、音樂、回到頂端…）
 │   ├── seating-config.js          # 座位表名單來源設定（gviz / CSV / Apps Script / 本機備援）
-│   ├── seating-data.js            # 座位表本機備援名單
+│   ├── seating-data.js            # 座位表本機備援名單（目前為空，完全依表單回覆）
 │   └── seating.js                 # 座位表繪製與查詢邏輯
-├── images/                        # 版面圖片
-│   ├── album/                     # 婚紗照 137 張（candid/couple/group/portrait）
+├── images/
+│   ├── album/                     # 婚紗照縮圖 137 張（warring/ tang/ ming/ 三子目錄）
 │   ├── hero.jpg, og.jpg           # 首屏主視覺、社群分享縮圖
-│   ├── ch1–ch5-*.jpg              # 三生三世各世章節插圖
+│   ├── ch1–ch5-*.jpg              # 三生三世各章節插圖
 │   ├── ecard-poster-*.jpg         # 電子喜帖輪播海報
 │   ├── tl1–tl3.jpg                # 影片示意圖（電子喜帖／預告片）
 │   ├── venue-map.jpg, venue-guide.jpg  # 場地位置與交通導引
@@ -88,11 +102,13 @@
 ├── scripts/
 │   ├── rsvp-to-sheet.gs           # ★ Google Apps Script 後端（RSVP 寫表 + 電子喜帖寄信 + diag）
 │   ├── seating-from-sheet.gs      # ★ Google Apps Script 後端（座位表名單 JSON）
+│   ├── publish-originals.py       # 原檔發布用：從 ZIP 串流取出並改名（位元不變）
 │   └── verify-seating-gs.js       # 座位表 Apps Script 離線驗證 harness（node scripts/verify-seating-gs.js）
 ├── changelog/                     # 各版本變更紀錄（CHANGES-vNN.md）
 ├── README.md                      # 本文件
 └── .github/workflows/
-    └── deploy-site.yml            # ★ 唯一部署流程（workflow_dispatch + zip_url）
+    ├── deploy-site.yml            # ★ 網站部署流程（workflow_dispatch + zip_url）
+    └── publish-originals.yml      # ★ 原檔發布流程（上傳至 Release originals-v86）
 ```
 
 > `changelog/CHANGES-vNN.md` 為各版本變更紀錄，是版本歷程的權威來源。
@@ -101,18 +117,25 @@
 
 ## 部署方式
 
-本專案**只有一個**部署流程：`.github/workflows/deploy-site.yml`。**請勿新增或修改任何 workflow。**
+### 網站（GitHub Pages）
 
-### 運作方式
+網站部署流程：`.github/workflows/deploy-site.yml`。
 
 1. 將要部署的網站打包成 `.zip`（內容為網站根目錄檔案：`index.html`、`css/`、`js/`、`images/`、`audio/`、`media/`、`.nojekyll` 等），上傳取得可公開下載的網址。
 2. 到 repo → **Actions** → 左側選 **Deploy wedding site** → 右側 **Run workflow**。
-3. 填入 `zip_url`（必填，網站壓縮檔網址；網址需含有效的存取簽章，例如 `?tk=…`，否則下載會失敗）→ 執行。
+3. 填入 `zip_url`（必填，網站壓縮檔網址；網址需含有有效的存取簽章，例如 `?tk=…`，否則下載會失敗）→ 執行。
 4. 流程會下載 zip → 解壓覆蓋到 repo 根目錄 → 自動 commit & push → GitHub Pages 隨即在數十秒內更新。
 
 `zip_url_fallback` 為選填的第二下載網址，主網址失敗時會自動嘗試。
 
-> **注意**：流程內建的 `Download archive` 步驟有 **1 MB 下限**（`sz -gt 1000000`）。若只打包少量文字檔（< 1 MB）會被拒絕，需一併打包其餘非二進位內容以超過下限。
+> **注意**：流程內的 `Download archive` 步驟有 **1 MB 下限**（`sz -gt 1000000`）。若只打包少量文字檔（< 1 MB）會被拒絕，需一併打包其餘非二進位內容以超過下限。
+
+### 原檔（GitHub Release）
+
+原檔發布流程：`.github/workflows/publish-originals.yml`（`workflow_dispatch`，輸入 `zip_url` 與 `tag`，預設 `originals-v86`）。
+
+- 以 `scripts/publish-originals.py` 從 ZIP **串流**取出每張原檔並改名（**位元不變**），再以 `gh release upload` 上傳為公開 Release 資產。
+- 燈箱即引用這些資產；重新發布時請沿用同一 `tag`（`--clobber` 會覆蓋同名資產）。
 
 ### 常見失敗原因
 
@@ -183,7 +206,7 @@
 
 | 設定 | 說明 |
 |---|---|
-| `GALLERY_THEMES` | 三主題：戰國（36 張）→ 唐代（45 張）→ 明朝（56 張），各含 `FEATURED`（大圖）與 `MORE`（縮圖），合計 **137 張** |
+| `GALLERY_THEMES` | 三主題：戰國（36 張）→ 唐代（45 張）→ 明朝（56 張），各含 `FEATURED`（大圖）與 `MORE`（縮圖），合計 **137 張**；每張含 `SRC`（縮圖）、`FULL`（Release 原檔）、`W`/`H`、`ALT` |
 | `MUSIC_URL` / `MUSIC_TITLE` | 背景音樂路徑與曲名 |
 
 ### RSVP 出席回覆
@@ -202,13 +225,15 @@ RSVP 流程（**維持不變**）：送出後**不跳轉新分頁**、**不寄�
 
 | 設定 | 說明 |
 |---|---|
-| `ECARD_PHOTO_POOL` | 隨機婚紗照池，**137 張全池** |
+| `ECARD_PHOTO_POOL` | 隨機婚紗照池，**137 張全池**（指向 `images/album/...` 縮圖） |
 | `ECARD_SUBJECT` / `ECARD_MAIL_SUBJECT` / `ECARD_GREETING` / `ECARD_BODY` / `ECARD_INVITE_TEXT` | 信件主旨與內文 |
 | `ECARD_PHOTO` / `ECARD_VIDEO_POSTER` / `ECARD_VIDEO_URL` | 信件內嵌圖片（以 `cid:` 直接內嵌，非外部連結）與影片示意圖 |
 | `ECARD_SLIDES` / `ECARD_SLIDE_MS` | 網站上喜帖卡片輪播海報 |
 | `E_INVITATION_*` / `TRAILER_*` | 電子喜帖與結婚預告片區塊文案與示意圖 |
 
 電子喜帖為**手動寄送**（於網站輸入賓客信箱後送出），寄送成功後自動清空輸入框；8 秒內對同一人＋同一主旨的重複送出會被去重（回 `deduped:true`）。
+
+> **畫質說明**：`ECARD_PHOTO_POOL` 目前指向**縮圖**（約 292 KB/張），以確保信件可送達（單張原檔 10–21 MB 會逼近 Gmail 25 MB 上限並提高進垃圾郵件機率）。若需改為最高畫質原檔，可將池內路徑改為 Release 原檔網址，但需自行評估送達率。
 
 ### 其他
 
@@ -251,7 +276,7 @@ RSVP 流程（**維持不變**）：送出後**不跳轉新分頁**、**不寄�
 
 ## 目前最新版本與版本歷程
 
-**目前最新版本：`v81`**
+**目前最新版本：`v86`**
 
 | 版本 | 內容 |
 |---|---|
@@ -279,28 +304,32 @@ RSVP 流程（**維持不變**）：送出後**不跳轉新分頁**、**不寄�
 | v65–v75 | 座位表遠端名單來源（gviz／CSV／Apps Script 四層備援）、字級控制、版面修正 |
 | v77–v79 | 電子喜帖信件內嵌媒體、循環 GIF、版面調整 |
 | v80 | 相簿浮水印去除與朝代主題重新分類（戰國 39／唐代 42／明朝 56，共 137） |
-| **v81** | **相簿改用原始照片並重新分類（零影像處理）**：自使用者最新上傳的 137 張原始照片逐位元放入相簿，sha256 137/137 驗證通過；主題維持三類，數量為 **戰國 36／唐代 38／明朝 63，合計 137**；`index.html` 的 `site-version` 為 v81 |
+| v81 | 相簿改用原始照片並重新分類（零影像處理）：137 張原始照片逐位元放入相簿，sha256 137/137 驗證通過 |
+| v82 | 主桌移除預設人員，改由表單填寫並依「男左女右」分配 |
+| v83 | 座位表徹底移除所有示範／預設名單（完全依問卷回覆） |
+| v84 | 相簿分類修正（僅調整分類歸屬，未做任何影像處理）：唐代 38→45、明朝 63→56 |
+| v85 | 相簿三主題 FEATURED 精選大圖重新挑選（僅調整 FEATURED 挑選，未做任何影像處理） |
+| **v86** | **最終版精修照片全面替換（縮圖瀏覽 + 點開看原檔）**：137 張最終版精修檔（4640×6960）全面替換相簿；縮圖 39.2 MiB（長邊 1600、q82）＋ 原檔 2.03 GiB 託管於 Release `originals-v86`，燈箱點開才載入；`ECARD_PHOTO_POOL` 改為本批 137 張；舊版扁平檔名已清除 |
 
-> v81 已部署至正式站。
+> v86 已部署至正式站。
 
 ---
 
 ## Repo 整理紀錄
 
-### 本輪整理（v81 之後）
+### 本輪整理（v86 之後）
 
-本輪以 **consumer-based 引用掃描**（HTML + CSS `url()` + JS config 資源池 + `.gs` 後端 + workflow）＋ **md5 全樹重複比對** 盤點全部 250 個檔案，僅刪除**零引用且屬程式產物**的檔案：
+本輪以 **consumer-based 引用掃描**（HTML + CSS `url()` + JS config 資源池 + `.gs` 後端 + workflow）＋ **md5 全樹重複比對** 盤點全部 256 個檔案，僅刪除**零引用且屬程式產物**的檔案：
 
 | 刪除檔案 | 類型 | 原因 |
 |---|---|---|
-| `scripts/verify-v58.py` | 一次性驗證腳本 | v58 專版 Playwright 驗證腳本，已被 `scripts/verify-seating-gs.js` 取代；無任何引用 |
-| `scripts/send-invitation.gs` | 過時後端腳本 | 舊版「表單觸發自動寄喜帖」腳本，已被 `scripts/rsvp-to-sheet.gs` 取代；無任何引用 |
+| `scripts/README-publish-step.txt` | 一次性片段 | 只是 `publish-originals.yml` 內「Extract and rename」步驟的 4 行複製片段，無任何引用 |
 
-- **檔案數變化：250 → 248**（刪除 2 個程式產物）。
+- **檔案數變化：256 → 255**（刪除 1 個程式產物）。
 - 未發現 md5 完全重複檔、未發現 `.bak`／`.orig`／`.tmp`／`.DS_Store` 等殘留檔。
-- **保留但標示為未使用**（依安全規則不刪，供人工確認）：`images/` 下 18 張未被任何消費者引用的照片 — `ch1-encounter.jpg`、`ch2-knowing.jpg`、`ch3-understanding.jpg`、`ch4-love.jpg`、`ch5-forever.jpg`、`ch5-forever-gongbi.jpg`、`g1–g6.jpg`、`m1–m6.jpg`。這些屬**內容資產**（照片），部分於 `index.html` 註解中標示為「可替換」的替代圖，部分為早期版本素材，刪除不可由程式還原，故一律保留。
+- **相簿照片已確認乾淨**：`images/album/` 下**只有** v86 使用的 137 張縮圖（戰國 36／唐代 45／明朝 56），**無任何舊版扁平檔名**（`couple-*.jpg`、`portrait-*.jpg`、`candid-*.jpg`、`group-*.jpg`）殘留。
+- **保留但標示為未使用**（依安全規則不刪，供人工確認）：`images/` 下 18 張未被任何消費者引用的照片 — `ch1-encounter.jpg`、`ch2-knowing.jpg`、`ch3-understanding.jpg`、`ch4-love.jpg`、`ch5-forever.jpg`、`ch5-forever-gongbi.jpg`、`g1–g6.jpg`、`m1–m6.jpg`（共 3.80 MB）。這些屬**內容資產**（照片／插畫），部分於 `index.html` 註解中標示為「可替換」的替代圖，部分為早期版本素材，刪除不可由程式還原，故一律保留。
 - 目錄結構維持既有分類（頁面／樣式／腳本／圖片／音訊／媒體／版本紀錄），**未更動任何線上載入路徑**。
-- **版本紀錄歸檔**：50 個 `CHANGES-vNN.md` 由 repo 根目錄移入 `changelog/`，內容逐位元不變（byte-identical），上方樹狀圖與說明同步更新。
 
 ### 前次整理（v43 時期）
 
