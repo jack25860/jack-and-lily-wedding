@@ -105,7 +105,8 @@ sweep(document)})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500;600&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="css/styles.css">
-<link rel="preload" as="image" href="images/hero.jpg">
+<link rel="preload" as="image" href="images/hero.jpg" media="(min-width: 641px)">
+<link rel="preload" as="image" href="images/hero-mobile.jpg" media="(max-width: 640px)">
 <!-- v52：背景音樂預先下載，讓開啟後 3 秒內即可出聲（不等待 JS 初始化） -->
 <link rel="preload" as="audio" href="audio/wedding-theme.mp3" type="audio/mpeg">
 <!-- v55：清除舊版可能殘留的「音樂關閉／靜音」localStorage 值，確保背景音樂一律預設開啟（不受舊狀態影響） -->
@@ -174,8 +175,12 @@ sweep(document)})();</script>
      1. 全螢幕 HERO
      ═══════════════════════════════════════════════════════════════════════════ -->
 <section class="hero" id="home">
-  <!-- 可替換：images/hero.jpg（建議 2400×1350 以上橫式婚紗照／氛圍照） -->
-  <div class="hero__bg" style="background-image:url('images/hero.jpg')"></div>
+  <!-- v87：主視覺改用 <picture> 做 art direction — 桌機載入橫式 images/hero.jpg（2560×1088），
+       手機（≤640px）載入直式 images/hero-mobile.jpg（1080×2184），避免橫式主視覺在手機被裁切 -->
+  <picture class="hero__bg">
+    <source media="(max-width: 640px)" srcset="images/hero-mobile.jpg">
+    <img src="images/hero.jpg" alt="" aria-hidden="true" decoding="async" fetchpriority="high">
+  </picture>
   <div class="hero__veil"></div>
   <div class="hero__dust" aria-hidden="true"></div>
   <div class="hero__silk" aria-hidden="true"></div>
