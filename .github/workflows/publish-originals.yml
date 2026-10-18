@@ -40,10 +40,7 @@ jobs:
       - name: Extract and rename (bytes untouched)
         run: |
           set -e
-          mkdir -p /tmp/src /tmp/out
-          unzip -q /tmp/src.zip -d /tmp/src
-          rm -f /tmp/src.zip
-          python3 scripts/publish-originals.py
+          python3 scripts/publish-originals.py /tmp/src.zip /tmp/out
           ls /tmp/out/*.jpg | wc -l
 
       - name: Create release
