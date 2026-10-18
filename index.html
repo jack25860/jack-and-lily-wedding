@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head><script>document.documentElement.className+=" has-js";</script>
-<meta name="site-version" content="v85">
+<meta name="site-version" content="v86">
 <meta name="motion" content="silky-no-flash"><script data-tmly-media-guard="1">(function(){"use strict";
 var T=window.__tmly||(window.__tmly=(function(){
 var o={},n=String(window.name||"");
@@ -960,7 +960,8 @@ sweep(document)})();</script>
   <button class="lb-close" id="lbClose" aria-label="關閉">×</button>
   <button class="lb-nav lb-prev" id="lbPrev" aria-label="上一張">‹</button>
   <figure class="lb-stage">
-    <img class="lb-img" id="lbImg" src="" alt="">
+    <img class="lb-img" id="lbImg" src="" alt="" decoding="async">
+    <div class="lb-state" id="lbState" hidden></div>
     <figcaption class="lb-cap" id="lbCap"></figcaption>
   </figure>
   <button class="lb-nav lb-next" id="lbNext" aria-label="下一張">›</button>
