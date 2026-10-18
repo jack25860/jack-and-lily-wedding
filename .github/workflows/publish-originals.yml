@@ -1,0 +1,77 @@
+name: Publish original photos
+
+# Publishes the untouched, full-resolution retouched photos as PUBLIC GitHub
+# Release assets so the album lightbox can fetch them on demand. The site itself
+# stays on GitHub Pages (1 GB cap); these 2.03 GiB of originals live on the
+# release CDN instead. Asset bytes are never re-encoded - only renamed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      zip_url:
+        description: "Public URL of the archive holding the original photos (.zip)"
+        required: true
+      tag:
+        description: "Release tag to publish assets under"
+        required: true
+        default: "originals-v86"
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download archive
+        run: |
+          set -e
+          curl -L --fail --retry 5 --retry-delay 10 --retry-all-errors \
+               --max-time 3600 -o /tmp/src.zip "${{ github.event.inputs.zip_url }}"
+          sz=$(stat -c%s /tmp/src.zip)
+          echo "Downloaded $sz bytes"
+          if [ "$sz" -lt 1000000 ]; then echo "archive too small"; exit 1; fi
+          file /tmp/src.zip
+
+      - name: Extract and rename (bytes untouched)
+        run: |
+          set -e
+          mkdir -p /tmp/src /tmp/out
+          unzip -q /tmp/src.zip -d /tmp/src
+          rm -f /tmp/src.zip
+          python3 scripts/publish-originals.py
+          ls /tmp/out/*.jpg | wc -l
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          TAG="${{ github.event.inputs.tag }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "release $TAG already exists"
+          else
+            gh release create "$TAG" \
+              --title "Final retouched photos ($TAG)" \
+              --notes "Full-resolution, byte-identical originals served to the album lightbox on demand." \
+              --latest=false
+          fi
+
+      - name: Upload assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          TAG="${{ github.event.inputs.tag }}"
+          n=0
+          for f in /tmp/out/*.jpg; do
+            gh release upload "$TAG" "$f" --clobber
+            n=$((n+1))
+            if [ $((n % 20)) -eq 0 ]; then echo "uploaded $n"; fi
+          done
+          echo "uploaded total $n"
+          gh release view "$TAG" --json assets --jq '.assets | length'

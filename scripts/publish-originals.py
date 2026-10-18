@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Copy the retouched originals into stable public asset names.
 
-Bytes are copied with shutil.copyfile — no decode, no re-encode, no resize.
+Bytes are copied with shutil.copyfile - no decode, no re-encode, no resize.
 Only the FILENAME changes, so every published asset is bit-identical to the
 photographer's deliverable.
 """
