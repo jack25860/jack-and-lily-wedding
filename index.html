@@ -105,8 +105,7 @@ sweep(document)})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500;600&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="css/styles.css">
-<link rel="preload" as="image" href="images/hero.jpg" media="(min-width: 641px)">
-<link rel="preload" as="image" href="images/hero-mobile.jpg" media="(max-width: 640px)">
+<link rel="preload" as="image" href="images/hero.jpg">
 <!-- v52：背景音樂預先下載，讓開啟後 3 秒內即可出聲（不等待 JS 初始化） -->
 <link rel="preload" as="audio" href="audio/wedding-theme.mp3" type="audio/mpeg">
 <!-- v55：清除舊版可能殘留的「音樂關閉／靜音」localStorage 值，確保背景音樂一律預設開啟（不受舊狀態影響） -->
@@ -175,12 +174,8 @@ sweep(document)})();</script>
      1. 全螢幕 HERO
      ═══════════════════════════════════════════════════════════════════════════ -->
 <section class="hero" id="home">
-  <!-- v87：主視覺改用 <picture> 做 art direction — 桌機載入橫式 images/hero.jpg（2560×1088），
-       手機（≤640px）載入直式 images/hero-mobile.jpg（1080×2184），避免橫式主視覺在手機被裁切 -->
-  <picture class="hero__bg">
-    <source media="(max-width: 640px)" srcset="images/hero-mobile.jpg">
-    <img src="images/hero.jpg" alt="" aria-hidden="true" decoding="async" fetchpriority="high">
-  </picture>
+  <!-- 可替換：images/hero.jpg（建議 2400×1350 以上橫式婚紗照／氛圍照） -->
+  <div class="hero__bg" style="background-image:url('images/hero.jpg')"></div>
   <div class="hero__veil"></div>
   <div class="hero__dust" aria-hidden="true"></div>
   <div class="hero__silk" aria-hidden="true"></div>
@@ -571,7 +566,7 @@ sweep(document)})();</script>
     <header class="section__head reveal">
       <p class="eyebrow">OUR PRE-WEDDING</p>
       <h2 class="section__title">我們的三生三世</h2>
-      <p class="section__sub">精修婚紗照 — 合影、特寫、互動、齊聚，四個篇章。v79：137 張全面去浮水印。</p>
+      <p class="section__sub">三朝風華，一世情深 —— 戰國、盛唐、大明，我們在三個朝代裡，預演了三生三世。</p>
     </header>
 
     <!-- 影片素材：結婚預告片
@@ -955,7 +950,7 @@ sweep(document)})();</script>
     <span class="music__bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
     <span class="music__label" id="musicLabel">MUSIC ON</span>
   </button>
-  <audio id="bgm" src="audio/wedding-theme.mp3" loop preload="auto"></audio>
+  <audio id="bgm" src="audio/wedding-theme.mp3" loop preload="none"></audio>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
@@ -965,7 +960,7 @@ sweep(document)})();</script>
   <button class="lb-close" id="lbClose" aria-label="關閉">×</button>
   <button class="lb-nav lb-prev" id="lbPrev" aria-label="上一張">‹</button>
   <figure class="lb-stage">
-    <img class="lb-img" id="lbImg" src="" alt="" decoding="async">
+    <img class="lb-img" id="lbImg" alt="" decoding="async">
     <div class="lb-state" id="lbState" hidden></div>
     <figcaption class="lb-cap" id="lbCap"></figcaption>
   </figure>

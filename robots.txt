@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /seating.html
+Disallow: /ecard-email-preview.html
+
+Sitemap: https://jack25860.github.io/jack-and-lily-wedding/sitemap.xml

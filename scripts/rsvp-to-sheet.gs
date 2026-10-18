@@ -196,7 +196,14 @@ function randomPhoto_() {
   return ECARD_PHOTO_POOL[Math.floor(Math.random() * ECARD_PHOTO_POOL.length)];
 }
 
-var ENDPOINT_VERSION = 'v47';
+var ENDPOINT_VERSION = 'v48';
+
+/**
+ * v48：RSVP／電子喜帖端點共用密鑰。
+ * 前端送出時必須帶上 token，後端不符即拒絕 —— 避免公開的 /exec 端點被任意腳本大量寫入。
+ * 此值必須與 js/config.js 的 RSVP_SHARED_TOKEN 完全一致。
+ */
+var SHARED_TOKEN = 'ssss-rsvp-7f3a91c4e8b2';
 
 /**
  * 電子喜帖去重（僅防「同一瞬間連點」造成的重複寄信）：
@@ -264,6 +271,10 @@ function testEcard() {
 function doPost(e) {
   try {
     var data = parseIncoming_(e);
+    // v48：共用密鑰驗證 —— 未帶或錯誤一律拒絕（公開端點防護）。
+    if (String(data.token || '') !== SHARED_TOKEN) {
+      return json_({ ok: false, error: 'unauthorized' });
+    }
     if (String(data.type || '').toLowerCase() === 'ecard') {
       return json_(sendEcard_(data));
     }
@@ -272,7 +283,10 @@ function doPost(e) {
     try {
       var sheet = getSheet_();
       ensureHeader_(sheet);
-      sheet.appendRow(buildRow_(sheet, data));
+      // v48：同一 email 重複回覆 → 就地更新原列（保留原序號），不新增重複名單。
+      if (!updateExistingRow_(sheet, data)) {
+        sheet.appendRow(buildRow_(sheet, data));
+      }
     } finally {
       lock.releaseLock();
     }
@@ -280,6 +294,33 @@ function doPost(e) {
   } catch (err) {
     return json_({ ok: false, error: String(err) });
   }
+}
+
+/**
+ * v48：以 email 比對既有列；找到則就地更新（保留原序號），回傳 true。
+ * 找不到、或該列沒有 email 可比對時回傳 false（交由 appendRow 新增）。
+ */
+function updateExistingRow_(sheet, data) {
+  var email = String(pick_(data, ['email', '您的信箱', 'EMAIL']) || '').trim().toLowerCase();
+  if (!email) return false;
+  var last = sheet.getLastRow();
+  if (last <= HEADER_ROW) return false;
+  var col = HEADERS.indexOf('您的信箱') + 1;
+  if (col < 1) return false;
+  var emails = sheet.getRange(HEADER_ROW + 1, col, last - HEADER_ROW, 1).getValues();
+  for (var i = 0; i < emails.length; i++) {
+    if (String(emails[i][0] || '').trim().toLowerCase() === email) {
+      var values = mapFields_(data), row = [];
+      for (var j = 0; j < HEADERS.length; j++) {
+        row.push(HEADERS[j] === '序號'
+          ? sheet.getRange(HEADER_ROW + 1 + i, 1).getValue()
+          : (values[HEADERS[j]] == null ? '' : values[HEADERS[j]]));
+      }
+      sheet.getRange(HEADER_ROW + 1 + i, 1, 1, HEADERS.length).setValues([row]);
+      return true;
+    }
+  }
+  return false;
 }
 
 /* ------------------------------------------------------------------ *
