@@ -1,0 +1,39 @@
+name: Revert to v93
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  revert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore v93 files from commit 18f14b8
+        run: |
+          set -e
+          git checkout 18f14b838eb1b3ee0c08bc2fa63cb349ec167d81 -- index.html css/styles.css css/v93-typography.css
+          git rm -f css/v94-overlay-free.css CHANGES-v94.md || true
+          echo "--- verify ---"
+          md5sum index.html css/styles.css css/v93-typography.css
+          grep -o 'site-version" content="[^"]*"' index.html | head -1
+          grep -c 'v94-overlay-free' index.html || true
+
+      - name: Commit and push
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Restore v93 state (remove v94 overlay)"
+            git push
+          fi
