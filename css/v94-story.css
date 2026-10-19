@@ -1,0 +1,222 @@
+/* ============================================================================
+   v94 — 「我們的故事」章節：字體 / 字級 / 顏色 / 行距 修正
+   ----------------------------------------------------------------------------
+   依據 Technical Artist 的真實瀏覽器量測與建議（ta_typography/REPORT.md）。
+   只重設「型」與「色」，不新增區塊、不改動結構；設計語彙維持
+   Noto Serif TC 襯線 ＋ 酒紅／金／米白紙感。
+
+   ⚠ 量測前提：站上宣告紙色 #F5F0E7，但紙紋圖以 multiply 合成後，
+     實測真實底色為 #E9DEC7。本檔所有對比數字皆以 #E9DEC7 計算。
+
+   WCAG 目標：AA 4.5:1（一般文字）、3:1（大字 ≥24px 或 ≥18.66px bold）
+   ============================================================================ */
+
+/* ── 1. 可驗算色票（以實測紙色 #E9DEC7 為基準） ─────────────────────────── */
+:root{
+  /* 淺底（紙感區塊）文字色 */
+  --v94-ink:        #1C1715;  /* 標題：on paper 13.31 */
+  --v94-body:       #5A5248;  /* 正文：on paper  5.75  ← 原 #6A6157 僅 4.55 */
+  --v94-gold:       #74561A;  /* 金（淺底）：on paper 5.10 ← 原 #7C5F1C 僅 4.48 */
+  --v94-wine:       #6E1626;  /* 酒紅：on paper 8.72（本來最穩，不動） */
+
+  /* 深底（維持原亮金／提亮酒紅，不動） */
+  --v94-gold-dark:  #DCC79A;  /* on ink 11.43 */
+  --v94-wine-dark:  #E3A9B2;  /* on ink  9.54 */
+
+  /* 中文閱讀節奏 */
+  --v94-lh-copy: 2.0;   /* 段落：中文每行 1.9–2.1 最順 */
+  --v94-lh-note: 1.9;   /* 小標、圖說 */
+  --v94-lh-head: 1.5;   /* 標題 */
+}
+
+/* ── 2. 字重：只用真正載入的 300 / 400 / 500 ────────────────────────────────
+   實測 Noto Serif TC 的 600 / 700 從未載入，宣告只會得到合成假粗體。
+   正文 300 → 400：15px 下橫畫約 0.9px，配 4.55:1 的灰就是「淡」的來源。 */
+.story .chapter__text,
+.story .story__lead,
+.story .section__sub,
+.story .story__finale-line,
+.story .chapter__no,
+.story .chapter__tags,
+.story .eyebrow{ font-weight: 400; }
+
+/* ── 3. 章節標題層級（H2 永遠大於 H3，任何斷點都不倒掛） ─────────────────── */
+/* 段落主標 H2：768px 由 28px → 37.8px（原 v93 在平板倒掛） */
+.story .section__title{
+  font-size: clamp(30px, 1.4rem + 2vw, 48px);
+  line-height: 1.45;
+  letter-spacing: .12em;
+  color: var(--v94-ink);
+  font-weight: 400;
+}
+/* 章節小標 H3：上限 28px，穩定小於 H2 */
+.story .chapter__zh{
+  font-size: clamp(22px, 1.1rem + 1.2vw, 28px);
+  line-height: var(--v94-lh-head);
+  letter-spacing: .14em;
+  color: var(--v94-ink);
+  font-weight: 400;
+}
+
+/* ── 4. 章節內文字：字級 / 顏色 / 行距 ──────────────────────────────────── */
+/* 章節序號：14px（中文下限），酒紅 8.72:1 */
+.story .chapter__no{
+  font-size: 14px;
+  line-height: var(--v94-lh-note);
+  letter-spacing: .3em;
+  color: var(--v94-wine);
+  margin-bottom: 18px;
+}
+/* 英文小標：12px 起（原 v93 在「小」模式掉到 10.5px），深金 5.10:1
+   ← 原 v93 因 CSS 特異性事故沿用深底亮金 #DCC79A，對比只有 1.24:1 */
+.story .chapter__en{
+  font-size: 12px;
+  line-height: var(--v94-lh-note);
+  letter-spacing: .28em;
+  color: var(--v94-gold);
+  margin-top: 12px;
+}
+/* 正文：下限 15.5px（原「小」模式 13.2px），深灰 5.75:1，行距 2.0 */
+.story .chapter__text{
+  font-size: clamp(15.5px, 1.0625rem, 17.5px);
+  line-height: var(--v94-lh-copy);
+  letter-spacing: .1em;
+  color: var(--v94-body);
+  margin-bottom: .8em;   /* 原 10px = 0.32 行，四段擠成一塊 */
+}
+.story .chapter__text:last-child{ margin-bottom: 0; }
+/* 章節標籤：14px，深金 5.10:1（原 4.48:1 差 0.02 未達 AA） */
+.story .chapter__tags{
+  margin-top: 26px;
+  font-size: 14px;
+  line-height: var(--v94-lh-note);
+  letter-spacing: .2em;
+  color: var(--v94-gold);
+  opacity: 1;
+}
+/* 章節分隔線：維持酒紅細線 */
+.story .chapter__rule span{ background: var(--v94-wine); opacity: .5; }
+
+/* ── 5. 章節開頭（eyebrow / 副標） ──────────────────────────────────────── */
+.story .eyebrow{
+  font-size: 12px;
+  line-height: var(--v94-lh-note);
+  letter-spacing: .3em;
+  text-indent: .3em;
+  color: var(--v94-gold);   /* 原 4.48:1 → 5.10:1 */
+}
+.story .section__sub{
+  font-size: clamp(15px, 1.5vw, 17px);
+  line-height: var(--v94-lh-copy);
+  letter-spacing: .08em;
+  color: var(--v94-body);
+}
+
+/* ── 6. 楔子：三句之間補回呼吸（原 0px，轉折句的修辭完全消失） ───────────── */
+.story .story__lead{
+  font-size: clamp(17px, 2.3vw, 19px);
+  line-height: var(--v94-lh-copy);
+  letter-spacing: .16em;
+  color: var(--v94-body);
+}
+.story .story__lead p + p{ margin-top: .5em; }
+.story .story__lead-strong{ color: var(--v94-wine); margin-top: .5em !important; }
+
+/* ── 7. 章節收尾句 / 終章 ───────────────────────────────────────────────── */
+.story .story__strong{ color: var(--v94-wine) !important; }
+.story .story__finale-names{
+  font-size: clamp(22px, 4.2vw, 40px);
+  line-height: 1.4;
+  letter-spacing: .2em;
+  color: var(--v94-ink);
+  font-weight: 500;
+}
+.story .story__finale-line{
+  margin-top: 24px;
+  font-size: clamp(16px, 2.2vw, 19px);
+  line-height: var(--v94-lh-copy);
+  letter-spacing: .26em;
+  color: var(--v94-wine);
+}
+
+/* ── 8. 五張雙人照片：移除所有覆蓋文字，改以金色細框點綴 ──────────────────
+   原 .chapter__media-cap 是壓在照片上的深色底文字條（含「第一世・相遇」等），
+   依需求全部移除；改以內縮金色細框＋四角金色短線裝飾，維持典雅排版語彙。 */
+.story .chapter__media-cap{ display: none !important; }
+
+/* 內縮金色細框（常駐，非 hover 才出現） */
+.story .chapter__media::before{
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 1px solid rgba(201,169,97,.55);
+  z-index: 3;
+  pointer-events: none;
+  opacity: 1;
+  transition: inset .8s cubic-bezier(.22,.61,.36,1), border-color .8s;
+}
+.story .chapter__media:hover::before{
+  inset: 16px;
+  border-color: rgba(201,169,97,.85);
+}
+/* 四角金色短線（以 ::after 疊在細框上，用背景漸層畫四角） */
+.story .chapter__media::after{
+  content: "";
+  position: absolute;
+  inset: 12px;
+  z-index: 4;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(201,169,97,.95), rgba(201,169,97,.95)) left  top    / 26px 1px no-repeat,
+    linear-gradient(180deg, rgba(201,169,97,.95), rgba(201,169,97,.95)) left  top    / 1px 26px no-repeat,
+    linear-gradient(90deg, rgba(201,169,97,.95), rgba(201,169,97,.95)) right top    / 26px 1px no-repeat,
+    linear-gradient(180deg, rgba(201,169,97,.95), rgba(201,169,97,.95)) right top    / 1px 26px no-repeat,
+    linear-gradient(90deg, rgba(201,169,97,.95), rgba(201,169,97,.95)) left  bottom / 26px 1px no-repeat,
+    linear-gradient(180deg, rgba(201,169,97,.95), rgba(201,169,97,.95)) left  bottom / 1px 26px no-repeat,
+    linear-gradient(90deg, rgba(201,169,97,.95), rgba(201,169,97,.95)) right bottom / 26px 1px no-repeat,
+    linear-gradient(180deg, rgba(201,169,97,.95), rgba(201,169,97,.95)) right bottom / 1px 26px no-repeat;
+  transition: inset .8s cubic-bezier(.22,.61,.36,1);
+}
+.story .chapter__media:hover::after{ inset: 16px; }
+/* 照片本身：保留原水彩質感，僅微調飽和度 */
+.story .chapter__media img{ filter: saturate(.94) contrast(1.03); }
+
+/* ── 9. 字級切換（小／中／大）：只放大不縮小 ──────────────────────────────
+   原「小」模式（html 87.5%）把正文壓到 13.2px、英文小標 10.5px——
+   越需要輔助的讀者拿到越小字。以下以 px 下限抵抗 root 縮放。 */
+html.font-scale-sm .story .chapter__text{ font-size: 15.5px; }
+html.font-scale-sm .story .story__lead{ font-size: 17px; }
+html.font-scale-sm .story .section__sub{ font-size: 15px; }
+html.font-scale-sm .story .story__finale-line{ font-size: 16px; }
+html.font-scale-sm .story .chapter__no,
+html.font-scale-sm .story .chapter__tags{ font-size: 14px; }
+html.font-scale-sm .story .chapter__en,
+html.font-scale-sm .story .eyebrow{ font-size: 12px; }
+html.font-scale-sm .story .section__title{ font-size: clamp(30px, 1.4rem + 2vw, 48px); }
+html.font-scale-sm .story .chapter__zh{ font-size: clamp(22px, 1.1rem + 1.2vw, 28px); }
+
+/* ── 10. 小尺寸裝置：只放大不縮小，並避免英文小標斷行 ───────────────────── */
+@media (max-width: 640px){
+  .story .section__title{ font-size: clamp(30px, 7.6vw, 34px); letter-spacing: .1em; }
+  .story .chapter__zh{ font-size: 22px; }
+  .story .chapter__text{ font-size: 15.5px; }
+  .story .story__lead{ font-size: 17px; }
+  .story .section__sub{ font-size: 15px; }
+  .story .chapter__en{ font-size: 12px; letter-spacing: .22em; }
+  .story .eyebrow{ font-size: 12px; letter-spacing: .24em; }
+  .story .story__finale-names{ font-size: clamp(22px, 5.4vw, 24px); }
+  .story .story__finale-line{ font-size: 16px; }
+  .story .chapter__media::before{ inset: 9px; }
+  .story .chapter__media::after{ inset: 9px; }
+  .story .chapter__media:hover::before,
+  .story .chapter__media:hover::after{ inset: 12px; }
+}
+@media (max-width: 360px){
+  .story .chapter__en{ letter-spacing: .16em; }
+}
+
+/* ── 11. 減少動態偏好：裝飾框不位移 ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce){
+  .story .chapter__media::before,
+  .story .chapter__media::after{ transition: none; }
+}
