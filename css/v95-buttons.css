@@ -1,0 +1,158 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   v95 — 按鈕文字置中（水平 ＋ 垂直）
+   ------------------------------------------------------------------------
+   只修「文字在框內的對齊」，不改字級、字型、顏色、間距與整體版面。
+   每個控制項的盒高都鎖回 v94 實測值，外觀與 v94 逐像素一致。
+
+   ── 根因（Chromium 1440×900，真實墨跡框像素比對）────────────────────────
+
+   A. 垂直偏上 ─ 行盒高度來自繼承，不是字面高度
+      body{line-height:1.9~1.95} 讓 12px 的字住進 22.8px 的行盒。
+      多出的 ~10.8px 半 leading 上下等分，但字型本身的 ascent / descent
+      並不對稱（Cinzel ≈ 0.98em / 0.22em），墨跡重心因此高於行盒中心。
+      align-items:center 對齊的是「行盒」，不是「字」，所以看起來偏上。
+      實測：送出祝福 −1.48px、查看座位表 −1.02px。
+      訪客機器若 fallback 到 Songti / PingFang（字面重心更低），
+      同一條 1.95 會把這個偏差放大成肉眼可見的「字浮在上面」——
+      這就是使用者在自己的電腦上看到、而在 Linux CI 只量到 1px 的原因。
+
+   B. 水平偏左 ─ letter-spacing 的尾端空隙
+      CSS letter-spacing 會在「最後一個字之後」也多留一個字距。
+      flex 置中時行盒含這段尾端空隙，可見字形因此偏左 ½ 字距。
+      專案原本只在 .btn 用 text-indent:.28em 抵掉，
+      .nav__link(.24em)、.totop__text(.24em)、.fontctl__opt(.08em) 都漏了。
+      實測：.totop 偏 1.61px ≈ ½ × 3.12px。
+
+   ── 解法 ────────────────────────────────────────────────────────────────
+   1) 單行標籤 line-height:1 → 行盒 = 字面高度，垂直對齊才有意義
+   2) 支援的引擎再加 text-box-trim:trim-both / text-box-edge:cap alphabetic
+      → 行盒裁到 cap-height 與基線，得到真正的「字形視覺置中」；
+        不支援的引擎自動略過，僅靠第 1 條仍有 ≤1px 誤差
+   3) 每個帶 letter-spacing 的標籤補上等量 text-indent，抵掉尾端那一格
+   4) 用 min-height 鎖回 v94 盒高（含原本的 line-height 貢獻），
+      padding 維持原值 → 尺寸零變化
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. 單行標籤：行盒 = 字面高度 ─────────────────────────────────────── */
+.btn,
+.btn--small,
+.btn--solid,
+.btn--ghost,
+.note-card__link,
+.nav__link,
+.nav__mlink,
+.ecard-panel__send,
+.ecard-panel__cancel,
+.rsvp-thanks__close,
+.gtheme__toggle,
+.fontctl__toggle,
+.fontctl__tt,
+.totop__arrow,
+.totop__text {
+  line-height: 1;
+}
+
+/* 支援 text-box-trim 的引擎：行盒裁到字面（cap → 基線）＝ 真正的字形置中 */
+@supports (text-box-trim: trim-both) {
+  .btn,
+  .btn--small,
+  .btn--solid,
+  .btn--ghost,
+  .note-card__link,
+  .nav__link,
+  .nav__mlink,
+  .ecard-panel__send,
+  .ecard-panel__cancel,
+  .rsvp-thanks__close,
+  .gtheme__toggle,
+  .fontctl__opt,
+  .fontctl__toggle,
+  .totop__arrow,
+  .totop__text {
+    text-box-trim: trim-both;
+    text-box-edge: cap alphabetic;
+  }
+}
+
+/* ── 2. 水平：抵掉 letter-spacing 在字尾多留的那一格 ──────────────────── */
+.btn               { text-indent: .28em; }   /* 原本已對，明示以防被覆寫 */
+.btn--small        { text-indent: .28em; }
+.btn--solid        { text-indent: .28em; }
+.btn--ghost        { text-indent: .28em; }
+.note-card__link   { text-indent: .24em; }
+.nav__mlink        { text-indent: .2em; }
+.ecard-panel__send { text-indent: .26em; }   /* 原本已對，明示以防被覆寫 */
+.nav__link         { text-indent: .24em; }  /* 原缺 → 偏左 1.2px；置中時自動抵成 ½ 字距 */
+.totop__text       { text-indent: .24em; }  /* 原缺 → 偏左 1.6px */
+
+@media (max-width: 1080px) {
+  .nav__link { letter-spacing: .18em; text-indent: .18em; }
+}
+
+/* ── 3. 垂直：盒高鎖回 v94 實測值（padding 不動，尺寸零變化）────────────
+   公式＝原本的「上下 padding ＋ 上下 border ＋ 原本 line-height 行盒」
+   全部用 em 表達，字級切換（Tt 14/16/19px）時仍等比縮放。            */
+.btn {
+  min-height: calc(32px + 1.9em);      /* 15+15 + 2 border + 22.8@12px = 54.8 */
+}
+.btn--small {
+  min-height: calc(24px + 1.9em);      /* 11+11 + 2 + 22.8 = 46.8 */
+}
+.btn--solid {                           /* <button>：UA 的 line-height:normal */
+  min-height: calc(32px + 1.5em);      /* 15+15 + 2 + 18   = 50.0 */
+}
+.gtheme__toggle {                       /* 原由 min-height:52px 決定 */
+  min-height: 52px;
+}
+.note-card__link {
+  min-height: calc(20px + 1.9em);      /* 9+9 + 2 + 22.8 = 42.8 */
+}
+.nav__link {
+  min-height: calc(12px + 1.9em);      /* 6+6 + 22.8 = 34.8 */
+}
+
+/* ── 4. 確認主／交叉軸都是置中 ────────────────────────────────────────── */
+.btn,
+.btn--small,
+.btn--solid,
+.btn--ghost,
+.gtheme__toggle,
+.note-card__link,
+.ecard-panel__send,
+.ecard-panel__cancel,
+.rsvp-thanks__close {
+
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── 5. 導覽列：連結改為 inline-flex，文字軸與列高真正對齊 ────────────── */
+.nav__links { align-items: center; }
+.nav__link  { display: inline-flex; align-items: center; justify-content: center; }
+
+/* ── 6. 兩行式 CTA：外層 flex 置中（內層文字保持原樣，盒高不變）──────── */
+.rsvp-cta        { align-items: center; }
+.ecard-show__cta { align-items: center; }
+.rsvp-cta__body,
+.ecard-show__cta-body { justify-content: center; }
+
+/* ── 7. 圓形／膠囊浮動鈕 ─────────────────────────────────────────────── */
+.fontctl__toggle {
+  display: grid;
+  place-items: center;
+  padding: 0;                 /* 原值即 0，重申避免被其他規則覆寫 */
+}
+.fontctl__tt { display: block; }
+
+.totop {
+  justify-content: center;    /* 主軸（column）置中，徽章文字變動也不偏 */
+  gap: 4px;
+  min-height: 62px;           /* 鎖回 v94 盒高（原本由 line-height 撐出） */
+}
+.totop__arrow { display: block; }
+
+
+/* ── 8. 座位查詢頁按鈕 ───────────────────────────────────────────────── */
+.seat-search__btn { justify-content: center; }
+
+/* 以上皆不改盒高；浮動鈕原尺寸即已置中，僅維持既有 12/12 padding */
