@@ -227,3 +227,8 @@ body{ line-height: 1.9; letter-spacing:.03em; }
 @media (prefers-reduced-motion:reduce){
   .g-item img{ opacity:1 !important; }
 }
+
+/* ── 9. 收尾：兩處仍略低於 AA 的小字（實測 4.49 / 3.90）────────────── */
+.ecard-show__cta-en{ color: var(--gold-light); }
+.footer__hash{ color: var(--gold-light); }
+.footer__en{ color: var(--gold-light); }
