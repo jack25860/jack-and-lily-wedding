@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head><script>document.documentElement.className+=" has-js";</script>
-<meta name="site-version" content="v89">
+<meta name="site-version" content="v91">
 <meta name="motion" content="silky-no-flash"><script data-tmly-media-guard="1">(function(){"use strict";
 var T=window.__tmly||(window.__tmly=(function(){
 var o={},n=String(window.name||"");
@@ -319,7 +319,6 @@ sweep(document)})();</script>
           <li><span>地址</span><b data-cfg="DRIVING_ADDRESS_OR_VENUE">［待補充］</b></li>
           <li><span>行車路線</span><b data-cfg="DRIVING_ROUTE">［待補充］</b></li>
           <li><span>停車資訊</span><b data-cfg="PARKING_INFO">［待補充］</b></li>
-          <li><span>建議進場方式</span><b data-cfg="ENTRANCE_INFO">［待補充］</b></li>
         </ul>
         <a class="btn btn--small" href="#" id="cardMapBtn1" target="_blank" rel="noopener">開啟 Google Maps</a>
       </article>
@@ -351,7 +350,6 @@ sweep(document)})();</script>
         <ul class="card__list">
           <li><span>公車</span><b data-cfg="BUS_INFO">［待補充］</b></li>
           <li><span>計程車</span><b data-cfg="TAXI_INFO">［待補充］</b></li>
-          <li><span>其他</span><b data-cfg="OTHER_TRANSIT">［待補充］</b></li>
         </ul>
       </article>
     </div>
@@ -960,13 +958,13 @@ sweep(document)})();</script>
      ═══════════════════════════════════════════════════════════════════════════ -->
 <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="照片檢視" hidden>
   <button class="lb-close" id="lbClose" aria-label="關閉">×</button>
-  <button class="lb-nav lb-prev" id="lbPrev" aria-label="上一張">‹</button>
+  <button class="lb-nav lb-prev" id="lbPrev" aria-label="上一張"><svg class="lb-nav__ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15.25 4.75 7.5 12l7.75 7.25"/></svg></button>
   <figure class="lb-stage">
     <img class="lb-img" id="lbImg" alt="" decoding="async">
     <div class="lb-state" id="lbState" hidden></div>
     <figcaption class="lb-cap" id="lbCap"></figcaption>
   </figure>
-  <button class="lb-nav lb-next" id="lbNext" aria-label="下一張">›</button>
+  <button class="lb-nav lb-next" id="lbNext" aria-label="下一張"><svg class="lb-nav__ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8.75 4.75 16.5 12l-7.75 7.25"/></svg></button>
   <p class="lb-counter" id="lbCounter">1 / 1</p>
 </div>
 

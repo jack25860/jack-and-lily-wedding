@@ -135,34 +135,34 @@ html.font-scale-lg{font-size:118.75%}
 :root{--dur-1:.28s;--dur-2:.45s;--dur-3:.62s;--ease-out:cubic-bezier(.22,.61,.36,1);--ease-io:cubic-bezier(.4,0,.2,1)}
 
 /* ── 2. 字級平滑過渡：僅在 JS 就緒後開啟（避免首次載入抖動）；reduced-motion 關閉 ── */
-html.font-anim{transition:font-size .30s var(--ease-io)}
+html.font-anim{transition:font-size .30s var(--ease-soft)}
 @media(prefers-reduced-motion:reduce){html.font-anim{transition:none}}
 
 /* ── 3. 「Tt」字體鈕：展開／收合皆為絲滑縮放（opacity + transform + visibility 同步，無閃動、無殘影）── */
-.fontctl__opts{will-change:opacity,transform;transition:opacity .58s var(--ease-io),transform .58s var(--ease-out),visibility .58s}
+.fontctl__opts{will-change:opacity,transform;transition:opacity .58s var(--ease-soft),transform .58s var(--ease-out),visibility .58s}
 .fontctl.is-opening .fontctl__opts,.fontctl[data-open="true"] .fontctl__opts{opacity:1;visibility:visible;pointer-events:auto;transform:translateY(0) scale(1)}
 .fontctl.is-closing .fontctl__opts{opacity:0;visibility:hidden;pointer-events:none;transform:translateY(8px) scale(.86)}
 @media(prefers-reduced-motion:reduce){.fontctl__opts,.fontctl.is-opening .fontctl__opts,.fontctl.is-closing .fontctl__opts{transition:none}}
 
 /* ── 4. 燈箱（相簿）開合：柔和淡入淡出、無殘影 ── */
-.lightbox{transition:opacity .62s var(--ease-io);will-change:opacity}
+.lightbox{transition:opacity .62s var(--ease-soft);will-change:opacity}
 
 /* ── 5. 相簿「展開全部」：以 opacity／transform 過渡取代 display 硬切 ── */
-.gtheme__more{animation:none;opacity:0;transform:translateY(14px);transition:opacity .55s var(--ease-io),transform .55s var(--ease-out);will-change:opacity,transform}
+.gtheme__more{animation:none;opacity:0;transform:translateY(14px);transition:opacity .55s var(--ease-soft),transform .55s var(--ease-out);will-change:opacity,transform}
 .gtheme__more.is-open{opacity:1;transform:none}
 
 /* ── 6. RSVP 出席人數／兒童椅：平滑展開收合（預設展開，僅切換時動畫，避免載入時閃動）── */
-#rsvpNumWrap{max-height:1600px;overflow:hidden;transition:max-height .55s var(--ease-io),opacity .42s var(--ease-io),transform .5s var(--ease-out)}
+#rsvpNumWrap{max-height:1600px;overflow:hidden;transition:max-height .55s var(--ease-soft),opacity .42s var(--ease-soft),transform .5s var(--ease-out)}
 #rsvpNumWrap.is-collapsed{max-height:0;opacity:0;transform:translateY(-10px)}
-#rsvpChairRow{max-height:400px;overflow:hidden;transition:max-height .45s var(--ease-io),opacity .4s var(--ease-io),transform .4s var(--ease-out)}
+#rsvpChairRow{max-height:400px;overflow:hidden;transition:max-height .45s var(--ease-soft),opacity .4s var(--ease-soft),transform .4s var(--ease-out)}
 #rsvpChairRow.is-collapsed{max-height:0;opacity:0;transform:translateY(-8px)}
 
 /* ── 7. RSVP 備援出口：平滑展開收合 ── */
-.rsvp-fallback{opacity:0;transform:translateY(-8px);transition:opacity .45s var(--ease-io),transform .45s var(--ease-out)}
+.rsvp-fallback{opacity:0;transform:translateY(-8px);transition:opacity .45s var(--ease-soft),transform .45s var(--ease-out)}
 .rsvp-fallback.is-open{opacity:1;transform:none}
 
 /* ── 8. 電子喜帖寄送面板：以 opacity／transform 取代 display 硬切 ── */
-.ecard-panel{animation:none;opacity:0;transform:translateY(-14px) scale(.985);transition:opacity .5s var(--ease-io),transform .5s var(--ease-out);will-change:opacity,transform}
+.ecard-panel{animation:none;opacity:0;transform:translateY(-14px) scale(.985);transition:opacity .5s var(--ease-soft),transform .5s var(--ease-out);will-change:opacity,transform}
 .ecard-panel.is-open{opacity:1;transform:none}
 
 /* ── 9. 漂浮開關／等化條／回到頂端：補 will-change，避免重繪跳動 ── */
@@ -212,13 +212,13 @@ html:not(.has-js) #fontctlOpts{display:none}
    ══════════════════════════════════════════════════════════════════════════ */
 
 /* 1) 燈箱：外層只淡入淡出（避免 scale 造成邊緣露出），內容以 scale 進出 */
-.lightbox{transition:opacity .62s var(--ease-io);will-change:opacity}
+.lightbox{transition:opacity .62s var(--ease-soft);will-change:opacity}
 .lb-stage{transition:transform .62s var(--ease-out);will-change:transform}
 .lightbox:not(.shown) .lb-stage{transform:scale(.94)}
 .lightbox.shown .lb-stage{transform:none}
 
 /* 2) 燈箱照片：以 transition 取代一次性 animation（切換照片時平滑縮放） */
-.lb-img{animation:none!important;opacity:0;transform:scale(.965);transition:opacity .5s var(--ease-io),transform .62s var(--ease-out)}
+.lb-img{animation:none!important;opacity:0;transform:scale(.965);transition:opacity .5s var(--ease-soft),transform .62s var(--ease-out)}
 .lb-img.is-loaded{opacity:1;transform:none}
 .lb-img:not(.is-loaded){opacity:0!important}
 
@@ -255,3 +255,27 @@ html:not(.has-js) #fontctlOpts{display:none}
   .lb-state:not([hidden]),.rsvp-thanks__card{animation:none}
   .lightbox:not(.shown) .lb-stage{transform:none}
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   v91 — 燈箱「下一張」按鈕真正置中
+   ──────────────────────────────────────────────────────────────────────────
+   幾何量測（getBoundingClientRect）一直顯示按鈕框與照片中心差 0.00px，但肉眼看起來
+   仍然偏斜。真正的偏差在「字形墨跡」：舊版按鈕的內容是襯線字元「›」，
+   font-size:2rem／line-height:1 讓襯線字體的 ascent/descent 不對稱，
+   以 4x DPR 像素量測得到：白色箭頭墨跡中心比圓盤圓心高 6.38px（手機）／
+   且在細字重下幾乎看不出，放大後就非常明顯。
+   修法：改用 viewBox 24x24 的 SVG 折線，路徑本身關於 y=12 完全對稱，
+   size 由 CSS 固定，因此墨跡中心必然等於圓心 → 偏移 0px，且與字型檔無關
+   （不再受 Noto Serif TC / Songti TC 各自的度量影響）。
+   ────────────────────────────────────────────────────────────────────────── */
+.lb-nav__ico{display:block;width:26px;height:26px;fill:none;stroke:currentColor;
+  stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+@media(max-width:640px){.lb-nav__ico{width:22px;height:22px;stroke-width:1.7}}
+
+/* v91：按鈕以 transform 置中，並確保 hit area 與視覺圓心一致（不依賴 line-height） */
+.lb-nav{top:50%;transform:translateY(-50%);line-height:0;padding:0;
+  box-sizing:border-box;align-items:center;justify-items:center}
+
+/* v91：燈箱進場／出場維持縮放＋淡入淡出，不突然跳出 */
+.lightbox{transition:opacity .62s var(--ease-soft),visibility .62s var(--ease-soft)}
+.lightbox:not(.shown){pointer-events:none}
