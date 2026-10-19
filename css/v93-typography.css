@@ -116,9 +116,11 @@ body{ line-height: 1.9; letter-spacing:.03em; }
 .cd-label i{ font-size: var(--fs-label); letter-spacing:.18em; color: var(--text-dim); }
 .chapter__media-cap{
   font-size: var(--fs-note); letter-spacing:.22em; text-indent:.22em;
-  color:#FBF7EF; text-shadow:0 2px 14px rgba(0,0,0,.85), 0 1px 3px rgba(0,0,0,.7);
-  background:linear-gradient(180deg,transparent,rgba(10,8,8,.55));
-  padding:14px 16px 12px; left:0; right:0; bottom:0;
+  color:#FBF7EF;
+  background:rgba(19,16,16,.72);
+  -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
+  padding:12px 18px 11px; left:18px; right:18px; bottom:18px;
+  border:1px solid rgba(201,169,97,.35);
 }
 .chapter__tags{ font-size: var(--fs-label); letter-spacing:.2em; color: var(--gold-on-paper); opacity:1; }
 .gtheme__sub{ font-size: var(--fs-note); letter-spacing:.12em; color: var(--text-dim); }
@@ -150,7 +152,7 @@ body{ line-height: 1.9; letter-spacing:.03em; }
 .section--dark .section__sub,
 .tl-panel__text, .trailer__desc, .gtheme__sub, .cd-label, .cd-label i,
 .dress__note, .footer__hash, .note-card__hint, .rsvp-cta__hint{ color: var(--text-dim); }
-.tl-panel__no{ color: var(--wine-on-dark); filter:none; }
+.tl-panel__no{ font-size: var(--fs-label); color: var(--wine-on-dark); filter:none; }
 .tl-panel__en, .chapter__en{ color: var(--gold-on-dark); }
 
 /* ── 5. 按鈕與互動元件：視覺語彙一致、對比可驗算 ────────────────────── */
@@ -213,6 +215,13 @@ body{ line-height: 1.9; letter-spacing:.03em; }
 .ecard-panel__row label i{ color: var(--gold-on-paper); opacity:1; }
 .invite-card__pre{ color: var(--wine-on-paper); }
 .ecard-panel__row label{ color: var(--wine-on-paper); }
+
+.tl-panel__no{ font-size: var(--fs-label); letter-spacing:.5em; text-indent:.5em; color: var(--wine-on-dark); filter:none; }
+.tl-panel__en{ font-size: var(--fs-cap); letter-spacing:.36em; text-indent:.36em; color: var(--gold-on-dark); }
+.rsvp-form label, .rsvp-form legend, .msg-form__row label{ font-size: var(--fs-label); letter-spacing:.2em; }
+/* RSVP 主要 CTA：亮金字在酒紅底上提升至 6:1 */
+.rsvp-cta__en{ color: var(--gold-light); }
+.rsvp-cta__hint{ color: var(--text-dim-paper); }
 
 /* ── 8. 減少動態偏好者的可讀性保障 ───────────────────────────────────── */
 @media (prefers-reduced-motion:reduce){
