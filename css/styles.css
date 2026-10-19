@@ -207,3 +207,51 @@ html:not(.has-js) #fontctlOpts{display:none}
 /* v88：相簿預設只呈現雙人合影的說明 */
 .gallery__note--hint{margin-top:14px;font-size:clamp(.74rem,1.7vw,.86rem);letter-spacing:.18em;color:var(--gold-light);opacity:.72}
 .gallery__note--hint + .gtheme{margin-top:clamp(34px,5vw,56px)}
+/* ══════════════════════════════════════════════════════════════════════════
+   v89 — 動效統一：所有「出現／消失」一律以縮放＋淡入淡出過渡，不得瞬間跳出
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* 1) 燈箱：外層只淡入淡出（避免 scale 造成邊緣露出），內容以 scale 進出 */
+.lightbox{transition:opacity .62s var(--ease-io);will-change:opacity}
+.lb-stage{transition:transform .62s var(--ease-out);will-change:transform}
+.lightbox:not(.shown) .lb-stage{transform:scale(.94)}
+.lightbox.shown .lb-stage{transform:none}
+
+/* 2) 燈箱照片：以 transition 取代一次性 animation（切換照片時平滑縮放） */
+.lb-img{animation:none!important;opacity:0;transform:scale(.965);transition:opacity .5s var(--ease-io),transform .62s var(--ease-out)}
+.lb-img.is-loaded{opacity:1;transform:none}
+.lb-img:not(.is-loaded){opacity:0!important}
+
+/* 3) 燈箱載入指示：縮放淡入，不再硬切 */
+.lb-state:not([hidden]){animation:lbStateIn .38s var(--ease-out) both}
+@keyframes lbStateIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+
+/* 4) 展開相簿：加入縮放 */
+.gtheme__more{transform:translateY(14px) scale(.985)}
+.gtheme__more.is-open{transform:none}
+
+/* 5) 手機選單：加入縮放 */
+.nav__mobile{transform:translateY(-12px) scale(.985)}
+.nav__mobile.open{transform:none}
+
+/* 6) 回頂端鈕：加入縮放 */
+.totop{transform:translateY(10px) scale(.9)}
+.totop.show{transform:none}
+
+/* 7) 電子喜帖面板：加大縮放幅度 */
+.ecard-panel{transform:translateY(-14px) scale(.96)}
+
+/* 8) 出席回覆成功卡：加入縮放 */
+.rsvp-thanks__card{animation:rsvpThanksRise .46s var(--ease-out) both}
+@keyframes rsvpThanksRise{from{opacity:0;transform:translateY(16px) scale(.94)}to{opacity:1;transform:none}}
+
+/* 9) 按鈕：hover 加入微縮放（與既有 translateY 共用同一條 transition） */
+.btn:hover{transform:translateY(-2px) scale(1.02)}
+.note-card__link:hover{transform:translateY(-2px) scale(1.02)}
+.rsvp-cta:hover{transform:translateY(-2px) scale(1.015)}
+
+@media(prefers-reduced-motion:reduce){
+  .lightbox,.lb-stage,.lb-img,.gtheme__more,.nav__mobile,.totop,.ecard-panel{transition:none}
+  .lb-state:not([hidden]),.rsvp-thanks__card{animation:none}
+  .lightbox:not(.shown) .lb-stage{transform:none}
+}
