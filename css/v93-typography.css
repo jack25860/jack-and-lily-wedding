@@ -1,1 +1,220 @@
-@PLACEHOLDER_CSS@
+/* ============================================================================
+   v93 — 字體層級 / 配色對比 / 行距 收斂覆蓋層
+   Foundations only: 不新增任何區塊、不改動結構，只重設「型」與「色」。
+   設計語彙維持：Noto Serif TC 襯線 ＋ 金色／酒紅／米白紙感。
+   WCAG 目標：AA 4.5:1（本文）、3:1（大字）；以實際背景色計算，非目測。
+   ============================================================================ */
+
+/* ── 1. 語意色彩層（可驗算的對比色票） ──────────────────────────────────
+   原色 remap 只動「文字用」的灰階與按鈕用色，品牌主色（酒紅／金）不動。 */
+:root{
+  /* 中性灰：深底與淺底各一組，皆 ≥ 4.5:1 */
+  --text-dim:        #9E9488;  /* on ink 6.35 · on ink-2 5.96 · on ink-3 5.41 */
+  --text-dim-paper:  #6A6157;  /* on paper 5.35 · on card 5.68 */
+  --text-soft:       #B9AFA2;  /* on ink 8.76 · on ink-2 8.22（次要但清楚） */
+
+  /* 金色：深底用亮金、淺底用深金（同一個「金」的兩種曝光） */
+  --gold-on-dark:    #DCC79A;  /* on ink 11.43 */
+  --gold-on-paper:   #7C5F1C;  /* on paper 5.27 · on card 5.60 */
+
+  /* 酒紅：深底用提亮版，淺底用原酒紅 */
+  --wine-on-dark:    #E3A9B2;  /* on ink 9.54 · on ink-2 8.95 */
+  --wine-on-paper:   #6E1626;  /* on paper 10.25 */
+
+  /* 行距節奏（中文閱讀） */
+  --lh-tight: 1.42;   /* 大標題 */
+  --lh-snug:  1.55;   /* 次標題 */
+  --lh-copy:  2.05;   /* 段落：中文每行 1.9–2.1 最順 */
+  --lh-note:  1.95;   /* 說明、標籤 */
+
+  /* 字級 scale：12 系統一基準，一個級距只用一次 */
+  --fs-cap:    0.75rem;  /* 12px 英文小標（手機下限） */
+  --fs-label:  0.875rem; /* 14px 中文小標（手機下限） */
+  --fs-note:   0.9375rem;/* 15px 圖說、補充 */
+  --fs-body:   1.0625rem;/* 17px 本文 */
+  --fs-lead:   1.1875rem;/* 19px 導言 */
+  --fs-h3:     1.5rem;   /* 24px 區塊內小標 */
+  --fs-h2:     2.125rem; /* 34px 段落主標（手機） */
+  --fs-h2-lg:  3rem;     /* 48px 段落主標（桌機） */
+}
+
+/* 舊灰階變數統一指向新的可驗算色票 */
+:root{
+  --grey-1: var(--text-dim);
+  --grey-2: var(--text-dim-paper);
+  /* v93 覆蓋層自身引用到的品牌色（確保獨立作用域） */
+  --gold-light: #EBDCB6;
+  --wine: #6E1626;
+}
+
+/* ── 2. 行距：全站改成中文閱讀節奏 ───────────────────────────────────── */
+body{ line-height: 1.9; letter-spacing:.03em; }
+.section__sub, .story__lead, .chapter__text, .gallery__note, .rsvp__intro,
+.note-card p, .msg-card__text, .dress__value, .tl-panel__text, .invite-row dd,
+.rsvp__embed-ph-text, .rsvp__embed-steps li, .trailer__desc, .card__list b,
+.card__note, .ecard-show__text, .rsvp-fallback__text, .interlude__mark{
+  line-height: var(--lh-copy);
+}
+.section__title, .hero__names, .story__finale-names, .footer__names,
+.tl-panel__zh, .verse__mark, .invite-name__value{
+  line-height: var(--lh-tight);
+}
+.eyebrow, .card__title, .card__title-en, .note-card h3, .gtheme__name,
+.gtheme__en, .gtheme__sub, .dress__label, .dress__en, .footer__en,
+.footer__hash, .hero__meta-label, .invite-name__role, .chapter__no,
+.chapter__en, .trailer__tag, .trailer__count, .lb-cap, .msg-card__name{
+  line-height: var(--lh-note);
+}
+
+/* ── 3. 字级：收斂成單一 scale（H3 永遠小於 H2） ─────────────────────── */
+/* 段落主標 H2：clamp 上限 48px，不再出現 67px 的「比 H2 還大的 H3」 */
+.section__title{
+  font-size: clamp(1.75rem, 3.6vw, var(--fs-h2-lg));
+  line-height: 1.45;
+  letter-spacing:.12em;
+}
+/* 區塊內小標 H3：上限 24–28px，穩定小於 H2 */
+.chapter__zh{ font-size: clamp(1.375rem, 2.4vw, 1.75rem); line-height:1.5; letter-spacing:.14em; }
+.gtheme__name{ font-size: clamp(1.375rem, 2.4vw, 1.75rem); line-height:1.5; letter-spacing:.2em; }
+.trailer__title{ font-size: clamp(1.125rem, 1.8vw, 1.375rem); }
+/* 「相遇 / 相知 / 相守」目前是 H3 卻 67.2px（比 H2 大）→ 收在 H2 之下（44px < 48px） */
+.tl-panel__zh{ font-size: clamp(1.875rem, 4.2vw, 2.75rem); letter-spacing:.26em; }
+
+/* 英文小標：9.6 / 9.92 / 10.24 / 10.56 / 10.88 / 11.2px → 12px 起 */
+.eyebrow{ font-size: var(--fs-cap); letter-spacing:.3em; text-indent:.3em; }
+.card__title-en{ font-size: var(--fs-cap); letter-spacing:.24em; }
+.gtheme__en{ font-size: var(--fs-cap); letter-spacing:.28em; color: var(--gold-on-dark); }
+.dress__en{ font-size: var(--fs-cap); letter-spacing:.26em; }
+.trailer__tag{ font-size: var(--fs-cap); letter-spacing:.26em; }
+.trailer__count{ font-size: var(--fs-cap); letter-spacing:.24em; }
+.footer__en{ font-size: var(--fs-cap); letter-spacing:.32em; text-indent:.32em; }
+.footer__hash{ font-size: var(--fs-label); letter-spacing:.16em; }
+.hero__en{ font-size: var(--fs-cap); letter-spacing:.34em; }
+.hero__scroll-text{ font-size: var(--fs-cap); letter-spacing:.3em; }
+.interlude__en{ font-size: var(--fs-cap); letter-spacing:.34em; }
+.ecard-show__eyebrow{ font-size: var(--fs-cap); letter-spacing:.34em; }
+.ecard-show__cta-en,.rsvp-cta__en{ font-size: var(--fs-cap); letter-spacing:.26em; }
+.music__label{ font-size: var(--fs-cap); letter-spacing:.2em; }
+.totop__text{ font-size: var(--fs-cap); letter-spacing:.18em; }
+.rsvp-form label i, .rsvp-form legend i, .rsvp-nums__title i,
+.ecard-panel__row label i, .rsvp__ecard-hint{ font-size: var(--fs-cap); letter-spacing:.22em; }
+
+/* 中文小標：11.2 / 11.5 / 11.84px → 14px，並改用可驗算色 */
+.card__list span{ font-size: var(--fs-label); letter-spacing:.18em; color: var(--text-dim); }
+.hero__meta-label{ font-size: var(--fs-label); letter-spacing:.24em; }
+.invite-name__role{ font-size: var(--fs-label); letter-spacing:.3em; color: var(--text-dim-paper); }
+.footer__hash{ color: var(--text-soft); }
+.rsvp-form label, .rsvp-form legend, .rsvp-nums__title,
+.ecard-panel__row label{ font-size: var(--fs-label); letter-spacing:.18em; }
+.msg-card__name{ font-size: var(--fs-label); }
+.note-card h3{ font-size: var(--fs-label); letter-spacing:.26em; }
+
+/* 圖說 / 補充：11.52px → 15px。chapter__media-cap 原本淺金壓米白 1.20:1 */
+.chapter__no{ font-size: var(--fs-label); letter-spacing:.3em; color: var(--wine-on-paper); }
+.chapter__en{ font-size: var(--fs-cap); letter-spacing:.28em; color: var(--gold-on-paper); }
+.cd-label{ font-size: var(--fs-label); letter-spacing:.22em; color: var(--text-dim); }
+.cd-label i{ font-size: var(--fs-label); letter-spacing:.18em; color: var(--text-dim); }
+.chapter__media-cap{
+  font-size: var(--fs-note); letter-spacing:.22em; text-indent:.22em;
+  color:#FBF7EF; text-shadow:0 2px 14px rgba(0,0,0,.85), 0 1px 3px rgba(0,0,0,.7);
+  background:linear-gradient(180deg,transparent,rgba(10,8,8,.55));
+  padding:14px 16px 12px; left:0; right:0; bottom:0;
+}
+.chapter__tags{ font-size: var(--fs-label); letter-spacing:.2em; color: var(--gold-on-paper); opacity:1; }
+.gtheme__sub{ font-size: var(--fs-note); letter-spacing:.12em; color: var(--text-dim); }
+.gallery__note{ font-size: var(--fs-lead); letter-spacing:.14em; color: var(--text-soft); }
+.gallery__arc{ font-size: clamp(1.0625rem, 2.1vw, 1.25rem); }
+.section__sub{ font-size: clamp(.9375rem, 1.5vw, 1.0625rem); letter-spacing:.08em; }
+.trailer__desc{ font-size: var(--fs-note); letter-spacing:.1em; color: var(--text-dim); }
+.dress__note{ font-size: var(--fs-note); letter-spacing:.18em; color: var(--text-dim); }
+.rsvp__note{ font-size: var(--fs-label); letter-spacing:.12em; color: var(--text-dim-paper); }
+.note-card__hint{ font-size: var(--fs-label) !important; letter-spacing:.1em !important; color: var(--text-dim) !important; }
+.rsvp-cta__hint{ font-size: var(--fs-label); letter-spacing:.08em; color: var(--text-dim-paper); }
+
+/* ── 4. 對比修正：金色／酒紅在「錯誤底色」上的使用 ──────────────────── */
+/* 淺底（紙感區塊）：金色 → 深金；灰字 → 深灰 */
+.section--paper .eyebrow,
+.section--paper .chapter__tags,
+.section--paper .gtheme__en,
+.section--paper .card__title-en{ color: var(--gold-on-paper); }
+.section--paper .section__sub,
+.section--paper .chapter__text,
+.section--paper .story__lead,
+.section--paper .gallery__note,
+.section--paper .msg-empty,
+.section--paper .rsvp__note,
+.section--paper .rsvp__intro,
+.section--paper .dress__note{ color: var(--text-dim-paper); }
+
+/* 深底：灰字提亮、金色提亮、酒紅提亮 */
+.section--dark .section__sub,
+.tl-panel__text, .trailer__desc, .gtheme__sub, .cd-label, .cd-label i,
+.dress__note, .footer__hash, .note-card__hint, .rsvp-cta__hint{ color: var(--text-dim); }
+.tl-panel__no{ color: var(--wine-on-dark); filter:none; }
+.tl-panel__en, .chapter__en{ color: var(--gold-on-dark); }
+
+/* ── 5. 按鈕與互動元件：視覺語彙一致、對比可驗算 ────────────────────── */
+/* .btn--ghost 原本「酒紅字＋酒紅框」在深底只有 1.63:1（相簿「展開相簿」就是它） */
+.btn--ghost{
+  color: var(--gold-on-dark);
+  border-color: rgba(201,169,97,.62);
+  background: rgba(201,169,97,.06);
+}
+.btn--ghost:hover{ background: var(--wine); border-color: var(--wine); color:#FBF7EF; }
+
+/* 淺底區塊內的 ghost button 改用深金（對 paper 5.27:1） */
+.section--paper .btn--ghost{
+  color: var(--gold-on-paper);
+  border-color: rgba(124,95,28,.5);
+  background: rgba(124,95,28,.05);
+}
+.section--paper .btn--ghost:hover{ background: var(--wine); border-color: var(--wine); color: var(--gold-light); }
+
+/* 相簿「展開相簿」：字級 12→14px、加高可點區、與下方朝代標題拉近 */
+.gtheme__toggle{
+  font-size: var(--fs-label) !important;
+  letter-spacing:.2em; text-indent:.2em;
+  min-height:52px; padding:14px 30px;
+}
+.gtheme__toggle-wrap{ margin-top: clamp(18px, 2.2vw, 26px); }
+
+/* 一律 12px 起，避免 0.7rem 在字級縮放時掉到 9.6px */
+.btn{ font-size: var(--fs-cap); letter-spacing:.24em; }
+.btn--small{ font-size: var(--fs-cap); }
+.note-card__link{ font-size: var(--fs-cap); }
+.nav__link{ font-size: var(--fs-cap); letter-spacing:.2em; }
+.nav__mlink{ font-size: var(--fs-label); }
+.footer__seal{ font-size: var(--fs-cap); }
+.loader__sub{ font-size: var(--fs-cap); }
+
+/* ── 6. 相簿區：說明文字（使用者標示處）──────────────────────────────── */
+/* 「展開相簿」按鈕下方的朝代說明／相簿結語，統一 15–19px、可驗算色 */
+.gtheme__sub{ margin-top:16px; }
+.gallery__note{ margin-top: clamp(30px,4vw,48px); line-height: var(--lh-copy); }
+.gallery__arc{ line-height: var(--lh-copy); }
+
+/* ── 7. 小尺寸裝置：只放大不縮小 ─────────────────────────────────────── */
+@media (max-width:640px){
+  body{ line-height:1.88; }
+  /* 手機：H2 下限 30px，H3 一律收在 28px 以下，確保永不出現層級倒掛 */
+  .section__title{ font-size: clamp(1.875rem, 7.6vw, 2.125rem); letter-spacing:.1em; }
+  .gtheme__name{ font-size: 1.5rem; }
+  .chapter__zh{ font-size: 1.375rem; }
+  .tl-panel__zh{ font-size: clamp(1.5rem, 6.8vw, 1.75rem); }
+  .story__finale-names{ font-size: clamp(1.375rem, 5.4vw, 1.5rem); }
+  .gtheme__sub{ font-size: var(--fs-label); }
+  .gallery__note{ font-size: var(--fs-body); }
+  .eyebrow{ font-size: var(--fs-cap); letter-spacing:.24em; }
+  .gtheme__toggle{ width:100%; max-width:320px; }
+}
+
+/* ── 7b. 表單小標的拉丁字：淺底金 → 深金（原金色壓白底僅 2.11:1）────────── */
+.rsvp-form label i, .rsvp-form legend i, .rsvp-nums__title i,
+.ecard-panel__row label i{ color: var(--gold-on-paper); opacity:1; }
+.invite-card__pre{ color: var(--wine-on-paper); }
+.ecard-panel__row label{ color: var(--wine-on-paper); }
+
+/* ── 8. 減少動態偏好者的可讀性保障 ───────────────────────────────────── */
+@media (prefers-reduced-motion:reduce){
+  .g-item img{ opacity:1 !important; }
+}
