@@ -1,0 +1,272 @@
+/* ============================================================================
+   v94 — 全面移除「壓在圖片上的文字」
+   ----------------------------------------------------------------------------
+   原則：圖片歸圖片、文字歸文字。
+   - 不再使用半透明遮罩把文字硬壓在照片上；
+   - 需要保留的文案，改成照片「下方」的獨立文字區塊（博物館標籤式排版）；
+   - 純裝飾用的遮罩（veil / scrim）隨文字撤除而一併移除；
+   - 保留原本語彙：Noto Serif TC 襯線、酒紅／金／米白紙感、留白節奏。
+   本檔為覆蓋層，styles.css 與 v93-typography.css 皆未改動。
+   ============================================================================ */
+
+:root{
+  --hero-img-h: clamp(320px, 58vh, 580px);   /* hero 圖片高度（文字移到其下方） */
+  --tl-img-h:   clamp(260px, 44vh, 470px);   /* 三生三世單元圖片高度 */
+  --il-img-h:   clamp(260px, 44vh, 470px);   /* 過場圖片高度 */
+  --ec-img-h:   clamp(230px, 32vw, 400px);   /* 電子喜帖圖片高度 */
+}
+
+/* ────────────────────────────────────────────────────────────────
+   1. 導覽列：不再透明浮貼於 hero 照片之上
+   ──────────────────────────────────────────────────────────────── */
+.nav{
+  background: rgba(12,10,9,.94);
+  -webkit-backdrop-filter: blur(14px) saturate(1.05);
+  backdrop-filter: blur(14px) saturate(1.05);
+  border-bottom-color: rgba(201,169,97,.16);
+}
+.nav.scrolled{ background: rgba(12,10,9,.975); }
+
+/* ────────────────────────────────────────────────────────────────
+   2. HERO：照片在上、文字在下（照片區完全無字）
+   ──────────────────────────────────────────────────────────────── */
+.hero{
+  display: block;
+  min-height: 0;
+  padding-top: calc(var(--nav-h) + 6px);
+  padding-bottom: clamp(56px, 8vw, 96px);
+}
+.hero__bg{
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: var(--hero-img-h);
+  background-position: center;
+  overflow: hidden;
+  /* 文字已不在照片上，不需要 Ken Burns 位移把影像推出自己的區塊 */
+  animation: none !important;
+  transform: none !important;
+}
+/* 裝飾層（微粒／絲光／花瓣）只覆蓋照片區，不伸進文字區 */
+.hero__veil,
+.hero__dust,
+.hero__silk,
+.hero__petals{
+  top: calc(var(--nav-h) + 6px);
+  bottom: auto;
+  height: var(--hero-img-h);
+  pointer-events: none;
+}
+/* 照片上不再有字，因此只留極淡的底部暈影收邊，不再用重遮罩製造文字對比 */
+.hero__veil{
+  background: linear-gradient(180deg, rgba(10,8,8,.34) 0%, rgba(10,8,8,.06) 26%, rgba(10,8,8,0) 58%, rgba(10,8,8,.42) 100%);
+}
+.hero__content{
+  position: relative;
+  z-index: 4;
+  width: min(1000px, 90vw);
+  margin: 0 auto;
+  padding: clamp(46px, 6.5vw, 78px) 0 0;
+  text-align: center;
+}
+/* 文字已離開照片，原本為壓在照片上而加的濃黑影請撤掉 */
+.hero__names{ text-shadow: none; }
+.hero__scroll{
+  position: relative;
+  left: auto;
+  bottom: auto;
+  transform: none;
+  margin: clamp(30px, 4.5vw, 46px) auto 0;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   3. 章節圖說（第一世・相遇 …）：照片下方獨立文字
+   ──────────────────────────────────────────────────────────────── */
+.chapter__media{
+  display: block;
+  overflow: visible;      /* 圖說在圖片區之外，不能被裁掉 */
+  box-shadow: none;       /* 陰影改加在圖片本身，避免框住圖說 */
+}
+.chapter__media img{
+  box-shadow: 0 40px 90px -46px rgba(19,16,16,.6);
+}
+/* 原本壓在照片上的漸層遮罩與內框一律撤除 */
+.chapter__media:after,
+.chapter__media:before{ display: none; }
+/* 影像不再放大，避免溢出到下方圖說區 */
+.chapter__media img,
+.chapter__media:hover img{ transform: none; }
+.chapter__media-cap{
+  position: static;
+  left: auto; right: auto; bottom: auto;
+  display: block;
+  width: auto;
+  margin: 0;
+  padding: 16px 8px 0;
+  background: none;
+  border: 0;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  text-align: center;
+  text-shadow: none;
+  font-size: var(--fs-label, 0.875rem);
+  letter-spacing: .24em;
+  text-indent: .24em;
+  color: var(--wine-on-paper, #6E1626);
+}
+.chapter__media-cap:before{
+  content: "";
+  display: block;
+  width: 34px;
+  height: 1px;
+  margin: 0 auto 13px;
+  background: linear-gradient(90deg, transparent, rgba(110,22,38,.55), transparent);
+}
+
+/* ────────────────────────────────────────────────────────────────
+   4. 相簿：每張照片上的圖說疊層完全移除（朝代標題本來就在照片上方）
+   ──────────────────────────────────────────────────────────────── */
+.g-item figcaption{ display: none !important; }
+
+/* ────────────────────────────────────────────────────────────────
+   5. 過場（三生三世，我們走過不同的風景）：照片在上、文字在下
+   ──────────────────────────────────────────────────────────────── */
+.interlude{
+  display: block;
+  min-height: 0;
+}
+.interlude__bg{
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: var(--il-img-h);
+  transform: none;
+  background-size: cover;
+  background-position: center;
+}
+.interlude__veil{ display: none; }
+.interlude__content{
+  position: relative;
+  z-index: 2;
+  margin: 0 auto;
+  max-width: 920px;
+  padding: clamp(46px, 7vw, 92px) 24px;
+}
+/* 文字已離開照片，原本為壓圖而加的光暈與陰影一併撤除 */
+.interlude__mark{ text-shadow: none; }
+
+/* ────────────────────────────────────────────────────────────────
+   6. 三生三世 三個單元：每張照片獨立，文字在其下方
+   ──────────────────────────────────────────────────────────────── */
+.three-lives .tl-panel{
+  display: block;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  margin-bottom: clamp(36px, 5vw, 64px);
+}
+.tl-panel__bg{
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: var(--tl-img-h);
+  transform: none;
+  background-size: cover;
+  background-position: center;
+}
+.tl-panel.in .tl-panel__bg{ transform: none; }
+.tl-panel__veil{ display: none; }
+/* 文字已離開照片，原本為壓圖而加的濃重陰影撤除 */
+.tl-panel__zh{ text-shadow: none; }
+.tl-panel__no{ filter: none; }
+.tl-panel__content{
+  position: relative;
+  width: min(760px, 90vw);
+  margin: 0 auto;
+  padding: clamp(38px, 5.5vw, 64px) 10px;
+}
+/* 單元之間以細金線收邊，取代原本靠照片滿版撐出的分隔感 */
+.three-lives .tl-panel + .tl-panel{
+  border-top: 1px solid rgba(201,169,97,.16);
+  padding-top: clamp(36px, 5vw, 64px);
+  margin-top: 0;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   7. 電子喜帖：照片輪播在上、文案與按鈕在下
+   ──────────────────────────────────────────────────────────────── */
+.ecard-show{
+  display: flex;
+  flex-direction: column;
+  aspect-ratio: auto;
+  background: #0e0b0a;
+}
+.ecard-show__slider{
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: var(--ec-img-h);
+  flex: none;
+}
+.ecard-show__veil,
+.ecard-show__frame{ display: none; }
+.ecard-show__content{
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-width: none;
+  padding: clamp(26px, 4vw, 44px) clamp(24px, 4.2vw, 52px) clamp(28px, 4.4vw, 48px);
+  background: #131010;
+}
+.ecard-show__dots{
+  top: calc(var(--ec-img-h) - 44px);
+  bottom: auto;
+  right: clamp(16px, 3vw, 32px);
+}
+/* 文案已離開照片，原本為壓圖而加的濃重陰影全部撤除 */
+.ecard-show__eyebrow,
+.ecard-show__title,
+.ecard-show__names,
+.ecard-show__meta,
+.ecard-show__text,
+.ecard-show__cta-text,
+.ecard-show__cta-en{ text-shadow: none; }
+/* 圖片輪播本身維持滿版比例，不用再放大出畫 */
+.ecard-show__slide.is-on,
+.ecard-show__slide{ transform: none; }
+.ecard-show__slide.is-on{ opacity: 1; }
+
+/* ────────────────────────────────────────────────────────────────
+   8. 預告片：素材占位圖上只留播放圖示，文字改用影格下方既有標題
+   ──────────────────────────────────────────────────────────────── */
+.trailer__ph-text{ display: none; }
+
+/* ────────────────────────────────────────────────────────────────
+   9. 手機（390×844）：等比縮小，維持同樣的「圖上無字」結構
+   ──────────────────────────────────────────────────────────────── */
+@media (max-width: 760px){
+  :root{
+    --hero-img-h: clamp(240px, 40vh, 340px);
+    --tl-img-h:   clamp(200px, 32vh, 290px);
+    --il-img-h:   clamp(200px, 30vh, 290px);
+    --ec-img-h:   clamp(200px, 56vw, 300px);
+  }
+  .hero{ padding-bottom: clamp(44px, 10vw, 64px); }
+  .hero__content{ padding-top: clamp(34px, 8vw, 48px); }
+  .chapter__media-cap{ padding-top: 13px; letter-spacing: .2em; text-indent: .2em; }
+  .chapter__media-cap:before{ margin-bottom: 11px; }
+  .tl-panel__content{ padding: clamp(30px, 7vw, 44px) 8px; }
+  .ecard-show__content{
+    padding: clamp(22px, 6vw, 30px) clamp(18px, 5vw, 24px) clamp(24px, 6vw, 32px);
+    background: #131010;
+  }
+  .interlude__content{ padding: clamp(38px, 9vw, 56px) 20px; }
+}
+
+/* ────────────────────────────────────────────────────────────────
+   10. 減少動態偏好：不做任何位移進場，結構照樣正確
+   ──────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce){
+  .hero__bg{ animation: none; }
+  .tl-panel__bg{ transition: none; }
+}
