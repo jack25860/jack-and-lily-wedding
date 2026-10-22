@@ -1,0 +1,96 @@
+/* ============================================================================
+   v98 —「三生三世」章節標籤（第一世／第二世／第三世）：移除 v97 的酒紅底＋金細框
+   ----------------------------------------------------------------------------
+   為什麼要換掉 v97 的籤牌（實測與語彙盤點，非主觀）：
+     v97 的 `.tl-panel__no` 是站上唯一「不透明底 + 邊框 + 投影」三重疊加的
+     純文字元素。全頁 59 個四面帶框的元素裡，四框只用於「內容容器」（影片框、
+     地圖、場地照，且從不壓在照片上）或「可點擊元件」（.btn / .rsvp__fields li）。
+     一個三級資訊（第幾世）卻佔用最高階的視覺訊號，眼睛先讀到框、再讀到字。
+     另外框內 78% 是空的（外框 88×35，三個字墨跡只有 45×13），連三張照片各出
+     現一次，會被讀成「三個平行區塊」而不是同一段落的三個序號。
+
+   解法（Technical Artist 的 S4）：羽化遮罩 ＋ 左右金色細線
+     · 無邊框、無圓角、無投影 —— 最外圈 alpha = 0，因此不存在可看見的邊
+     · 對比與照片徹底脫鉤：六個取樣點落在 13.94–14.30 的窄帶
+     · 左右細線複用站上 `.section__head .eyebrow` 既有的語彙（同一個金、同一
+       條 1px 漸層線），不加框但仍然有裝飾
+   ============================================================================ */
+
+/* ── 1. 標籤本體 ───────────────────────────────────────────────────────────── */
+.tl-panel__no{
+  /* 排版：文字、細線由 flex 排，間距一致 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .92em;
+
+  /* 「不加框」的核心：三件事全部清掉 */
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+
+  /* 羽化遮罩：最外圈 alpha = 0 → 邊界處完全透明，不會出現任何可見的邊 */
+  background: radial-gradient(closest-side ellipse at 50% 50%,
+      rgba(9,7,6,.94) 0%,
+      rgba(9,7,6,.91) 46%,
+      rgba(9,7,6,.62) 72%,
+      rgba(9,7,6,.24) 88%,
+      rgba(9,7,6,0)  100%);
+
+  /* 橫向留白就是羽化距離，36px 是「羽化在細線之前完成」的下限 */
+  padding: 17px 36px;
+
+  /* 字 */
+  color: var(--gold-light);              /* #EBDCB6 → 對羽化底 13.96:1 */
+  font-size: 14px;                       /* 中文下限，不再隨字級切換縮小 */
+  font-weight: 500;                      /* Noto Serif TC 只實載 300/400/500 */
+  line-height: 1.5;
+  letter-spacing: .14em;                 /* 14px × .14 = 1.96px，與 44px 主標同節奏 */
+  text-indent: .14em;                    /* 抵掉行尾多出的一格字距，視覺才真置中 */
+
+  /* 清掉 v97 的殘留 */
+  filter: none;
+  opacity: 1;
+  text-shadow: none;
+
+  margin: 0 0 20px;
+}
+
+/* ── 2. 左右金色細線：與 .section__head .eyebrow 完全相同的語彙 ────────────── */
+.tl-panel__no::before,
+.tl-panel__no::after{
+  content: "";
+  display: block;
+  width: 26px;
+  height: 1px;
+  flex: none;
+}
+.tl-panel__no::before{
+  background: linear-gradient(90deg, rgba(201,169,97,0), rgba(201,169,97,.92));
+}
+.tl-panel__no::after{
+  background: linear-gradient(90deg, rgba(201,169,97,.92), rgba(201,169,97,0));
+}
+
+/* ── 3. 手機：整體收窄，字級不動 ──────────────────────────────────────────── */
+@media (max-width: 640px){
+  .tl-panel__no{
+    padding: 15px 30px;
+    gap: .8em;
+    letter-spacing: .12em;
+    text-indent: .12em;
+    margin-bottom: 16px;
+  }
+  .tl-panel__no::before,
+  .tl-panel__no::after{
+    width: 20px;
+  }
+}
+
+/* ── 4. 與前後文的層級：標籤(14) < 英文小標(12 Caps) < 主標(44) ───────────── */
+.tl-panel__no + .tl-panel__zh{ margin-top: 0; }
+
+/* ── 5. 降低動態偏好時不做任何額外效果 ────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce){
+  .tl-panel__no{ transition: none; }
+}
