@@ -1,0 +1,64 @@
+/* ============================================================================
+   v97 — 「三生三世」區塊章節標籤（第一世／第二世／第三世）重新設計
+   ----------------------------------------------------------------------------
+   問題（實測，非目測）：
+     v96 的 .tl-panel__no 是「裸字直接壓在照片上」：
+       color: var(--wine-on-dark) = #E3A9B2 → 深底用的粉紅，放到照片上完全走鐘
+       font-size: 14px / letter-spacing: 7px（0.5em）→ 字距過寬，與相鄰的 44px 標題打架
+       背景是照片，亮度逐張不同 → 對比在 2.4:1 ~ 8.6:1 之間亂跳，亮部直接不及格
+   解法：
+     不再讓文字去對抗照片，改給它一個自己的底 —— 酒紅近不透明底 ＋ 金色細框的
+     「小籤」牌（chip）。與站上既有的 .trailer__tag / .rsvp__fields li 同一套語彙。
+     底色近乎不透明 → 對比與照片無關，恆定 ≥ 7.5:1。
+   只動型與色，不動結構、不動尺寸節奏。
+   ============================================================================ */
+
+/* ── 1. 章節標籤：酒紅底 ＋ 金細框 ───────────────────────────────────────── */
+.tl-panel__no{
+  /* 排版：小籤牌自成一格，不再靠字距撐場 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 6px 18px;
+  border: 1px solid rgba(201,169,97,.52);
+  border-radius: 2px;                    /* 與 .btn / .trailer__tag 一致 */
+  background: linear-gradient(180deg, rgba(42,10,17,.94), rgba(42,10,17,.88));
+  box-shadow: 0 8px 22px -12px rgba(0,0,0,.85), 0 0 0 1px rgba(201,169,97,.10) inset;
+
+  /* 字：中文 ≥ 14px；字距收斂到 2px 級，與 44px 主標不再互相拉扯 */
+  font-size: 14px;
+  font-weight: 500;                      /* Noto Serif TC 只實際載入 300/400/500 */
+  line-height: 1.5;
+  letter-spacing: .14em;                 /* 14px × .14 = 1.96px */
+  text-indent: .14em;                    /* 抵掉行尾多出的那一格字距，視覺才真置中 */
+  color: var(--gold-light);              /* #EBDCB6 */
+
+  /* 清掉舊版的殘留 */
+  filter: none;
+  opacity: 1;
+  text-shadow: none;
+
+  margin-bottom: 20px;
+}
+
+/* 手機：留白收一點，字級不縮（中文 14px 是不動的下限） */
+@media (max-width: 640px){
+  .tl-panel__no{
+    padding: 5px 14px;
+    font-size: 14px;
+    letter-spacing: .12em;
+    text-indent: .12em;
+    margin-bottom: 16px;
+  }
+}
+
+/* ── 2. 與前後文的層級：籤牌(14) < 英文小標(12 Caps) < 主標(44) ─────────────
+   標籤是「第幾世」的索引，語意上比英文小標更靠前，因此補一點上下呼吸，
+   讓它與 44px 主標之間有明確的階梯，而不是擠在一起。 */
+.tl-panel__no + .tl-panel__zh{ margin-top: 0; }
+
+/* ── 3. 使用者偏好降低動態時，不做任何額外效果 ───────────────────────────── */
+@media (prefers-reduced-motion: reduce){
+  .tl-panel__no{ transition: none; }
+}
