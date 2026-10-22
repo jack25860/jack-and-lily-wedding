@@ -1,0 +1,87 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   v96 — 圓形浮動鈕幾何鎖定（修正「返回最頂部」按鈕變形）
+   ────────────────────────────────────────────────────────────────────────────
+   只修「幾何」，不動字體、顏色、間距語彙。
+
+   ▸ 問題
+     `.totop` 的 `border-radius` 只是「把它當圓／膠囊」的宣告，
+     但元素本身從未拿到相等的寬與高：
+       · 寬 = 內容收縮（shrink-to-fit）→ 由 "TOP" 在訪客字型下的實際寬決定
+       · 高 = 內容高 或 v95 的 `min-height:62px`
+     兩軸來源不同，圓只會在「剛好相等」時出現。
+
+   ▸ 實測（Chromium 1440×900，修前）
+       字級 小：59.19 × 62.00 → 橢圓（−2.81）
+       字級 中：63.36 × 62.00 → 橢圓（+1.36）
+       字級 大：70.11 × 62.00 → 明顯橢圓（+8.11）
+       手機 ≤640px：42.00 × 62.00 → 直立橢圓（−20.00）★使用者附圖
+     手機在 v94 時是 42 × 42 正圓；v95 為了鎖住文字置中而加的
+     `min-height:62px` 只鎖高度、沒鎖寬度 —— 這是最後一根稻草。
+
+   ▸ 修法
+     以單一自訂屬性 `--totop-d` 同時餵給 width / height / min-* / max-*，
+     兩軸自此同源，`border-radius:50%` 才是真正的正圓；
+     padding 歸零（置中交給 flex），直徑以 rem 表達 → 隨 Tt 字級等比縮放。
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.totop {
+  /* 16px root → 62px（與 v95 的桌機盒高一致，視覺不跳） */
+  --totop-d: 3.875rem;
+
+  width: var(--totop-d);
+  height: var(--totop-d);
+  min-width: var(--totop-d);
+  min-height: var(--totop-d);
+  max-width: var(--totop-d);
+  max-height: var(--totop-d);
+
+  padding: 0;              /* 原本 12px 14px；置中改由 flex 負責，不再靠 padding 撐形 */
+  border-radius: 50%;      /* 圓形跟隨單一直徑 → 恆為正圓 */
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  flex: none;              /* 避免被任何 flex 父層壓扁 */
+}
+
+/* 手機：文字已隱藏，只有箭頭 → 直徑收到 48px，對齊 .fontctl__toggle 的 48px */
+@media (max-width: 640px) {
+  .totop {
+    --totop-d: 48px;
+    padding: 0;
+  }
+}
+
+/* 內容不得撐破圓：箭頭與文字皆為單行、不換行 */
+.totop__arrow,
+.totop__text {
+  flex: none;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* ── 其餘「圓形／膠囊」控制項：確認未被 v95 影響，明示鎖定以免日後回歸 ── */
+/* Tt（正圓，v95 只動了 place-items / padding，盒尺寸未變） */
+.fontctl__toggle {
+  width: 50px;
+  height: 50px;
+  min-width: 50px;
+  min-height: 50px;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+@media (max-width: 640px) {
+  .fontctl__toggle {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+  }
+}
+
+/* MUSIC ON（膠囊／手機為近圓）：v95 未觸及此控制項（實測 v94 與 v95 尺寸完全相同），
+   維持原設計不動 —— 只在此註記「已確認非本次回歸」。 */
