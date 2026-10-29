@@ -620,8 +620,8 @@
     canvas.appendChild(svg);
 
     /* 圖例 / 資料來源註記（SVG 內；v74：移至右下角，避開廚房上菜口） */
-    var srcTx = el("text", { class: "venue-caption", x: 18, y: VB_H - 14, "text-anchor": "start" }, svg);
-    srcTx.textContent = "SEATING CHART · JACK & LILY";
+    var srcTx = el("text", { class: "venue-caption venue-caption--zh", x: 18, y: VB_H - 14, "text-anchor": "start" }, svg);
+    srcTx.textContent = "SEATING CHART · 王有岑 & 杜伊穠";
   }
 
   function buildTable(t, cx, cy, side) {

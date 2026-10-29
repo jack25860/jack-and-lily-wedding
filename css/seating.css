@@ -65,6 +65,8 @@
 .seat-hero__title{margin-top:22px;font-family:var(--zh);font-weight:400;font-size:clamp(1.75rem,4.6vw,3rem);letter-spacing:.16em;line-height:1.5;color:#fbf7ef}
 .seat-hero__sub{margin-top:18px;font-size:clamp(.88rem,1.8vw,1.02rem);letter-spacing:.24em;color:var(--gold-light)}
 .seat-hero__meta{margin-top:14px;font-family:var(--en-caps);font-size:.62rem;letter-spacing:.34em;color:var(--grey-1)}
+/* v100：頁首副標改為中文新人姓名（CJK 用中文字體、字距縮小，避免手機換行破版） */
+.seat-hero__meta-names{font-family:var(--zh);font-size:1.15em;letter-spacing:.14em;color:var(--gold-light);white-space:nowrap}
 .seat-hero__rule{display:flex;justify-content:center;margin:clamp(26px,4vw,40px) 0 0}
 .seat-hero__rule span{width:min(260px,58%);height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
 
@@ -264,6 +266,8 @@
 
 .side-label{fill:var(--wine);font-size:10px;letter-spacing:.26em;opacity:.72}
 .venue-caption{fill:var(--grey-1);font-family:var(--en-caps);font-size:7.5px;letter-spacing:.24em}
+/* v100：圖說改為中文新人姓名（CJK 需用中文字體，字距縮小以免過寬） */
+.venue-caption--zh{font-family:var(--zh);font-size:8px;letter-spacing:.1em}
 
 /* ── SVG：桌次 ── */
 .tbl{cursor:pointer}
