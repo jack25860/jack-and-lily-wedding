@@ -573,15 +573,13 @@ sweep(document)})();</script>
     <div class="films films--single films--hero">
       <div class="trailer reveal" id="trailerBlock">
         <div class="trailer__frame" id="trailerFrame">
-          <video id="trailerVideo" class="trailer__video" playsinline muted preload="none" poster="images/trailer-poster-1920.jpg"></video>
+          <video id="trailerVideo" class="trailer__video" playsinline webkit-playsinline preload="none" poster="images/trailer-poster-1920.jpg"></video>
           <div class="trailer__placeholder" id="trailerPlaceholder">
             <button type="button" class="trailer__play" id="trailerPlay" aria-label="播放結婚預告片"></button>
             <p class="trailer__ph-text" data-cfg="TRAILER_CAPTION">點擊播放，看我們的故事。</p>
           </div>
         </div>
         <div class="trailer__meta">
-          <p class="trailer__tag" id="trailerTag">即將上映 · 12.01</p>
-          <p class="trailer__count" id="trailerCount" hidden></p>
           <h3 class="trailer__title" data-cfg="TRAILER_TITLE">結婚預告片</h3>
         </div>
       </div>
