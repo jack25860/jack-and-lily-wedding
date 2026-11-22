@@ -30,9 +30,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Apply v102 site patch
-        run: |
-          set -e
-          python3 scripts/v102_patch.py
+        run: python3 scripts/v102_patch.py
 
       - name: Install ffmpeg
         run: |
@@ -46,7 +44,8 @@ jobs:
           set -e
           curl -L --fail --retry 5 --retry-delay 10 --retry-all-errors \
                --max-time 1800 -o /tmp/master.mp4 "${{ github.event.inputs.master_url }}"
-          sz=$(stat -c%s /tmp/master.mp4); echo "master $sz bytes"
+          sz=$(stat -c%s /tmp/master.mp4)
+          echo "master $sz bytes"
           [ "$sz" -gt 1000000 ] || { echo "master too small"; exit 1; }
           ffprobe -v error -show_entries format=duration,size,bit_rate \
                   -show_entries stream=codec_type,width,height,bit_rate \
@@ -87,33 +86,8 @@ jobs:
             ffprobe -v error -show_entries format=duration,size,bit_rate \
                     -show_entries stream=codec_type,width,height,bit_rate \
                     -of default=noprint_wrappers=1 "$f"
-            python3 - "$f" <<'PY'
-import struct, sys, os
-p = sys.argv[1]
-sz = os.path.getsize(p)
-f = open(p, 'rb')
-off = 0
-order = []
-while off < sz:
-    f.seek(off)
-    h = f.read(8)
-    if len(h) < 8:
-        break
-    l = struct.unpack('>I', h[:4])[0]
-    t = h[4:8].decode('latin1')
-    if l == 1:
-        l = struct.unpack('>Q', f.read(8))[0]
-    elif l == 0:
-        l = sz - off
-    order.append(t)
-    if l <= 0:
-        break
-    off += l
-print("atoms:", order)
-assert order.index('moov') < order.index('mdat'), "moov is not before mdat"
-print("faststart OK")
-PY
           done
+          python3 scripts/check_faststart.py videos/trailer-1080p.mp4 videos/trailer-720p.mp4
 
       - name: Commit and push
         run: |
