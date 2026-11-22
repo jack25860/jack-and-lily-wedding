@@ -1,0 +1,35 @@
+name: v102 polish (version marker + trailer filter)
+
+# Applies scripts/v102_polish.py to index.html: bumps the site-version meta and
+# drops the CSS filter on the trailer video. No video download, no transcode —
+# it only edits index.html, so it is fast and safe to run on its own.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  polish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply polish
+        run: python3 scripts/v102_polish.py
+
+      - name: Commit and push
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "v102: bump site-version to v102, drop CSS filter on trailer video"
+            git push
+          fi
