@@ -279,3 +279,15 @@ html:not(.has-js) #fontctlOpts{display:none}
 /* v91：燈箱進場／出場維持縮放＋淡入淡出，不突然跳出 */
 .lightbox{transition:opacity .62s var(--ease-soft),visibility .62s var(--ease-soft)}
 .lightbox:not(.shown){pointer-events:none}
+
+/* ══ v101：結婚預告片嵌入（影片串流、點擊載入、內側暗角、背景音樂連動） ══ */
+.trailer__video{opacity:1;transition:opacity .6s var(--ease);background:#0e0b0a;filter:saturate(1.04) contrast(1.02) hue-rotate(-2deg)}
+/* poster 需在點擊前就看得見：佔位層改為半透明暗化層，讓 16:9 poster 透出、金色播放鈕仍可讀 */
+.trailer__placeholder{background:linear-gradient(180deg,rgba(19,16,16,.40),rgba(42,10,17,.62))}
+button.trailer__play{padding:0;background:none;cursor:pointer}
+button.trailer__play:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+.trailer__frame:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;background:radial-gradient(120% 100% at 50% 50%,transparent 58%,rgba(19,16,16,.42) 100%),linear-gradient(180deg,rgba(19,16,16,.18),transparent 22%,transparent 78%,rgba(19,16,16,.28))}
+.trailer__frame.is-loading:before{content:"";position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border:2px solid rgba(201,169,97,.32);border-top-color:var(--gold-light);border-radius:50%;z-index:3;animation:trailerSpin .9s linear infinite}
+@keyframes trailerSpin{to{transform:rotate(360deg)}}
+@media(max-width:640px){.films--hero{width:92vw}}
+@media(prefers-reduced-motion:reduce){.trailer__video{transition:none}.trailer__frame.is-loading:before{animation:none}}
