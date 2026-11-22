@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head><script>document.documentElement.className+=" has-js";</script>
-<meta name="site-version" content="v99">
+<meta name="site-version" content="v102">
 <meta name="motion" content="silky-no-flash"><script data-tmly-media-guard="1">(function(){"use strict";
 var T=window.__tmly||(window.__tmly=(function(){
 var o={},n=String(window.name||"");
@@ -116,6 +116,12 @@ sweep(document)})();</script>
 <link rel="preload" as="audio" href="audio/wedding-theme.mp3" type="audio/mpeg">
 <!-- v55：清除舊版可能殘留的「音樂關閉／靜音」localStorage 值，確保背景音樂一律預設開啟（不受舊狀態影響） -->
 <script>(function(){try{var ks=[],i;for(i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&/music|muted|bgm|sound/i.test(k)){ks.push(k)}}for(i=0;i<ks.length;i++){localStorage.removeItem(ks[i])}}catch(e){}})();</script>
+<style>/* v102 - 影片播放效能微調：移除影片上的 CSS filter。
+   原本的 saturate(1.04) contrast(1.02) hue-rotate(-2deg) 會讓瀏覽器對每一格畫面多做一次濾鏡合成，
+   在低階手機上是純粹的額外負擔。實測影片本身已偏暖、22s 拜堂段與站上酒紅幾乎同色系，
+   色調本躪就協調，不需要這層修飾。內側暗角 (`.trailer__frame:after`) 保留。 */
+.trailer__video{filter:none}
+</style>
 </head>
 <body class="is-loading">
 
