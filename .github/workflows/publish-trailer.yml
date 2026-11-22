@@ -1,0 +1,129 @@
+name: Publish wedding trailer v102
+
+# This repo is edited from a sandbox whose plan cannot encode video, so the whole
+# job runs here on a GitHub-hosted runner (which has ffmpeg). One dispatch is
+# atomic and self-verifying:
+#   1. applies scripts/v102_patch.py to the checked-out site files
+#   2. downloads the 4K master
+#   3. transcodes 1080p + 720p with +faststart and loudnorm
+#   4. commits everything to this branch -> GitHub Pages serves it
+#
+# The 4K master (3840x2160, 69 Mbps, 271 MB, moov atom at EOF) is never committed:
+# it is far over GitHub's 100 MB file limit and is useless for web playback.
+
+on:
+  workflow_dispatch:
+    inputs:
+      master_url:
+        description: "Public URL of the 4K trailer master (.mp4)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply v102 site patch
+        run: |
+          set -e
+          python3 scripts/v102_patch.py
+
+      - name: Install ffmpeg
+        run: |
+          set -e
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          ffmpeg -version | head -1
+
+      - name: Download 4K master
+        run: |
+          set -e
+          curl -L --fail --retry 5 --retry-delay 10 --retry-all-errors \
+               --max-time 1800 -o /tmp/master.mp4 "${{ github.event.inputs.master_url }}"
+          sz=$(stat -c%s /tmp/master.mp4); echo "master $sz bytes"
+          [ "$sz" -gt 1000000 ] || { echo "master too small"; exit 1; }
+          ffprobe -v error -show_entries format=duration,size,bit_rate \
+                  -show_entries stream=codec_type,width,height,bit_rate \
+                  -of default=noprint_wrappers=1 /tmp/master.mp4
+
+      - name: Transcode 1080p (desktop)
+        run: |
+          set -e
+          mkdir -p videos
+          ffmpeg -nostdin -hide_banner -y -i /tmp/master.mp4 \
+            -vf "scale=1920:1080:flags=lanczos,format=yuv420p" \
+            -c:v libx264 -profile:v high -level 4.1 -preset slow \
+            -crf 20 -maxrate 9M -bufsize 18M \
+            -g 60 -keyint_min 60 -sc_threshold 0 \
+            -c:a aac -b:a 128k -ar 48000 -ac 2 \
+            -af "loudnorm=I=-16:TP=-1.5:LRA=11" \
+            -movflags +faststart videos/trailer-1080p.mp4
+          ls -lh videos/trailer-1080p.mp4
+
+      - name: Transcode 720p (mobile)
+        run: |
+          set -e
+          ffmpeg -nostdin -hide_banner -y -i /tmp/master.mp4 \
+            -vf "scale=1280:720:flags=lanczos,format=yuv420p" \
+            -c:v libx264 -profile:v high -level 4.0 -preset slow \
+            -crf 23 -maxrate 3.5M -bufsize 7M \
+            -g 60 -keyint_min 60 -sc_threshold 0 \
+            -c:a aac -b:a 96k -ar 48000 -ac 2 \
+            -af "loudnorm=I=-16:TP=-1.5:LRA=11" \
+            -movflags +faststart videos/trailer-720p.mp4
+          ls -lh videos/trailer-720p.mp4
+
+      - name: Verify outputs
+        run: |
+          set -e
+          for f in videos/trailer-1080p.mp4 videos/trailer-720p.mp4; do
+            echo "--- $f"
+            ffprobe -v error -show_entries format=duration,size,bit_rate \
+                    -show_entries stream=codec_type,width,height,bit_rate \
+                    -of default=noprint_wrappers=1 "$f"
+            python3 - "$f" <<'PY'
+import struct, sys, os
+p = sys.argv[1]
+sz = os.path.getsize(p)
+f = open(p, 'rb')
+off = 0
+order = []
+while off < sz:
+    f.seek(off)
+    h = f.read(8)
+    if len(h) < 8:
+        break
+    l = struct.unpack('>I', h[:4])[0]
+    t = h[4:8].decode('latin1')
+    if l == 1:
+        l = struct.unpack('>Q', f.read(8))[0]
+    elif l == 0:
+        l = sz - off
+    order.append(t)
+    if l <= 0:
+        break
+    off += l
+print("atoms:", order)
+assert order.index('moov') < order.index('mdat'), "moov is not before mdat"
+print("faststart OK")
+PY
+          done
+
+      - name: Commit and push
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "v102: web-optimised trailer (1080p+720p, faststart+loudnorm), sound on, release tag removed"
+            git push
+          fi
