@@ -291,3 +291,22 @@ button.trailer__play:focus-visible{outline:2px solid var(--gold);outline-offset:
 @keyframes trailerSpin{to{transform:rotate(360deg)}}
 @media(max-width:640px){.films--hero{width:92vw}}
 @media(prefers-reduced-motion:reduce){.trailer__video{transition:none}.trailer__frame.is-loading:before{animation:none}}
+
+/* ===== v103 - playback compositing relief =====
+   While the video decodes the page is still running a full-viewport grain
+   blend, a ken-burns hero, drifting silk/dust, falling petals, a blurred
+   sticky nav and will-change on every .reveal. Each of those re-composites
+   every frame and competes with the video. YouTube deprioritises background
+   rendering during playback; this does the same, only while playing. */
+html.trailer-active .hero__bg,
+html.trailer-active .hero__dust,
+html.trailer-active .hero__silk,
+html.trailer-active .hero__petals span,
+html.trailer-active .hero__scroll-text,
+html.trailer-active .hero__scroll-arrow:after,
+html.trailer-active .progress span,
+html.trailer-active .music__btn.playing .music__bars i{animation-play-state:paused!important}
+html.trailer-active .paper-grain{display:none!important}
+html.trailer-active .hero__petals{display:none!important}
+html.trailer-active .reveal{will-change:auto!important}
+html.trailer-active .nav.scrolled{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:#0f0c0bf2!important}
