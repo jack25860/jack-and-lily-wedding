@@ -1,0 +1,38 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   v107：留言功能跨裝置共用 ＋ iPhone 輸入時畫面跳動修正
+   ──────────────────────────────────────────────────────────────────────────
+   1) 跨裝置：留言改由 Google 試算表（共用）讀寫，任何裝置看到同一份。
+      （前端邏輯在 js/app.js；此檔僅負責樣式）
+   2) iPhone 跳動：Safari 在「輸入框字級 < 16px」時，聚焦會自動放大整頁，
+      造成畫面跳動。將留言表單輸入框字級固定為 16px 以上即可避免。
+   3) 輸入期間（html.msg-typing）暫停浮動控件的重新定位，避免鍵盤彈出時
+      反覆重排造成跳動。
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* 1) 防止 iOS Safari 聚焦自動放大：輸入框字級不得小於 16px */
+.msg-form input,
+.msg-form textarea {
+  font-size: 16px;
+}
+
+/* 2) 聚焦時捲動目標穩定，避免鍵盤彈出後版面來回位移 */
+.msg-form input,
+.msg-form textarea {
+  scroll-margin-top: calc(var(--nav-h) + 24px);
+  scroll-margin-bottom: 24px;
+}
+
+/* 3) 輸入期間：浮動控件（字體調整、回頂端）不重新定位，減少重排 */
+html.msg-typing .fontctl,
+html.msg-typing .totop {
+  transition: none;
+}
+
+/* 4) 留言卡片：長留言不撐破版面（避免水平溢位） */
+.msg-card__text {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.msg-card__name {
+  overflow-wrap: anywhere;
+}
