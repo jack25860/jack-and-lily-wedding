@@ -1,0 +1,48 @@
+/* v106 — RSVP 表單：手機號碼欄位與「選填」標記
+   只新增必要樣式，不改動既有 styles.css，避免影響其他區塊。 */
+
+/* 手機號碼輸入框沿用既有文字／信箱輸入框外觀，避免版面跳動 */
+.rsvp-form input[type="tel"]{
+  width:100%;
+  font-family:inherit;
+  font-size:1rem;
+  color:inherit;
+  background:transparent;
+  border:0;
+  border-bottom:1px solid rgba(110,22,38,.28);
+  padding:.7em .2em;
+  border-radius:0;
+  -webkit-appearance:none;
+  appearance:none;
+}
+.rsvp-form input[type="tel"]:focus{
+  outline:none;
+  border-bottom-color:var(--wine,#6E1626);
+}
+.rsvp-form input[type="tel"]::placeholder{
+  color:rgba(140,131,121,.75);
+}
+
+/* 「（選填）」標記 */
+.rsvp-form__opt{
+  font-family:var(--en-caps,"Cinzel",serif);
+  font-style:normal;
+  font-size:.6rem;
+  letter-spacing:.18em;
+  color:var(--gold,#C9A961);
+  opacity:.95;
+}
+
+/* 欄位下方格式提示 */
+.rsvp-form__hint{
+  margin:.45em 0 0;
+  font-size:.72rem;
+  letter-spacing:.08em;
+  line-height:1.6;
+  color:#8c8379;
+}
+
+/* 手機：提示文字不撐破容器 */
+@media (max-width:640px){
+  .rsvp-form__hint{font-size:.7rem;letter-spacing:.04em}
+}

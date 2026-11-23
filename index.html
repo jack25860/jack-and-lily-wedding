@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head><script>document.documentElement.className+=" has-js";</script>
-<meta name="site-version" content="v105">
+<meta name="site-version" content="v106">
 <meta name="motion" content="silky-no-flash"><script data-tmly-media-guard="1">(function(){"use strict";
 var T=window.__tmly||(window.__tmly=(function(){
 var o={},n=String(window.name||"");
@@ -111,6 +111,7 @@ sweep(document)})();</script>
   <link rel="stylesheet" href="css/v96-circle.css">
   <link rel="stylesheet" href="css/v97-lives.css">
   <link rel="stylesheet" href="css/v98-lives.css">
+  <link rel="stylesheet" href="css/v106-rsvp.css">
 <link rel="preload" as="image" href="images/hero.jpg">
 <!-- v52：背景音樂預先下載，讓開啟後 3 秒內即可出聲（不等待 JS 初始化） -->
 <link rel="preload" as="audio" href="audio/wedding-theme.mp3" type="audio/mpeg">
@@ -751,8 +752,14 @@ sweep(document)})();</script>
           </div>
 
           <div class="rsvp-form__row rsvp-form__row--full">
-            <label for="rsvpEmail">您的信箱 <i>EMAIL</i></label>
-            <input type="email" id="rsvpEmail" name="email" placeholder="guest@example.com" maxlength="80" autocomplete="email" required>
+            <label for="rsvpEmail">您的信箱 <i>EMAIL</i> <span class="rsvp-form__opt">（選填）</span></label>
+            <input type="email" id="rsvpEmail" name="email" placeholder="guest@example.com（選填）" maxlength="80" autocomplete="email">
+          </div>
+
+          <div class="rsvp-form__row rsvp-form__row--full">
+            <label for="rsvpPhone">手機號碼 <i>MOBILE</i> <span class="rsvp-form__opt">（選填）</span></label>
+            <input type="tel" id="rsvpPhone" name="phone" placeholder="0912-345-678" maxlength="20" inputmode="tel" autocomplete="tel" pattern="[0-9+\-\s()]{6,20}" aria-describedby="rsvpPhoneHint">
+            <p class="rsvp-form__hint" id="rsvpPhoneHint">方便聯繫用，例如 0912-345-678；可不填。</p>
           </div>
 
           <fieldset class="rsvp-form__row rsvp-form__row--full rsvp-form__fieldset">

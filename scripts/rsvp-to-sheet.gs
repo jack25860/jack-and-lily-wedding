@@ -21,6 +21,16 @@ var IGNORED_KEYS = [];
 var HEADERS = ['序號', '您的姓名', '您的信箱', '您是哪一方的賓客', '與新人的關係',
   '是否能出席本次盛宴', '出席人數', '出席大人人數', '出席兒童人數', '需要兒童椅數量'];
 
+/**
+ * v49：新增「手機號碼」欄位。
+ * 為避免既有資料錯位，手機號碼固定寫入 L 欄（第 12 欄），
+ * K 欄（第 11 欄）保留給人工維護的「桌次」，寫入時一律不覆蓋。
+ */
+var PHONE_HEADER = '手機號碼';
+var SEAT_COL = 11;   // K：桌次（人工維護，程式不寫入）
+var PHONE_COL = 12;  // L：手機號碼
+var ROW_WIDTH = 12;  // A..L
+
 /** 電子喜帖寄件者顯示名稱 */
 /** 婚禮網站域名（用於將相對路徑轉成絕對網址） */
 var SITE_BASE = 'https://jack25860.github.io/jack-and-lily-wedding/';
@@ -196,7 +206,7 @@ function randomPhoto_() {
   return ECARD_PHOTO_POOL[Math.floor(Math.random() * ECARD_PHOTO_POOL.length)];
 }
 
-var ENDPOINT_VERSION = 'v48';
+var ENDPOINT_VERSION = 'v49';
 
 /**
  * v48：RSVP／電子喜帖端點共用密鑰。
@@ -316,7 +326,10 @@ function updateExistingRow_(sheet, data) {
           ? sheet.getRange(HEADER_ROW + 1 + i, 1).getValue()
           : (values[HEADERS[j]] == null ? '' : values[HEADERS[j]]));
       }
-      sheet.getRange(HEADER_ROW + 1 + i, 1, 1, HEADERS.length).setValues([row]);
+      // v49：保留人工維護的 K 欄（桌次），只更新 L 欄（手機號碼）
+      row.push(sheet.getRange(HEADER_ROW + 1 + i, SEAT_COL).getValue());
+      row.push(values[PHONE_HEADER] == null ? '' : values[PHONE_HEADER]);
+      sheet.getRange(HEADER_ROW + 1 + i, 1, 1, ROW_WIDTH).setValues([row]);
       return true;
     }
   }
@@ -356,6 +369,11 @@ function ensureHeader_(sheet) {
   if (sheet.getLastRow() === 0) {
     sheet.getRange(HEADER_ROW, 1, 1, HEADERS.length).setValues([HEADERS]);
   }
+  // v49：確保 L 欄有「手機號碼」表頭（既有試算表不會被重建，只補這一格）
+  var phoneCell = sheet.getRange(HEADER_ROW, PHONE_COL);
+  if (String(phoneCell.getValue() || '').trim() === '') {
+    phoneCell.setValue(PHONE_HEADER);
+  }
 }
 
 function buildRow_(sheet, data) {
@@ -364,6 +382,9 @@ function buildRow_(sheet, data) {
     row.push(HEADERS[i] === '序號' ? nextNo
       : (values[HEADERS[i]] == null ? '' : values[HEADERS[i]]));
   }
+  // v49：K 欄（桌次）留空，L 欄寫入手機號碼
+  row.push(''); // K
+  row.push(values[PHONE_HEADER] == null ? '' : values[PHONE_HEADER]); // L
   return row;
 }
 
@@ -385,6 +406,7 @@ function mapFields_(data) {
   var out = {};
   out['您的姓名']         = pick_(data, ['name', '您的姓名', 'NAME']);
   out['您的信箱']         = pick_(data, ['email', '您的信箱', 'EMAIL']);
+  out[PHONE_HEADER]      = pick_(data, ['phone', '手機號碼', 'MOBILE', 'PHONE', 'tel']);
   out['您是哪一方的賓客'] = pick_(data, ['side', '您是哪一方的賓客', 'SIDE']);
   out['與新人的關係']     = pick_(data, ['relation', '與新人的關係', 'RELATION']);
   out['是否能出席本次盛宴'] = attend;

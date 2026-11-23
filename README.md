@@ -22,7 +22,7 @@
 | Repo | https://github.com/jack25860/jack-and-lily-wedding |
 | 分支 | `main` |
 | Pages 來源 | Deploy from a branch → `main` / `/ (root)`（由 `.nojekyll` 關閉 Jekyll 處理） |
-| 目前版本 | **v86**（見 `index.html` 的 `<meta name="site-version">`） |
+| 目前版本 | **v106**（見 `index.html` 的 `<meta name="site-version">`） |
 
 ---
 
