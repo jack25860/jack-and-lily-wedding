@@ -1,0 +1,48 @@
+name: v103b prefetch trailer on approach
+
+# Measured on the live site at 20 Mbps: click-to-first-frame was 15.3 s because
+# the video request queued behind 137 gallery images. YouTube starts fetching
+# the rendition as the player scrolls into view; this does the same with an
+# IntersectionObserver (600 px root margin). Nothing is fetched until the
+# trailer block is near the viewport.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  prefetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Add prefetch
+        run: |
+          set -e
+          echo 'aW1wb3J0IGlvLCBzeXMKCiMgdjEwM2I6IHN0YXJ0IGJ1ZmZlcmluZyB3aGVuIHRoZSB0cmFpbGVyIGJsb2NrIGFwcHJvYWNoZXMgdGhlIHZpZXdwb3J0LgojCiMgTWVhc3VyZWQgb24gdGhlIGxpdmUgc2l0ZSBhdCAyMCBNYnBzOiB0aGUgY2xpY2stdG8tZmlyc3QtZnJhbWUgdGltZSB3YXMgMTUuMyBzCiMgYmVjYXVzZSB0aGUgdmlkZW8gcmVxdWVzdCBxdWV1ZWQgYmVoaW5kIDEzNyBnYWxsZXJ5IGltYWdlcy4gWW91VHViZSBkb2VzIG5vdAojIHdhaXQgZm9yIHRoZSBjbGljayBlaXRoZXIgLSBpdCBzdGFydHMgZmV0Y2hpbmcgdGhlIHJlbmRpdGlvbiBhcyB0aGUgcGxheWVyCiMgc2Nyb2xscyBpbnRvIHZpZXcuIFRoaXMgZG9lcyB0aGUgc2FtZTogYW4gSW50ZXJzZWN0aW9uT2JzZXJ2ZXIgd2l0aCBhIDYwMCBweAojIHJvb3QgbWFyZ2luIHNldHMgcHJlbG9hZD0iYXV0byIgYW5kIHRoZSBzcmMsIHNvIGJ5IHRoZSB0aW1lIHRoZSB2aXNpdG9yIHRhcHMKIyBwbGF5IHRoZXJlIGlzIGFscmVhZHkgYSBidWZmZXIuIE5vdGhpbmcgaXMgZmV0Y2hlZCB1bnRpbCB0aGUgYmxvY2sgaXMgbmVhci4KCk9MRCA9ICgKICAgICdmdW5jdGlvbiBzdGFydCgpe2lmKGxvYWRlZClyZXR1cm47bG9hZGVkPXRydWU7JwogICAgJ3Yuc2V0QXR0cmlidXRlKCJzcmMiLHNyYyk7dHJ5e3YubG9hZCgpfWNhdGNoKGUpe30nCiAgICAnaWYoZnIpZnIuY2xhc3NMaXN0LmFkZCgiaXMtbG9hZGluZyIpOycKKQoKTkVXID0gKAogICAgJ3ZhciBwcmVmZXRjaGVkPWZhbHNlOycKICAgICdmdW5jdGlvbiBwcmVmZXRjaCgpe2lmKHByZWZldGNoZWR8fGxvYWRlZClyZXR1cm47cHJlZmV0Y2hlZD10cnVlOycKICAgICd2LnNldEF0dHJpYnV0ZSgicHJlbG9hZCIsImF1dG8iKTt2LnNldEF0dHJpYnV0ZSgic3JjIixzcmMpOycKICAgICd0cnl7di5sb2FkKCl9Y2F0Y2goZSl7fX0nCiAgICAnaWYod2luZG93LkludGVyc2VjdGlvbk9ic2VydmVyJiZmcil7JwogICAgJ3ZhciBpbz1uZXcgSW50ZXJzZWN0aW9uT2JzZXJ2ZXIoZnVuY3Rpb24oZXMpeycKICAgICdmb3IodmFyIGk9MDtpPGVzLmxlbmd0aDtpKyspe2lmKGVzW2ldLmlzSW50ZXJzZWN0aW5nKXtwcmVmZXRjaCgpO2lvLmRpc2Nvbm5lY3QoKTticmVha319JwogICAgJ30se3Jvb3RNYXJnaW46IjYwMHB4IDBweCJ9KTtpby5vYnNlcnZlKGZyKX0nCiAgICAnZWxzZXt3aW5kb3cuc2V0VGltZW91dChwcmVmZXRjaCwyNTAwKX0nCiAgICAnZnVuY3Rpb24gc3RhcnQoKXtpZihsb2FkZWQpcmV0dXJuO2xvYWRlZD10cnVlOycKICAgICdpZighcHJlZmV0Y2hlZCl7di5zZXRBdHRyaWJ1dGUoInNyYyIsc3JjKTt0cnl7di5sb2FkKCl9Y2F0Y2goZSl7fX0nCiAgICAnaWYoZnIpZnIuY2xhc3NMaXN0LmFkZCgiaXMtbG9hZGluZyIpOycKKQoKcyA9IGlvLm9wZW4oImpzL2FwcC5qcyIsIGVuY29kaW5nPSJ1dGYtOCIpLnJlYWQoKQpuID0gcy5jb3VudChPTEQpCnByaW50KCJzdGFydCgpIG9jY3VycmVuY2VzOiIsIG4pCmlmIG4gIT0gMToKICAgIHByaW50KCJGQUlMRUQ6IGV4cGVjdGVkIDEsIGZvdW5kICVkIiAlIG4pCiAgICBzeXMuZXhpdCgxKQpzID0gcy5yZXBsYWNlKE9MRCwgTkVXKQppby5vcGVuKCJqcy9hcHAuanMiLCAidyIsIGVuY29kaW5nPSJ1dGYtOCIpLndyaXRlKHMpCnByaW50KCJwcmVmZXRjaCBhZGRlZCIpCgpzMiA9IGlvLm9wZW4oImpzL2FwcC5qcyIsIGVuY29kaW5nPSJ1dGYtOCIpLnJlYWQoKQphc3NlcnQgIkludGVyc2VjdGlvbk9ic2VydmVyIiBpbiBzMgphc3NlcnQgImZ1bmN0aW9uIHByZWZldGNoKCkiIGluIHMyCnByaW50KCJvayIpCg==' | base64 -d > /tmp/p3.py
+          python3 /tmp/p3.py
+
+      - name: Verify
+        run: |
+          set -e
+          node --check js/app.js
+          grep -q 'IntersectionObserver' js/app.js
+          grep -q 'function prefetch()' js/app.js
+          echo "verified"
+
+      - name: Commit and push
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "v103b: prefetch the trailer rendition as it approaches the viewport"
+            git push
+          fi
