@@ -1,0 +1,47 @@
+name: v103 fix dangling play block
+
+# The v103 patch left the original play() block dangling after the new buffer
+# gate, which throws "p is not defined" on click. This removes exactly that
+# one copy and verifies the result.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Remove the dangling block
+        run: |
+          set -e
+          echo 'aW1wb3J0IGlvLCBzeXMKCiMgVGhlIHYxMDMgcGF0Y2ggbGVmdCB0aGUgb3JpZ2luYWwgcGxheSgpIGJsb2NrIGRhbmdsaW5nIGFmdGVyIHRoZSBuZXcgZ2F0ZSwKIyB3aGljaCB0aHJvd3MgInAgaXMgbm90IGRlZmluZWQiIGF0IHJ1bnRpbWUuIFJlbW92ZSBleGFjdGx5IHRoYXQgb25lIGNvcHk6CiMgdGhlIG9uZSB0aGF0IGZvbGxvd3MgdGhlIGdhdGUncyAxMjAwMCBtcyB0aW1lb3V0LgpEQU5HTElORyA9ICgKICAgICcsMTIwMDApOycKICAgICdpZihwJiZwLmNhdGNoKXAuY2F0Y2goZnVuY3Rpb24oKXtpZih2LmVycm9yKXJldHVybjsnCiAgICAndHJ5e3YubXV0ZWQ9ZmFsc2U7dmFyIHE9di5wbGF5KCk7cSYmcS5jYXRjaCYmcS5jYXRjaChmdW5jdGlvbigpeycKICAgICdpZih2LmVycm9yKXJldHVybjt0cnl7di5tdXRlZD10cnVlO3ZhciByPXYucGxheSgpO3ImJnIuY2F0Y2gmJnIuY2F0Y2goZnVuY3Rpb24oKXt9KX1jYXRjaChlKXt9fSl9Y2F0Y2goZSl7fX0pOycKICAgICdpZihwaCl7JwopCkNMRUFOID0gJywxMjAwMCk7aWYocGgpeycKCnMgPSBpby5vcGVuKCJqcy9hcHAuanMiLCBlbmNvZGluZz0idXRmLTgiKS5yZWFkKCkKbiA9IHMuY291bnQoREFOR0xJTkcpCnByaW50KCJkYW5nbGluZyBvY2N1cnJlbmNlczoiLCBuKQppZiBuID09IDA6CiAgICBwcmludCgibm90aGluZyB0byBmaXggKGFscmVhZHkgY2xlYW4pIikKZWxpZiBuID09IDE6CiAgICBpby5vcGVuKCJqcy9hcHAuanMiLCAidyIsIGVuY29kaW5nPSJ1dGYtOCIpLndyaXRlKHMucmVwbGFjZShEQU5HTElORywgQ0xFQU4pKQogICAgcHJpbnQoImRhbmdsaW5nIGJsb2NrIHJlbW92ZWQiKQplbHNlOgogICAgcHJpbnQoIkZBSUxFRDogZXhwZWN0ZWQgYXQgbW9zdCAxIG9jY3VycmVuY2UsIGZvdW5kICVkIiAlIG4pCiAgICBzeXMuZXhpdCgxKQoKIyBzYW5pdHk6IHRoZSBnYXRlIG11c3Qgc3RpbGwgYmUgdGhlcmUsIGFuZCBubyBiYXJlIGBwYCByZWZlcmVuY2UgbWF5IHJlbWFpbiBvdXRzaWRlIHRoZSBnbygpIGhlbHBlci4KczIgPSBpby5vcGVuKCJqcy9hcHAuanMiLCBlbmNvZGluZz0idXRmLTgiKS5yZWFkKCkKYXNzZXJ0ICJmdW5jdGlvbiBnYXRlKCkiIGluIHMyLCAiZ2F0ZSBtaXNzaW5nIgphc3NlcnQgImZ1bmN0aW9uIGdvKCkiIGluIHMyLCAiZ28gbWlzc2luZyIKcHJpbnQoIm9rIikK' | base64 -d > /tmp/fix.py
+          python3 /tmp/fix.py
+
+      - name: Verify
+        run: |
+          set -e
+          node --check js/app.js
+          grep -q 'function gate()' js/app.js
+          grep -q 'function go()' js/app.js
+          test "$(grep -o 'if(p&&p.catch)p.catch' js/app.js | wc -l)" -eq 1
+          echo "verified: one play block, syntax ok"
+
+      - name: Commit and push
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "v103: remove dangling play block left by the patch (fixes p is not defined)"
+            git push
+          fi
