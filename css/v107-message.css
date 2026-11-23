@@ -28,7 +28,34 @@ html.msg-typing .totop {
   transition: none;
 }
 
-/* 4) 留言卡片：長留言不撐破版面（避免水平溢位） */
+/* 4) 輸入期間關閉平滑捲動：iOS 鍵盤彈出時，smooth scroll 會與系統捲動互相拉扯，
+      造成畫面來回跳動。輸入中改為即時捲動，離開輸入框後恢復。 */
+html.msg-typing {
+  scroll-behavior: auto;
+}
+html.msg-typing body {
+  scroll-behavior: auto;
+}
+
+/* 5) 以 svh（small viewport height）固定各區塊高度：
+      iOS 鍵盤彈出時 100vh/88vh 會跟著視窗高度改變而重算，
+      svh 以「工具列展開時的最小視窗」為基準，鍵盤開關都不再變動。 */
+@supports (height: 100svh) {
+  .hero { min-height: 100svh; }
+  .tl-panel { height: clamp(74svh, 88svh, 940px); }
+  .verse { min-height: 78svh; }
+  .interlude { min-height: 80svh; }
+  .nav__mobile { height: 100svh; max-height: 100svh; }
+}
+@media (max-width: 640px) {
+  @supports (height: 100svh) {
+    .tl-panel { height: 78svh; }
+    .verse { min-height: 64svh; }
+    .interlude { min-height: 66svh; }
+  }
+}
+
+/* 6) 留言卡片：長留言不撐破版面（避免水平溢位） */
 .msg-card__text {
   overflow-wrap: anywhere;
   word-break: break-word;
