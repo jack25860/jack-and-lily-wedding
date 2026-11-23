@@ -1,0 +1,66 @@
+name: v105 literary trailer title + iOS audio hardening
+
+# Two user requests:
+#
+# 1. Replace the trailer heading "結婚預告片" with a more literary line.
+#    Updated everywhere the string appeared: the visible <h3>, the play
+#    button's aria-label, the HTML comment, and TRAILER_TITLE in config.js.
+#
+# 2. iOS Safari in-page playback + volume. v104 removed `muted` and set
+#    volume=1, but did it *after* play() in one path and never re-asserted
+#    the volume once the element actually started. iOS can re-mute an
+#    element when a play() promise is rejected, and `volume` is read-only
+#    there (setting it is a silent no-op). v105:
+#      - unmutes BEFORE play() so the user gesture carries the audio intent
+#      - re-asserts muted=false / volume=1 on `playing` and `volumechange`
+#      - keeps playsinline + webkit-playsinline
+#      - never falls back to a muted film: if play() is rejected it shows
+#        the native controls instead of silently muting the trailer
+#
+# No video download, no transcode - this only edits index.html, js/config.js
+# and js/app.js.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply v105 patch
+        run: python3 scripts/v105_patch.py
+
+      - name: Verify
+        run: |
+          set -e
+          node --check js/app.js
+          node --check js/config.js
+          echo "syntax OK"
+          grep -q 'v105:ios-audio-hardening' js/app.js
+          grep -q 'v105: never fall back to a muted film' js/app.js
+          grep -q 'content="v105"' index.html
+          echo "v105 markers OK"
+          if grep -q '結婚預告片' index.html js/config.js js/app.js; then
+            echo "FAIL: old heading still present"; exit 1
+          fi
+          echo "old heading fully removed"
+
+      - name: Commit and push
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "v105: literary trailer title, iOS in-page audio hardening (unmute before play, no muted fallback)"
+            git push
+          fi
