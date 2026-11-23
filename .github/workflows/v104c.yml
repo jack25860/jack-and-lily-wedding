@@ -1,0 +1,52 @@
+name: v104c adaptive frame-drop downgrade
+
+# v104b stepped down to 720p only on a buffering stall (readyState < 3 for
+# 2.5 s). A machine that downloads fine but cannot present every frame shows
+# dropped frames instead, so it never stepped down.
+#
+# Measured on the live site (real Chrome, 1440x900, 20 Mbps, full page):
+#   1080p -> 166 / 986 dropped (16.8%)
+#   720p  ->  68 / 986 dropped ( 6.9%)
+#
+# v104c samples getVideoPlaybackQuality() every 2 s while playing and steps
+# down to 720p at the same position if >15% of a >=30-frame window was
+# dropped. The first window is skipped so decoder warm-up cannot trigger it.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply v104c patch
+        run: python3 scripts/v104c_patch.py
+
+      - name: Verify
+        run: |
+          set -e
+          node --check js/app.js
+          echo "app.js syntax OK"
+          grep -q 'v104c:frame-drop-downgrade' js/app.js
+          grep -q 'getVideoPlaybackQuality' js/app.js
+          echo "v104c markers OK"
+
+      - name: Commit and push
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "v104c: step down to 720p on sustained frame drops, not only on buffering stalls"
+            git push
+          fi
