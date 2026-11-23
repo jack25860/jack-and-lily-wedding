@@ -1,0 +1,54 @@
+name: v104b desktop 1080p with auto-downgrade
+
+# v103 gated the desktop source on `navigator.connection.downlink >= 12`.
+# Chrome caps `downlink` at 10, so that test is never true and every desktop
+# visitor silently received the 720p file - a quality regression.
+#
+# Measured on the live site (real Chrome, 1440x900):
+#   1080p @20 Mbps -> first frame 1406 ms, 0.7% dropped, 0 stalled
+#   1080p @10 Mbps -> never reached readyState 3
+#
+# v104b: desktop starts on 1080p; if playback stalls for 2.5 s it steps down to
+# 720p at the same position. Mobile is untouched.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply v104b patch
+        run: python3 scripts/v104b_patch.py
+
+      - name: Verify
+        run: |
+          set -e
+          node --check js/app.js
+          echo "app.js syntax OK"
+          grep -q 'v104b:desktop-1080p-with-auto-downgrade' js/app.js
+          grep -q 'armDowngrade' js/app.js
+          if grep -q 'dl>=12' js/app.js; then
+            echo "FAIL: the dead downlink>=12 gate is still present"; exit 1
+          fi
+          echo "v104b markers OK"
+
+      - name: Commit and push
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "v104b: desktop plays 1080p again (Chrome caps downlink at 10), auto-downgrade to 720p only if it stalls"
+            git push
+          fi
