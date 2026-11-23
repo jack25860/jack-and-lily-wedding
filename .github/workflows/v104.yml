@@ -1,0 +1,53 @@
+name: v104 trailer start-as-soon-as-decodable
+
+# v103 gated play() on `readyState>=3 && bufferAhead>=2s`. Measured on the live
+# site with real Chrome: desktop first frame 400 ms, mobile 5399 ms even though
+# canplay fired at 1899 ms - the 2 s buffer gate was the entire wait.
+#
+# v104 drops the gate: play() the moment the browser can decode a frame, and let
+# it keep downloading in the background (YouTube's behaviour). The spinner only
+# appears if playback genuinely stalls for >700 ms.
+#
+# No video download, no transcode - this only edits js/app.js and index.html.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply v104 patch
+        run: python3 scripts/v104_patch.py
+
+      - name: Verify
+        run: |
+          set -e
+          node --check js/app.js
+          echo "app.js syntax OK"
+          if grep -q 'readyState>=3&&ahead()>=2' js/app.js; then
+            echo "FAIL: v103 buffer gate still present"; exit 1
+          fi
+          grep -q 'v104:start-as-soon-as-decodable' js/app.js
+          grep -q 'content="v104"' index.html
+          echo "v104 markers OK"
+
+      - name: Commit and push
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "v104: start trailer playback as soon as a frame is decodable (drop the 2s buffer gate)"
+            git push
+          fi
