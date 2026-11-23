@@ -48,6 +48,20 @@ stallT=window.setTimeout(function(){stallT=null;if(!downgraded&&v.readyState<3)d
 });
 v.addEventListener("playing",function(){if(stallT){clearTimeout(stallT);stallT=null}});
 v.addEventListener("timeupdate",function(){if(stallT&&v.readyState>=3){clearTimeout(stallT);stallT=null}});
+/*v104c:frame-drop-downgrade*/
+function quality(){try{return v.getVideoPlaybackQuality?v.getVideoPlaybackQuality():(v.webkitGetVideoPlaybackQuality?v.webkitGetVideoPlaybackQuality():null)}catch(e){return null}}
+var lastQ=null;
+var qTimer=window.setInterval(function(){
+if(downgraded){clearInterval(qTimer);return}
+if(v.paused||v.ended)return;
+var q=quality();if(!q){clearInterval(qTimer);return}
+if(!lastQ){lastQ=q;return}
+var dt=q.totalVideoFrames-lastQ.totalVideoFrames,dd=q.droppedVideoFrames-lastQ.droppedVideoFrames;
+lastQ=q;
+if(dt<30)return;
+if(dd/dt>0.15){clearInterval(qTimer);downgrade()}
+},2000);
+v.addEventListener("ended",function(){clearInterval(qTimer)});
 }
 function start(){
 if(loaded)return;loaded=true;
