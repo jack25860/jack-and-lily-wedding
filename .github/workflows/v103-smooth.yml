@@ -1,1 +1,68 @@
-PLACEHOLDER_B
+name: v103 trailer smoothness (adaptive rendition + buffer gate)
+
+# Repairs and upgrades the trailer in one atomic run.
+#
+# 1. Restores js/app.js from the v102 commit. An earlier commit of this change
+#    wrote a placeholder into that file by mistake, so the live site currently
+#    serves a 15-byte app.js. Restoring from a fixed SHA makes this idempotent.
+# 2. Applies the v103 patch (base64 below, decoded at run time) so the patch
+#    text cannot be mangled by YAML indentation.
+# 3. Verifies, then commits. GitHub Pages redeploys from the commit.
+#
+# No video download and no transcode: both renditions (1080p / 720p) are
+# already in the repo from v102.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore js/app.js from the v102 commit
+        run: |
+          set -e
+          git checkout eb5c16c^ -- js/app.js
+          wc -c js/app.js
+          grep -q 'function initTrailer' js/app.js
+          echo "app.js restored from v102"
+
+      - name: Apply v103 patch
+        run: |
+          set -e
+          echo 'aW1wb3J0IGlvLCByZSwgc3lzCgpGQUlMRUQgPSBbXQoKIyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tIGFwcC5qcwojIDEpIEFkYXB0aXZlIHJlbmRpdGlvbjogcGljayB0aGUgZmlsZSBmcm9tIHRoZSBtZWFzdXJlZCBsaW5rLCBub3QgdGhlIHNjcmVlbi4KIyAgICBUaGUgcGhvbmUgYWxyZWFkeSBnb3QgNzIwcCBhbmQgbmV2ZXIgc3R1dHRlcmVkOyB0aGUgZGVza3RvcCBnb3QgMTA4MHAKIyAgICAoOC4zMyBNYnBzKSBhbmQgZGlkLiBTYW1lIHBhZ2UsIHNhbWUgZGVjb3JhdGlvbnMsIGRpZmZlcmVudCBiaXRyYXRlLgpPTERfU1JDID0gJ3ZhciBzcmM9KGlzTW9iaWxlJiZ1cmxNKT91cmxNOnVybCxwb3M9KGlzTW9iaWxlJiZwb3N0ZXJNKT9wb3N0ZXJNOnBvc3RlcjsnCk5FV19TUkMgPSAoCiAgICAndmFyIHBvcz0oaXNNb2JpbGUmJnBvc3Rlck0pP3Bvc3Rlck06cG9zdGVyOycKICAgICd2YXIgbmM9bmF2aWdhdG9yLmNvbm5lY3Rpb258fG5hdmlnYXRvci5tb3pDb25uZWN0aW9ufHxuYXZpZ2F0b3Iud2Via2l0Q29ubmVjdGlvbnx8e307JwogICAgJ3ZhciBkbD10eXBlb2YgbmMuZG93bmxpbms9PT0ibnVtYmVyIj9uYy5kb3dubGluazpudWxsOycKICAgICd2YXIgZXQ9U3RyaW5nKG5jLmVmZmVjdGl2ZVR5cGV8fCIiKSxzYXZlPW5jLnNhdmVEYXRhPT09dHJ1ZTsnCiAgICAndmFyIGZhc3Q9IXNhdmUmJihldD09PSI0ZyJ8fGV0PT09IndpZmkifHxldD09PSIiKSYmKGRsPT09bnVsbHx8ZGw+PTEyKTsnCiAgICAndmFyIHNyYz1pc01vYmlsZT8odXJsTXx8dXJsKTooKGZhc3QmJnVybCk/dXJsOih1cmxNfHx1cmwpKTsnCikKCiMgMikgQnVmZmVyLWFoZWFkIGdhdGU6IGRvIG5vdCBzdGFydCB1bnRpbCB0aGVyZSBpcyBzb21ldGhpbmcgdG8gc2hvdy4KT0xEX1BMQVkgPSAndmFyIHA9bnVsbDt0cnl7cD12LnBsYXkoKX1jYXRjaChlKXt9JwpORVdfUExBWSA9ICgKICAgICdmdW5jdGlvbiBhaGVhZCgpe3RyeXt2YXIgdD12LmN1cnJlbnRUaW1lOycKICAgICdmb3IodmFyIGk9MDtpPHYuYnVmZmVyZWQubGVuZ3RoO2krKyl7JwogICAgJ2lmKHYuYnVmZmVyZWQuc3RhcnQoaSk8PXQrMC4xJiZ2LmJ1ZmZlcmVkLmVuZChpKT50KXJldHVybiB2LmJ1ZmZlcmVkLmVuZChpKS10fX1jYXRjaChlKXt9JwogICAgJ3JldHVybiAwfScKICAgICdmdW5jdGlvbiBnbygpe3ZhciBwPW51bGw7dHJ5e3A9di5wbGF5KCl9Y2F0Y2goZSl7fScKICAgICdpZihwJiZwLmNhdGNoKXAuY2F0Y2goZnVuY3Rpb24oKXtpZih2LmVycm9yKXJldHVybjsnCiAgICAndHJ5e3YubXV0ZWQ9ZmFsc2U7dmFyIHE9di5wbGF5KCk7cSYmcS5jYXRjaCYmcS5jYXRjaChmdW5jdGlvbigpeycKICAgICdpZih2LmVycm9yKXJldHVybjt0cnl7di5tdXRlZD10cnVlO3ZhciByPXYucGxheSgpO3ImJnIuY2F0Y2gmJnIuY2F0Y2goZnVuY3Rpb24oKXt9KX1jYXRjaChlKXt9fSl9Y2F0Y2goZSl7fX0pfScKICAgICd2YXIgc3RhcnRlZD1mYWxzZTsnCiAgICAnZnVuY3Rpb24gZ2F0ZSgpe2lmKHN0YXJ0ZWQpcmV0dXJuO2lmKCEodi5yZWFkeVN0YXRlPj0zJiZhaGVhZCgpPj0yKSlyZXR1cm47JwogICAgJ3N0YXJ0ZWQ9dHJ1ZTtnbygpfScKICAgICdbInByb2dyZXNzIiwiY2FucGxheSIsImNhbnBsYXl0aHJvdWdoIiwibG9hZGVkZGF0YSIsInRpbWV1cGRhdGUiXS5mb3JFYWNoKGZ1bmN0aW9uKG4peycKICAgICd2LmFkZEV2ZW50TGlzdGVuZXIobixnYXRlKX0pOycKICAgICd3aW5kb3cuc2V0VGltZW91dChmdW5jdGlvbigpe2lmKCFzdGFydGVkKXtzdGFydGVkPXRydWU7Z28oKX19LDEyMDAwKTsnCikKCiMgMykgQ29tcG9zaXRpbmcgcmVsaWVmOiBwYXJrIHRoZSBwYWdlJ3MgZGVjb3JhdGl2ZSBsYXllcnMgd2hpbGUgcGxheWluZy4KT0xEX0JHTSA9ICd2LmFkZEV2ZW50TGlzdGVuZXIoInBsYXkiLGJnbVBhdXNlKTt2LmFkZEV2ZW50TGlzdGVuZXIoImVuZGVkIixiZ21SZXN1bWUpOycKTkVXX0JHTSA9ICgKICAgICd2LmFkZEV2ZW50TGlzdGVuZXIoInBsYXkiLGJnbVBhdXNlKTt2LmFkZEV2ZW50TGlzdGVuZXIoImVuZGVkIixiZ21SZXN1bWUpOycKICAgICd2YXIgcm9vdEVsPWRvY3VtZW50LmRvY3VtZW50RWxlbWVudDsnCiAgICAnZnVuY3Rpb24gcmVsaWVmT24oKXtyb290RWwuY2xhc3NMaXN0LmFkZCgidHJhaWxlci1hY3RpdmUiKX0nCiAgICAnZnVuY3Rpb24gcmVsaWVmT2ZmKCl7cm9vdEVsLmNsYXNzTGlzdC5yZW1vdmUoInRyYWlsZXItYWN0aXZlIil9JwogICAgJ3YuYWRkRXZlbnRMaXN0ZW5lcigicGxheWluZyIscmVsaWVmT24pOycKICAgICd2LmFkZEV2ZW50TGlzdGVuZXIoInBhdXNlIixyZWxpZWZPZmYpOycKICAgICd2LmFkZEV2ZW50TGlzdGVuZXIoImVuZGVkIixyZWxpZWZPZmYpOycKICAgICd2LmFkZEV2ZW50TGlzdGVuZXIoImVycm9yIixyZWxpZWZPZmYpOycKKQoKQ1NTID0gIiIiCi8qID09PT09IHYxMDMgLSBwbGF5YmFjayBjb21wb3NpdGluZyByZWxpZWYgPT09PT0KICAgV2hpbGUgdGhlIHZpZGVvIGRlY29kZXMgdGhlIHBhZ2UgaXMgc3RpbGwgcnVubmluZyBhIGZ1bGwtdmlld3BvcnQgZ3JhaW4KICAgYmxlbmQsIGEga2VuLWJ1cm5zIGhlcm8sIGRyaWZ0aW5nIHNpbGsvZHVzdCwgZmFsbGluZyBwZXRhbHMsIGEgYmx1cnJlZAogICBzdGlja3kgbmF2IGFuZCB3aWxsLWNoYW5nZSBvbiBldmVyeSAucmV2ZWFsLiBFYWNoIG9mIHRob3NlIHJlLWNvbXBvc2l0ZXMKICAgZXZlcnkgZnJhbWUgYW5kIGNvbXBldGVzIHdpdGggdGhlIHZpZGVvLiBZb3VUdWJlIGRlcHJpb3JpdGlzZXMgYmFja2dyb3VuZAogICByZW5kZXJpbmcgZHVyaW5nIHBsYXliYWNrOyB0aGlzIGRvZXMgdGhlIHNhbWUsIG9ubHkgd2hpbGUgcGxheWluZy4gKi8KaHRtbC50cmFpbGVyLWFjdGl2ZSAuaGVyb19fYmcsCmh0bWwudHJhaWxlci1hY3RpdmUgLmhlcm9fX2R1c3QsCmh0bWwudHJhaWxlci1hY3RpdmUgLmhlcm9fX3NpbGssCmh0bWwudHJhaWxlci1hY3RpdmUgLmhlcm9fX3BldGFscyBzcGFuLApodG1sLnRyYWlsZXItYWN0aXZlIC5oZXJvX19zY3JvbGwtdGV4dCwKaHRtbC50cmFpbGVyLWFjdGl2ZSAuaGVyb19fc2Nyb2xsLWFycm93OmFmdGVyLApodG1sLnRyYWlsZXItYWN0aXZlIC5wcm9ncmVzcyBzcGFuLApodG1sLnRyYWlsZXItYWN0aXZlIC5tdXNpY19fYnRuLnBsYXlpbmcgLm11c2ljX19iYXJzIGl7YW5pbWF0aW9uLXBsYXktc3RhdGU6cGF1c2VkIWltcG9ydGFudH0KaHRtbC50cmFpbGVyLWFjdGl2ZSAucGFwZXItZ3JhaW57ZGlzcGxheTpub25lIWltcG9ydGFudH0KaHRtbC50cmFpbGVyLWFjdGl2ZSAuaGVyb19fcGV0YWxze2Rpc3BsYXk6bm9uZSFpbXBvcnRhbnR9Cmh0bWwudHJhaWxlci1hY3RpdmUgLnJldmVhbHt3aWxsLWNoYW5nZTphdXRvIWltcG9ydGFudH0KaHRtbC50cmFpbGVyLWFjdGl2ZSAubmF2LnNjcm9sbGVke2JhY2tkcm9wLWZpbHRlcjpub25lIWltcG9ydGFudDstd2Via2l0LWJhY2tkcm9wLWZpbHRlcjpub25lIWltcG9ydGFudDtiYWNrZ3JvdW5kOiMwZjBjMGJmMiFpbXBvcnRhbnR9CiIiIgoKCmRlZiBzdWIocywgb2xkLCBuZXcsIGxhYmVsKToKICAgIG4gPSBzLmNvdW50KG9sZCkKICAgIGlmIG4gIT0gMToKICAgICAgICBGQUlMRUQuYXBwZW5kKCIlczogZXhwZWN0ZWQgMSBtYXRjaCwgZm91bmQgJWQiICUgKGxhYmVsLCBuKSkKICAgICAgICByZXR1cm4gcwogICAgcHJpbnQoIiVzOiBwYXRjaGVkIiAlIGxhYmVsKQogICAgcmV0dXJuIHMucmVwbGFjZShvbGQsIG5ldykKCgpzID0gaW8ub3BlbigianMvYXBwLmpzIiwgZW5jb2Rpbmc9InV0Zi04IikucmVhZCgpCmlmICJ0cmFpbGVyLWFjdGl2ZSIgaW4gczoKICAgIHByaW50KCJhcHAuanM6IGFscmVhZHkgcGF0Y2hlZCIpCmVsc2U6CiAgICBzID0gc3ViKHMsIE9MRF9TUkMsIE5FV19TUkMsICJhcHAuanMgYWRhcHRpdmUgc291cmNlIikKICAgIHMgPSBzdWIocywgT0xEX1BMQVksIE5FV19QTEFZLCAiYXBwLmpzIGJ1ZmZlciBnYXRlIikKICAgIHMgPSBzdWIocywgT0xEX0JHTSwgTkVXX0JHTSwgImFwcC5qcyBjb21wb3NpdGluZyByZWxpZWYiKQogICAgaW8ub3BlbigianMvYXBwLmpzIiwgInciLCBlbmNvZGluZz0idXRmLTgiKS53cml0ZShzKQoKYyA9IGlvLm9wZW4oImNzcy9zdHlsZXMuY3NzIiwgZW5jb2Rpbmc9InV0Zi04IikucmVhZCgpCmlmICJ0cmFpbGVyLWFjdGl2ZSIgaW4gYzoKICAgIHByaW50KCJjc3M6IGFscmVhZHkgcGF0Y2hlZCIpCmVsc2U6CiAgICBpby5vcGVuKCJjc3Mvc3R5bGVzLmNzcyIsICJhIiwgZW5jb2Rpbmc9InV0Zi04Iikud3JpdGUoQ1NTKQogICAgcHJpbnQoImNzczogcmVsaWVmIHJ1bGVzIGFwcGVuZGVkIikKCmggPSBpby5vcGVuKCJpbmRleC5odG1sIiwgZW5jb2Rpbmc9InV0Zi04IikucmVhZCgpCmlmICdjb250ZW50PSJ2MTAzIicgaW4gaDoKICAgIHByaW50KCJ2ZXJzaW9uOiBhbHJlYWR5IHYxMDMiKQplbHNlOgogICAgaDIsIG4gPSByZS5zdWJuKHInKG5hbWU9InNpdGUtdmVyc2lvbiIgY29udGVudD0iKXZcZCsoIiknLCByJ1xnPDE+djEwM1xnPDI+JywgaCkKICAgIGlmIG4gIT0gMToKICAgICAgICBGQUlMRUQuYXBwZW5kKCJzaXRlLXZlcnNpb24gdGFnIGNvdW50PSVkIiAlIG4pCiAgICBlbHNlOgogICAgICAgIGlvLm9wZW4oImluZGV4Lmh0bWwiLCAidyIsIGVuY29kaW5nPSJ1dGYtOCIpLndyaXRlKGgyKQogICAgICAgIHByaW50KCJ2ZXJzaW9uIC0+IHYxMDMiKQoKaWYgRkFJTEVEOgogICAgcHJpbnQoIkZBSUxFRDoiKQogICAgZm9yIGYgaW4gRkFJTEVEOgogICAgICAgIHByaW50KCIgIC0gIiArIGYpCiAgICBzeXMuZXhpdCgxKQpwcmludCgiYWxsIHBhdGNoZXMgYXBwbGllZCIpCg==' | base64 -d > /tmp/v103_patch.py
+          wc -c /tmp/v103_patch.py
+          python3 /tmp/v103_patch.py
+
+      - name: Verify
+        run: |
+          set -e
+          grep -q 'trailer-active' js/app.js
+          grep -q 'navigator.connection' js/app.js
+          grep -q 'trailer-active' css/styles.css
+          grep -q 'content="v103"' index.html
+          node --check js/app.js
+          wc -c js/app.js
+          echo "patch verified"
+
+      - name: Commit and push
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "v103: adaptive trailer rendition + buffer-ahead gate + playback compositing relief"
+            git push
+          fi
