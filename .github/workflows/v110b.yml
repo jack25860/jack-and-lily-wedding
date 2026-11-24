@@ -1,7 +1,8 @@
 name: v110b restore and apply serial fix
 
 # 修正 0860d9cc 的錯誤提交（該次把檔案內容誤寫成佔位符）。
-# 本 workflow 先從 66bf5dc（v109，內容正確）還原兩個檔案，再套用 v110 patch。
+# 本 workflow 完全自帶：先從 66bf5dc（v109，內容正確）還原兩個檔案，
+# 再用 inline python 套用 v110 修正，不依賴任何外部 patch 腳本。
 
 on:
   workflow_dispatch:
@@ -24,14 +25,131 @@ jobs:
           set -e
           git show 66bf5dc:scripts/rsvp-to-sheet.gs > scripts/rsvp-to-sheet.gs
           git show 66bf5dc:index.html > index.html
-          echo "restored:"
-          head -c 80 scripts/rsvp-to-sheet.gs; echo
+          echo "restored gs head:"
+          head -c 60 scripts/rsvp-to-sheet.gs; echo
           grep -o 'site-version" content="[^"]*"' index.html
 
-      - name: Apply v110 patch
+      - name: Apply v110 patch (inline)
         run: |
           set -e
-          python3 scripts/v110_patch.py
+          python3 - <<'PY'
+          import io, sys
+
+          def read(p):
+              with io.open(p, encoding='utf-8') as f:
+                  return f.read()
+
+          def write(p, t):
+              with io.open(p, 'w', encoding='utf-8', newline='') as f:
+                  f.write(t)
+
+          def sub_once(text, old, new, label):
+              n = text.count(old)
+              if n != 1:
+                  sys.exit('FAIL [%s]: expected 1 occurrence, found %d' % (label, n))
+              return text.replace(old, new, 1)
+
+          GS = 'scripts/rsvp-to-sheet.gs'
+          gs = read(GS)
+
+          gs = sub_once(gs, "var ENDPOINT_VERSION = 'v51';",
+                        "var ENDPOINT_VERSION = 'v52';", 'version')
+
+          OLD_APPEND = (
+              "      if (!updateExistingRow_(sheet, data)) {\n"
+              "        // v51\uff1a\u5148\u78ba\u4fdd\u5217\u6578\u8db3\u5920\uff0c\u907f\u514d\u5de5\u4f5c\u8868\u6eff\u5217\u6642 appendRow \u5931\u6557\n"
+              "        ensureRows_(sheet, sheet.getLastRow() + 1);\n"
+              "        sheet.appendRow(buildRow_(sheet, data));\n"
+              "      }")
+          NEW_APPEND = (
+              "      if (!updateExistingRow_(sheet, data)) {\n"
+              "        // v52\uff1a\u4e0d\u518d\u7528 appendRow\uff08\u6703\u88ab\u683c\u5f0f\u6b98\u7559\u5e36\u504f\uff09\uff0c\u6539\u4f9d\u5e8f\u865f\u5b9a\u4f4d\u5beb\u5165\u3002\n"
+              "        var targetRow = nextDataRow_(sheet);\n"
+              "        ensureRows_(sheet, targetRow);\n"
+              "        sheet.getRange(targetRow, 1, 1, ROW_WIDTH).setValues([buildRow_(sheet, data)]);\n"
+              "      }")
+          gs = sub_once(gs, OLD_APPEND, NEW_APPEND, 'doPost')
+
+          OLD_NEXT = (
+              "function nextSerial_(sheet) {\n"
+              "  var last = sheet.getLastRow();\n"
+              "  var dataRows = last >= HEADER_ROW ? last - HEADER_ROW : 0;\n"
+              "  return START_NO + dataRows;\n"
+              "}")
+
+          NEW_NEXT = '''/**
+ * v52\uff1a\u6539\u4ee5\u300c\u5e8f\u865f\u300d\u8fa8\u8b58\uff0c\u4e0d\u518d\u7528 getLastRow()\u3002
+ *
+ * getLastRow() \u56de\u50b3\u300c\u6700\u5f8c\u4e00\u500b\u6709\u5167\u5bb9\u6216\u683c\u5f0f\u7684\u5217\u300d\u3002
+ * \u5148\u524d 1000 \u5217\u6e2c\u8a66\u5728 A1001:L1005 \u5beb\u904e\u8cc7\u6599\uff0c\u6e05\u9664\u503c\u5f8c\u4ecd\u7559\u4e0b\u683c\u5f0f\uff0c
+ * \u65bc\u662f getLastRow() \u4e00\u76f4\u56de\u5831 1005 \u2192 \u5e8f\u865f\u88ab\u7b97\u6210 1005\u3001\u8cc7\u6599\u88ab append \u5230\u7b2c 1006 \u5217\u3002
+ *
+ * \u65b0\u898f\u5247\uff1a
+ *   1. \u53ea\u6383 A \u6b04\uff08\u5e8f\u865f\uff09\u7684\u300c\u503c\u300d\uff0c\u5ffd\u7565\u7a7a\u767d\u5217\u8207\u683c\u5f0f\u6b98\u7559\u3002
+ *   2. \u53d6\u76ee\u524d\u6700\u5927\u7684\u6709\u6548\u5e8f\u865f N\uff08\u652f\u63f4\u4f7f\u7528\u8005\u624b\u52d5\u63d2\u5165\u7684\u8cd3\u5ba2\uff09\u3002
+ *   3. \u65b0\u8cd3\u5ba2\u5e8f\u865f = N + 1\uff0c\u4e26\u5beb\u5728\u300c\u6700\u5f8c\u4e00\u7b46\u6709\u6548\u8cc7\u6599\u7684\u4e0b\u4e00\u5217\u300d\uff0c\u4e2d\u9593\u4e0d\u7559\u7a7a\u5217\u3002
+ */
+function serialScan_(sheet) {
+  var maxRows = sheet.getMaxRows();
+  var colA = sheet.getRange(HEADER_ROW + 1, 1, Math.max(maxRows - HEADER_ROW, 1), 1).getValues();
+  var maxNo = START_NO - 1;
+  var lastRow = HEADER_ROW;
+  for (var i = 0; i < colA.length; i++) {
+    var raw = colA[i][0];
+    if (raw === '' || raw == null) continue;
+    var n = parseInt(String(raw).replace(/[^0-9]/g, ''), 10);
+    if (isNaN(n)) continue;
+    if (n > maxNo) maxNo = n;
+    var rowNo = HEADER_ROW + 1 + i;
+    if (rowNo > lastRow) lastRow = rowNo;
+  }
+  return { maxNo: maxNo, lastRow: lastRow };
+}
+
+function nextSerial_(sheet) {
+  return serialScan_(sheet).maxNo + 1;
+}
+
+/** \u65b0\u8cc7\u6599\u8981\u5beb\u5165\u7684\u5217\uff1a\u7dca\u63a5\u5728\u6700\u5f8c\u4e00\u7b46\u6709\u6548\u8cc7\u6599\u4e4b\u5f8c\uff08\u4e0d\u7559\u7a7a\u5217\uff09 */
+function nextDataRow_(sheet) {
+  return serialScan_(sheet).lastRow + 1;
+}
+
+/** v52\uff1a\u5e8f\u865f\u8a3a\u65b7\uff08\u4f9b doGet?diag=1 \u9060\u7aef\u78ba\u8a8d\u5beb\u5165\u4f4d\u7f6e\uff09 */
+function serialDiag_() {
+  try {
+    var sheet = getSheet_();
+    var s = serialScan_(sheet);
+    return {
+      maxSerial: s.maxNo,
+      lastDataRow: s.lastRow,
+      nextSerial: s.maxNo + 1,
+      nextRow: s.lastRow + 1,
+      lastRowApi: sheet.getLastRow(),
+      maxRows: sheet.getMaxRows()
+    };
+  } catch (e) {
+    return { error: String(e) };
+  }
+}'''
+
+          gs = sub_once(gs, OLD_NEXT, NEW_NEXT, 'nextSerial')
+
+          gs = sub_once(
+              gs,
+              "      lastEcard: readLastSend_()\n    });",
+              "      lastEcard: readLastSend_(),\n"
+              "      // v52\uff1a\u5e8f\u865f\u8a3a\u65b7\n"
+              "      serial: serialDiag_()\n    });",
+              'diag')
+
+          write(GS, gs)
+
+          idx = read('index.html')
+          idx = sub_once(idx, 'content="v109"', 'content="v110"', 'index')
+          write('index.html', idx)
+          print('v110 patch applied OK')
+          PY
 
       - name: Verify
         run: |
