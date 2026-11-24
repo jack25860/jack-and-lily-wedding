@@ -206,7 +206,35 @@ function randomPhoto_() {
   return ECARD_PHOTO_POOL[Math.floor(Math.random() * ECARD_PHOTO_POOL.length)];
 }
 
-var ENDPOINT_VERSION = 'v49';
+var ENDPOINT_VERSION = 'v51';
+
+/**
+ * v51：移除「1000 列」上限。
+ *  - RSVP 寫入前先確認工作表列數足夠（不足就自動擴充），appendRow 不會因滿列而失敗。
+ *  - 留言寫入前同樣確認列數，並以 N 欄最後一列 +1 定位，可無限成長。
+ *  - 前端 gviz 讀取改為開放式範圍（N:R），不再寫死 N1:R1000。
+ */
+var ROW_GROWTH_STEP = 500;   // 每次擴充的列數
+
+/** 確保工作表至少有 needRows 列；不足時自動擴充。 */
+function ensureRows_(sheet, needRows) {
+  var max = sheet.getMaxRows();
+  if (needRows <= max) return max;
+  var add = Math.ceil((needRows - max) / ROW_GROWTH_STEP) * ROW_GROWTH_STEP;
+  sheet.insertRowsAfter(max, add);
+  return sheet.getMaxRows();
+}
+
+/**
+ * v50：留言功能「跨裝置共用儲存」。
+ * 留言寫入「第一個工作表」的 N:R 區塊（與 RSVP 的 A:L 完全分離，不會互相干擾）。
+ * 前端讀取用 gviz（免授權、跨裝置）；寫入用本端點 type=saveMessage。
+ */
+var MSG_SHEET_NAME = '';        // 留空 = 第一個工作表
+var MSG_HEADER_ROW = 1;
+var MSG_START_COL = 14;         // N 欄
+var MSG_WIDTH = 5;              // N..R
+var MSG_HEADERS = ['留言時間', '姓名', '留言內容', '裝置', '留言ID'];
 
 /**
  * v48：RSVP／電子喜帖端點共用密鑰。
@@ -242,6 +270,10 @@ function doGet(e) {
       dedupeSeconds: ECARD_DEDUPE_SECONDS,
       lastEcard: readLastSend_()
     });
+  }
+  // v50：留言列表（前端主要用 gviz 讀取；此為備援）
+  if (p.action === 'listMessages') {
+    return json_({ ok: true, messages: listMessages_() });
   }
   return ContentService.createTextOutput('RSVP endpoint is running. ' + ENDPOINT_VERSION)
     .setMimeType(ContentService.MimeType.TEXT);
@@ -288,6 +320,10 @@ function doPost(e) {
     if (String(data.type || '').toLowerCase() === 'ecard') {
       return json_(sendEcard_(data));
     }
+    // v50：留言寫入（共用儲存，任何裝置可見）
+    if (String(data.type || '').toLowerCase() === 'savemessage') {
+      return json_(saveMessage_(data));
+    }
     var lock = LockService.getScriptLock();
     lock.waitLock(20000);          // 併發送出時排隊，避免搶同一個序號
     try {
@@ -295,6 +331,8 @@ function doPost(e) {
       ensureHeader_(sheet);
       // v48：同一 email 重複回覆 → 就地更新原列（保留原序號），不新增重複名單。
       if (!updateExistingRow_(sheet, data)) {
+        // v51：先確保列數足夠，避免工作表滿列時 appendRow 失敗
+        ensureRows_(sheet, sheet.getLastRow() + 1);
         sheet.appendRow(buildRow_(sheet, data));
       }
     } finally {
@@ -536,6 +574,71 @@ function fetchBlob_(url) {
   } catch (err) {
     return null;
   }
+}
+
+/* ------------------------------------------------------------------ *
+ *  留言 → 試算表（N:R）
+ * ------------------------------------------------------------------ */
+
+function getMsgSheet_() {
+  var ss = SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID)
+                          : SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) throw new Error('找不到試算表。');
+  if (MSG_SHEET_NAME) { var named = ss.getSheetByName(MSG_SHEET_NAME); if (named) return named; }
+  return ss.getSheets()[0];
+}
+
+function ensureMsgHeader_(sheet) {
+  var r = sheet.getRange(MSG_HEADER_ROW, MSG_START_COL, 1, MSG_WIDTH);
+  var cur = r.getValues()[0], need = false;
+  for (var i = 0; i < MSG_WIDTH; i++) { if (String(cur[i] || '').trim() === '') { need = true; break; } }
+  if (need) r.setValues([MSG_HEADERS]);
+}
+
+/** 寫入一則留言（不使用 appendRow，避免撞到 RSVP 的 A 欄） */
+function saveMessage_(data) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var sheet = getMsgSheet_();
+    ensureMsgHeader_(sheet);
+    var row = [
+      pick_(data, ['date', 'time', '留言時間']) || new Date().toISOString(),
+      pick_(data, ['name', '姓名']),
+      pick_(data, ['text', 'message', '留言內容']),
+      pick_(data, ['device', '裝置']),
+      pick_(data, ['id', '留言ID']) || Utilities.getUuid()
+    ];
+    // v51：以 N 欄最後一列 +1 定位，並在需要時自動擴充列數（可無限成長）
+    var maxRows = sheet.getMaxRows();
+    var colN = sheet.getRange(1, MSG_START_COL, maxRows, 1).getValues();
+    var lastMsg = MSG_HEADER_ROW;
+    for (var i = 0; i < colN.length; i++) {
+      if (String(colN[i][0] || '').trim() !== '') lastMsg = i + 1;
+    }
+    var target = Math.max(lastMsg + 1, MSG_HEADER_ROW + 1);
+    ensureRows_(sheet, target);
+    sheet.getRange(target, MSG_START_COL, 1, MSG_WIDTH).setValues([row]);
+    return { ok: true, row: target };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** 讀取全部留言（供 doGet?action=listMessages） */
+function listMessages_() {
+  var sheet = getMsgSheet_();
+  var last = sheet.getLastRow();
+  if (last <= MSG_HEADER_ROW) return [];
+  var vals = sheet.getRange(MSG_HEADER_ROW + 1, MSG_START_COL, last - MSG_HEADER_ROW, MSG_WIDTH).getValues();
+  var out = [];
+  for (var i = 0; i < vals.length; i++) {
+    var r = vals[i];
+    if (String(r[1] || '').trim() === '' && String(r[2] || '').trim() === '') continue;
+    out.push({ date: String(r[0] || ''), name: String(r[1] || ''), text: String(r[2] || ''),
+               device: String(r[3] || ''), id: String(r[4] || '') });
+  }
+  return out;
 }
 
 /* ------------------------------------------------------------------ *

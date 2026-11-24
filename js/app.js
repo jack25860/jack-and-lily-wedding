@@ -129,7 +129,8 @@ function lbCached(url){if(!url)return null;var c=lbCache[url];return c&&c.comple
 var MSG_KEY="ssss-wedding-messages";
 var MSG_PENDING_KEY="ssss-wedding-messages-pending";
 var MSG_SHEET_ID="1oxlmhFgKS93pIWfRInJF0AXqpXRLxeU8v5ZJCnZFpW0";
-var MSG_RANGE="N1:R1000";
+/* v109：移除 1000 列上限。開放式範圍 N:R 讓留言可無限成長（原本寫死 N1:R1000，第 1001 列之後的留言讀不到）。 */
+var MSG_RANGE="N:R";
 var MSG_TOKEN="ssss-rsvp-7f3a91c4e8b2";
 function msgGvizUrl(){return "https://docs.google.com/spreadsheets/d/"+MSG_SHEET_ID+"/gviz/tq?tqx=out:json&range="+encodeURIComponent(MSG_RANGE)+"&headers=1&t="+Date.now()}
 function loadMsgsCache(){try{var raw=window.localStorage.getItem(MSG_KEY),arr=raw?JSON.parse(raw):[];return Array.isArray(arr)?arr:[]}catch(e){return[]}}
