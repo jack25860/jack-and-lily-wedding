@@ -1,0 +1,61 @@
+name: v110c serial fix
+
+# Repair the placeholder commit 0860d9cc, then apply the serial-number fix.
+# Step 1 restores the two files from 66bf5dc (v109, known good).
+# Step 2 runs scripts/v110_patch.py (committed alongside this workflow).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore v109 sources
+        run: |
+          set -e
+          git show 66bf5dc:scripts/rsvp-to-sheet.gs > scripts/rsvp-to-sheet.gs
+          git show 66bf5dc:index.html > index.html
+          wc -c scripts/rsvp-to-sheet.gs index.html
+
+      - name: Apply v110 patch
+        run: python3 scripts/v110_patch.py
+
+      - name: Verify
+        run: |
+          set -e
+          cp scripts/rsvp-to-sheet.gs /tmp/chk.js && node --check /tmp/chk.js
+          echo "gs syntax OK"
+          grep -q "var ENDPOINT_VERSION = 'v52';" scripts/rsvp-to-sheet.gs
+          grep -q "function serialScan_" scripts/rsvp-to-sheet.gs
+          grep -q "function nextDataRow_" scripts/rsvp-to-sheet.gs
+          grep -q "function serialDiag_" scripts/rsvp-to-sheet.gs
+          grep -q "serial: serialDiag_()" scripts/rsvp-to-sheet.gs
+          grep -q "sheet.getRange(targetRow, 1, 1, ROW_WIDTH).setValues" scripts/rsvp-to-sheet.gs
+          if grep -q "sheet.appendRow(buildRow_" scripts/rsvp-to-sheet.gs; then
+            echo "FAIL: appendRow still present"; exit 1
+          fi
+          grep -q 'content="v110"' index.html
+          echo "v110 markers OK"
+
+      - name: Commit and push
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "v110c: serial-number RSVP fix (repair placeholder commit)"
+            git push
+          fi
