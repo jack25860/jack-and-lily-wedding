@@ -1,0 +1,67 @@
+name: v109 sync rsvp-to-sheet.gs + remove 1000-row cap
+
+# Two problems, one patch (scripts/v109_patch.py):
+#
+# 1) scripts/rsvp-to-sheet.gs in this repo was still v49. The live Apps Script
+#    endpoint is v50 (saveMessage / listMessages / phone in column L / optional
+#    email), so the repo was not a truthful record of what runs in production.
+#    The patch brings the repo file to v51 = v50 + the row-growth fix below.
+#
+# 2) The 1000-row ceiling.
+#    * js/app.js read the message board with MSG_RANGE="N1:R1000", so any
+#      message past row 1000 was invisible on every device -> open-ended "N:R".
+#    * Apps Script had no guarantee of a free row before writing -> ensureRows_()
+#      grows the grid in 500-row steps before any RSVP or message write.
+#
+# No new fields, no new features. RSVP columns A:L, message columns N:R, the
+# phone field, optional email, gallery, video and the iPhone typing CSS are
+# all untouched.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply v109 patch
+        run: python3 scripts/v109_patch.py
+
+      - name: Verify
+        run: |
+          set -e
+          node --check js/app.js
+          echo "app.js syntax OK"
+          grep -q "var ENDPOINT_VERSION = 'v51';" scripts/rsvp-to-sheet.gs
+          grep -q 'function saveMessage_' scripts/rsvp-to-sheet.gs
+          grep -q 'function listMessages_' scripts/rsvp-to-sheet.gs
+          grep -q 'function ensureRows_' scripts/rsvp-to-sheet.gs
+          grep -q 'MSG_RANGE="N:R"' js/app.js
+          grep -q 'content="v109"' index.html
+          if grep -q 'MSG_RANGE="N1:R1000"' js/app.js; then
+            echo "FAIL: old 1000-row range still present"; exit 1
+          fi
+          if grep -q "ENDPOINT_VERSION = 'v49'" scripts/rsvp-to-sheet.gs; then
+            echo "FAIL: repo script still v49"; exit 1
+          fi
+          echo "v109 markers OK"
+
+      - name: Commit and push
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "v109: sync rsvp-to-sheet.gs to v51 + remove 1000-row message read cap"
+            git push
+          fi
