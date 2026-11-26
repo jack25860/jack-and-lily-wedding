@@ -1,0 +1,49 @@
+name: v111b description line breaks
+
+# v111b: the reference screenshot shows the preview description as three
+# lines. v111 left the break between sentence 2 and 3 to the renderer; this
+# adds an explicit &#10; so the preview matches the reference exactly.
+# Only the three description meta tags change.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply v111b refinement
+        run: python3 scripts/v111b_patch.py
+
+      - name: Verify
+        run: |
+          set -e
+          node --check js/app.js
+          grep -q 'content="v111"' index.html
+          # all three description tags must now carry two line breaks
+          test "$(grep -c '旅程。&#10;誠摯邀請您見證' index.html)" = "3"
+          # title must be untouched
+          grep -q 'og:title" content="王有岑 & 杜伊穠 | 婚禮邀請暨報名"' index.html
+          echo "v111b markers OK"
+
+      - name: Commit and push
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "v111b: preview description line breaks to match reference"
+            git push
+          fi
