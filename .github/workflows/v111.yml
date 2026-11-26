@@ -1,0 +1,54 @@
+name: v111 title and link preview
+
+# v111: change the link-preview title + description to match the second
+# reference screenshot. Only <title>, meta description, og:*, twitter:* and
+# the document.title line in js/app.js are touched. No layout/style changes.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply v111 patch
+        run: python3 scripts/v111_patch.py
+
+      - name: Verify
+        run: |
+          set -e
+          node --check js/app.js
+          echo "app.js syntax OK"
+          grep -q 'content="v111"' index.html
+          grep -q 'og:title" content="王有岑 & 杜伊穠 | 婚禮邀請暨報名"' index.html
+          grep -q 'twitter:title" content="王有岑 & 杜伊穠 | 婚禮邀請暨報名"' index.html
+          grep -q 'document.title=groom+" & "+bride+" | 婚禮邀請暨報名"' js/app.js
+          if grep -q 'og:title" content="三生三世・緣定今生｜Jack' index.html; then
+            echo "FAIL: old og:title still present"; exit 1
+          fi
+          if grep -q 'document.title=val("SITE_TITLE")' js/app.js; then
+            echo "FAIL: old document.title still present"; exit 1
+          fi
+          echo "v111 markers OK"
+
+      - name: Commit and push
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "v111: link preview title/description -> 王有岑 & 杜伊穠 | 婚禮邀請暨報名"
+            git push
+          fi
