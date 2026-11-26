@@ -1,0 +1,52 @@
+name: v111c bride name typo
+
+# v111c: one wrong character in the bride's static fallback name.
+#   index.html  <span data-cfg="BRIDE_NAME">杜伊甯</span>   (甯 U+752F)
+#            -> <span data-cfg="BRIDE_NAME">杜伊穠</span>   (穠 U+7A60)
+# Only that single character changes.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply v111c fix
+        run: python3 scripts/v111c_patch.py
+
+      - name: Verify
+        run: |
+          set -e
+          node --check js/app.js
+          grep -q 'content="v111"' index.html
+          grep -q '<title>王有岑 & 杜伊穠 | 婚禮邀請暨報名</title>' index.html
+          grep -q 'og:title" content="王有岑 & 杜伊穠 | 婚禮邀請暨報名"' index.html
+          grep -q 'BRIDE_NAME">杜伊穠<' index.html
+          # the wrong character must be gone from the whole page
+          if python3 -c "import io,sys; sys.exit(0 if '\u752f' in io.open('index.html',encoding='utf-8').read() else 1)"; then
+            echo "FAIL: U+752F still present"; exit 1
+          fi
+          echo "v111c markers OK"
+
+      - name: Commit and push
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "v111c: bride name typo in static fallback (甯 -> 穠)"
+            git push
+          fi
